@@ -32,7 +32,7 @@
   <name>Vert.x gRPC</name>
 
   <properties>
-    <stack.version>3.3.0-SNAPSHOT</stack.version>
+    <stack.version>3.3.0.CR1</stack.version>
     <jetty.alpnAgent.version>2.0.0</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
   </properties>
