@@ -7,8 +7,12 @@ import io.grpc.HandlerRegistry;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.net.NetServerOptions;
+import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.impl.ServerID;
 
 import javax.annotation.Nullable;
@@ -33,7 +37,7 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   private final ServerID id;
   private Vertx vertx;
   private NettyServerBuilder builder;
-
+  private HttpServerOptions options = new HttpServerOptions();
 
   private VertxServerBuilder(Vertx vertx, int port) {
     this.id = new ServerID(port, "0.0.0.0");
@@ -85,9 +89,13 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return this;
   }
 
-  public VertxServer build() {
-    ContextImpl context = (ContextImpl) vertx.getOrCreateContext();
-    return new VertxServer(id, builder, context);
+  public VertxServerBuilder useSsl(Handler<TCPSSLOptions> handler) {
+    handler.handle(options);
+    return this;
   }
 
+  public VertxServer build() {
+    ContextImpl context = (ContextImpl) vertx.getOrCreateContext();
+    return new VertxServer(id, options, builder, context);
+  }
 }

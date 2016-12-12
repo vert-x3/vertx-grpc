@@ -1,7 +1,6 @@
 /**
  *
  * - worker integration
- * - SSL integration
  * - options etc...
  * - auto close in verticle
  * - ReadStream / WriteStream integration
