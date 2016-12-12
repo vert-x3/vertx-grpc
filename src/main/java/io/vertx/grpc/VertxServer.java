@@ -3,16 +3,24 @@ package io.vertx.grpc;
 import io.grpc.Server;
 import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.handler.ssl.SslContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.impl.HandlerManager;
+import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -29,19 +37,31 @@ public class VertxServer extends Server {
   private static class ActualServer {
 
     final ServerID id;
+    final HttpServerOptions options;
     final AtomicInteger count = new AtomicInteger();
     final VertxEventLoopGroup group = new VertxEventLoopGroup();
     final HandlerManager<String> manager = new HandlerManager<>(group);
     final ServerImpl server;
     final ThreadLocal<List<ContextImpl>> contextLocal = new ThreadLocal<>();
 
-    private ActualServer(ServerID id, NettyServerBuilder builder) {
+    private ActualServer(Vertx vertx, ServerID id, HttpServerOptions options, NettyServerBuilder builder) {
+
+      // SSL
+      SslContext sslContext = null;
+      if (options.isSsl()) {
+        SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
+        helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
+        sslContext = helper.getContext((VertxInternal) vertx);
+      }
+
       this.id = id;
+      this.options = options;
       this.server = builder
           .executor(command -> {
             contextLocal.get().get(0).executeFromIO(command::run);
           })
           .workerEventLoopGroup(group)
+          .sslContext(sslContext)
           .build();
     }
 
@@ -85,11 +105,13 @@ public class VertxServer extends Server {
 
   private final ServerID id;
   private final NettyServerBuilder builder;
+  private final HttpServerOptions options;
   private ActualServer actual;
   private final ContextImpl context;
 
-  VertxServer(ServerID id, NettyServerBuilder builder, ContextImpl context) {
+  VertxServer(ServerID id, HttpServerOptions options, NettyServerBuilder builder, ContextImpl context) {
     this.id = id;
+    this.options = options;
     this.builder = builder;
     this.context = context;
   }
@@ -100,7 +122,7 @@ public class VertxServer extends Server {
   }
 
   public VertxServer start(Handler<AsyncResult<Void>> completionHandler) {
-    actual = map.computeIfAbsent(id, id -> new ActualServer(id, builder));
+    actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder));
     actual.start(context, completionHandler);
     return this;
   }

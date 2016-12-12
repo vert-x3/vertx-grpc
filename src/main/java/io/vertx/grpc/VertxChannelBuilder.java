@@ -9,11 +9,19 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.NameResolver;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.netty.NettyChannelBuilder;
+import io.netty.handler.ssl.SslContext;
 import io.vertx.core.Context;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.net.TCPSSLOptions;
+import io.vertx.core.net.impl.SSLHelper;
 
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +46,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   private final Vertx vertx;
   private NettyChannelBuilder builder;
   private ContextInternal context;
+  private HttpClientOptions options = new HttpClientOptions();
 
   private VertxChannelBuilder(Vertx vertx, String host, int port) {
     this(vertx, GrpcUtil.authorityFromHostAndPort(host, port));
@@ -125,9 +134,21 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     return this;
   }
 
+  public VertxChannelBuilder useSsl(Handler<TCPSSLOptions> handler) {
+    handler.handle(options);
+    return this;
+  }
+
   @Override
   public ManagedChannel build() {
-    return builder.eventLoopGroup(context.nettyEventLoop()).executor(command -> {
+    // SSL
+    SslContext sslContext = null;
+    if (options.isSsl()) {
+      SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
+      helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
+      sslContext = helper.getContext((VertxInternal) vertx);
+    }
+    return builder.eventLoopGroup(context.nettyEventLoop()).sslContext(sslContext).executor(command -> {
       if (Context.isOnEventLoopThread()) {
         context.executeFromIO(command::run);
       } else {
