@@ -41,8 +41,6 @@ import java.util.stream.IntStream;
 @RunWith(VertxUnitRunner.class)
 public abstract class GrpcTestBase {
 
-  private static int portSeq = 50051;
-
   /* The port on which the server should run */
   protected Vertx vertx;
   protected int port;
@@ -50,7 +48,7 @@ public abstract class GrpcTestBase {
 
   @Before
   public void setUp() {
-    port = portSeq;
+    port = 50051;
     vertx = Vertx.vertx();
   }
 
