@@ -8,13 +8,16 @@ import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.stub.StreamObserver;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.grpc.StreamHelper;
 import io.vertx.grpc.VertxChannelBuilder;
+import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
 import org.junit.After;
 import org.junit.Before;
@@ -25,6 +28,8 @@ import io.grpc.examples.helloworld.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -36,29 +41,50 @@ import java.util.stream.IntStream;
 @RunWith(VertxUnitRunner.class)
 public class GrpcVertxTest {
 
+  private static int portSeq = 50051;
+
   /* The port on which the server should run */
   private Vertx vertx;
-  private int port = 50051;
-  private Server server;
+  private int port;
+  private VertxServer server;
 
   @Before
   public void setUp() {
+    port = portSeq;
     vertx = Vertx.vertx();
   }
 
   @After
   public void tearDown() throws Exception {
     if (server != null) {
-      server.shutdown().awaitTermination(10, TimeUnit.SECONDS);
+      VertxServer s = server;
+      server = null;
+      CountDownLatch fut = new CountDownLatch(1);
+      s.shutdown(ar -> fut.countDown());
+      fut.await(10, TimeUnit.SECONDS);
     }
-    vertx.close();
+    CountDownLatch latch = new CountDownLatch(1);
+    vertx.close(ar -> latch.countDown());
+    latch.await(10, TimeUnit.SECONDS);
   }
 
   private void startServer(BindableService service) throws Exception {
+    CompletableFuture<Void> fut = new CompletableFuture<>();
+    startServer(service, ar -> {
+      if (ar.succeeded()) {
+        fut.complete(null);
+      } else {
+        fut.completeExceptionally(ar.cause());
+      }
+    });
+    fut.get(10, TimeUnit.SECONDS);
+  }
+
+  private void startServer(BindableService service, Handler<AsyncResult<Void>> completionHandler) {
     server = VertxServerBuilder.forPort(vertx, port)
         .addService(service)
         .build()
-        .start();
+        .start(completionHandler);
   }
 
   @Test
@@ -66,27 +92,22 @@ public class GrpcVertxTest {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> {
-      try {
-        startServer(new GreeterGrpc.GreeterImplBase() {
-          @Override
-          public ServerServiceDefinition bindService() {
-            ctx.assertEquals(serverCtx, Vertx.currentContext());
-            ServerServiceDefinition sd = super.bindService();
-            started.complete();
-            return sd;
-          }
-          @Override
-          public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
-            ctx.assertEquals(serverCtx, Vertx.currentContext());
-            ctx.assertTrue(Context.isOnEventLoopThread());
-            HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-            responseObserver.onNext(reply);
-            responseObserver.onCompleted();
-          }
-        });
-      } catch (Exception e) {
-        ctx.fail(e);
-      }
+      startServer(new GreeterGrpc.GreeterImplBase() {
+        @Override
+        public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+          ctx.assertEquals(serverCtx, Vertx.currentContext());
+          ctx.assertTrue(Context.isOnEventLoopThread());
+          HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
+          responseObserver.onNext(reply);
+          responseObserver.onCompleted();
+        }
+      }, ar -> {
+        if (ar.succeeded()) {
+          started.complete();
+        } else {
+          ctx.fail(ar.cause());
+        }
+      });
     });
     started.awaitSuccess(10000);
     Async async = ctx.async();
@@ -113,15 +134,8 @@ public class GrpcVertxTest {
   @Test
   public void testStreamSink(TestContext ctx) throws Exception {
     int numItems = 128;
-    Async started = ctx.async();
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingImplBase() {
-      @Override
-      public ServerServiceDefinition bindService() {
-        ServerServiceDefinition sd = super.bindService();
-        started.complete();
-        return sd;
-      }
       @Override
       public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
         List<String> items = new ArrayList<>();
@@ -144,7 +158,6 @@ public class GrpcVertxTest {
         };
       }
     });
-    started.awaitSuccess(10000);
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
         .usePlaintext(true)
         .build();
