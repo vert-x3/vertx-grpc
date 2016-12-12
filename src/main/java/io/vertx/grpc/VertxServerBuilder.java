@@ -4,15 +4,16 @@ import io.grpc.BindableService;
 import io.grpc.CompressorRegistry;
 import io.grpc.DecompressorRegistry;
 import io.grpc.HandlerRegistry;
-import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.netty.NettyServerBuilder;
 import io.vertx.core.Vertx;
-import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.net.impl.ServerID;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executor;
 
@@ -29,17 +30,19 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return new VertxServerBuilder(vertx, address);
   }
 
+  private final ServerID id;
   private Vertx vertx;
   private NettyServerBuilder builder;
-  private ContextInternal context;
+
 
   private VertxServerBuilder(Vertx vertx, int port) {
+    this.id = new ServerID(port, "0.0.0.0");
     this.vertx = vertx;
-    this.context = (ContextInternal) vertx.getOrCreateContext();
     this.builder = NettyServerBuilder.forPort(port);
   }
 
   private VertxServerBuilder(Vertx vertx, SocketAddress address) {
+    this.id = new ServerID(((InetSocketAddress) address).getPort(), ((InetSocketAddress) address).getHostString());
     this.vertx = vertx;
     this.builder = NettyServerBuilder.forAddress(address);
   }
@@ -82,9 +85,9 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return this;
   }
 
-  public Server build() {
-    return builder
-        .executor(command -> context.executeFromIO(command::run))
-        .workerEventLoopGroup(context.nettyEventLoop()).build();
+  public VertxServer build() {
+    ContextImpl context = (ContextImpl) vertx.getOrCreateContext();
+    return new VertxServer(id, builder, context);
   }
+
 }
