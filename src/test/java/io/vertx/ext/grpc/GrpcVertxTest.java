@@ -64,39 +64,50 @@ public class GrpcVertxTest {
   @Test
   public void testSimple(TestContext ctx) throws Exception {
     Async started = ctx.async();
-    startServer(new GreeterGrpc.GreeterImplBase() {
-      @Override
-      public ServerServiceDefinition bindService() {
-        ServerServiceDefinition sd = super.bindService();
-        started.complete();
-        return sd;
-      }
-      @Override
-      public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
-        ctx.assertTrue(Context.isOnEventLoopThread());
-        ctx.assertNotNull(Vertx.currentContext());
-        HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-        responseObserver.onNext(reply);
-        responseObserver.onCompleted();
+    Context serverCtx = vertx.getOrCreateContext();
+    serverCtx.runOnContext(v -> {
+      try {
+        startServer(new GreeterGrpc.GreeterImplBase() {
+          @Override
+          public ServerServiceDefinition bindService() {
+            ctx.assertEquals(serverCtx, Vertx.currentContext());
+            ServerServiceDefinition sd = super.bindService();
+            started.complete();
+            return sd;
+          }
+          @Override
+          public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+            ctx.assertEquals(serverCtx, Vertx.currentContext());
+            ctx.assertTrue(Context.isOnEventLoopThread());
+            HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
+            responseObserver.onNext(reply);
+            responseObserver.onCompleted();
+          }
+        });
+      } catch (Exception e) {
+        ctx.fail(e);
       }
     });
     started.awaitSuccess(10000);
     Async async = ctx.async();
-    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
-        .usePlaintext(true)
-        .build();
-    GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    blockingStub.sayHello(request, StreamHelper.future(ar -> {
-      if (ar.succeeded()) {
-        ctx.assertEquals("Hello Julien", ar.result().getMessage());
-        ctx.assertTrue(Context.isOnEventLoopThread());
-        ctx.assertNotNull(Vertx.currentContext());
-        async.complete();
-      } else {
-        ctx.fail(ar.cause());
-      }
-    }));
+    Context clientCtx = vertx.getOrCreateContext();
+    clientCtx.runOnContext(v -> {
+      ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext(true)
+          .build();
+      GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+      HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+      blockingStub.sayHello(request, StreamHelper.future(ar -> {
+        if (ar.succeeded()) {
+          ctx.assertEquals(clientCtx, Vertx.currentContext());
+          ctx.assertTrue(Context.isOnEventLoopThread());
+          ctx.assertEquals("Hello Julien", ar.result().getMessage());
+          async.complete();
+        } else {
+          ctx.fail(ar.cause());
+        }
+      }));
+    });
   }
 
   @Test
