@@ -1,65 +1,93 @@
 package io.vertx.ext.grpc;
 
+import io.grpc.BindableService;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.GrpcSslContexts;
-import io.grpc.netty.NettyChannelBuilder;
-import io.grpc.netty.NettyServerBuilder;
-import io.grpc.testing.TestUtils;
-import io.grpc.testing.integration.AbstractTransportTest;
-import io.netty.handler.ssl.SslProvider;
-import io.netty.handler.ssl.SupportedCipherSuiteFilter;
-import org.junit.BeforeClass;
+import io.grpc.Server;
+import io.grpc.ServerServiceDefinition;
+import io.grpc.stub.StreamObserver;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.grpc.StreamHelper;
+import io.vertx.grpc.VertxChannelBuilder;
+import io.vertx.grpc.VertxServerBuilder;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-import java.io.IOException;
+import io.grpc.examples.helloworld.*;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-@RunWith(JUnit4.class)
-public class Http2VertxTest extends AbstractTransportTest {
+@RunWith(VertxUnitRunner.class)
+public class Http2VertxTest {
 
-  private static int serverPort = TestUtils.pickUnusedPort();
+  /* The port on which the server should run */
+  private Vertx vertx;
+  private int port = 50051;
+  private Server server;
 
-  @BeforeClass
-  public static void startServer() {
-    try {
-      startStaticServer(NettyServerBuilder.forPort(serverPort)
-          .flowControlWindow(65 * 1024)
-          .sslContext(GrpcSslContexts
-              .forServer(TestUtils.loadCert("server1.pem"), TestUtils.loadCert("server1.key"))
-              .ciphers(TestUtils.preferredTestCiphers(), SupportedCipherSuiteFilter.INSTANCE)
-              .sslProvider(SslProvider.JDK)
-              .build()));
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
+  @Before
+  public void setUp() {
+    vertx = Vertx.vertx();
   }
 
-  @Override
-  protected ManagedChannel createChannel() {
-    return new VertxChannelBuilder(TestUtils.testServerAddress(serverPort)).build();
-/*
-    try {
-      return NettyChannelBuilder
-          .forAddress(TestUtils.testServerAddress(serverPort))
-          .sslContext(GrpcSslContexts.forClient()
-              .trustManager(TestUtils.loadCert("ca.pem"))
-              .ciphers(TestUtils.preferredTestCiphers(), SupportedCipherSuiteFilter.INSTANCE)
-              .sslProvider(SslProvider.JDK)
-              .build())
-          .build();
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+  @After
+  public void tearDown() throws Exception {
+    if (server != null) {
+      server.shutdown().awaitTermination(10, TimeUnit.SECONDS);
     }
-*/
+    vertx.close();
   }
 
-  @Override
-  @Test(timeout = 10000000)
-  public void emptyUnary() throws Exception {
-    super.emptyUnary();
+  private void startServer(BindableService service) throws Exception {
+    server = VertxServerBuilder.forPort(vertx, port)
+        .addService(service)
+        .build()
+        .start();
+  }
+
+  @Test
+  public void testSimple(TestContext ctx) throws Exception {
+    Async started = ctx.async();
+    startServer(new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public ServerServiceDefinition bindService() {
+        ServerServiceDefinition sd = super.bindService();
+        started.complete();
+        return sd;
+      }
+      @Override
+      public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+        ctx.assertTrue(Context.isOnEventLoopThread());
+        ctx.assertNotNull(Vertx.currentContext());
+        HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
+        responseObserver.onNext(reply);
+        responseObserver.onCompleted();
+      }
+    });
+    started.awaitSuccess(10000);
+    Async async = ctx.async();
+    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
+        .usePlaintext(true)
+        .build();
+    GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    blockingStub.sayHello(request, StreamHelper.future(ar -> {
+      if (ar.succeeded()) {
+        ctx.assertEquals("Hello Julien", ar.result().getMessage());
+        ctx.assertTrue(Context.isOnEventLoopThread());
+        ctx.assertNotNull(Vertx.currentContext());
+        async.complete();
+      } else {
+        ctx.fail(ar.cause());
+      }
+    }));
   }
 }
