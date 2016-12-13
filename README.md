@@ -16,3 +16,4 @@ Todo:
 - ReadStream / WriteStream integration
 - write doc & examples
 - contribute support to grpc-java Netty implementation to provide async start/shutdown
+- on the client side check if the managed channel auto reconnects
