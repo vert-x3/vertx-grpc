@@ -29,9 +29,9 @@ public class Main {
             .forAddress(vertx, "localhost", 8080)
             .usePlaintext(true)
             .build();
-        GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+        GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
         HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-        blockingStub.sayHello(request, StreamHelper.future(asyncResponse -> {
+        stub.sayHello(request, StreamHelper.future(asyncResponse -> {
           if (asyncResponse.succeeded()) {
             System.out.println("Succeeded " + asyncResponse.result().getMessage());
           } else {

@@ -56,9 +56,9 @@ public class RpcTest extends GrpcTestBase {
       ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
           .usePlaintext(true)
           .build();
-      GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      blockingStub.sayHello(request, StreamHelper.future(ar -> {
+      stub.sayHello(request, StreamHelper.future(ar -> {
         if (ar.succeeded()) {
           ctx.assertEquals(clientCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
@@ -101,8 +101,8 @@ public class RpcTest extends GrpcTestBase {
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
         .usePlaintext(true)
         .build();
-    StreamingGrpc.StreamingStub blockingStub = StreamingGrpc.newStub(channel);
-    StreamObserver<Item> sink = blockingStub.sink(new StreamObserver<Empty>() {
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+    StreamObserver<Item> sink = stub.sink(new StreamObserver<Empty>() {
       @Override
       public void onNext(Empty value) {
         ctx.fail();
@@ -148,8 +148,8 @@ public class RpcTest extends GrpcTestBase {
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
         .usePlaintext(true)
         .build();
-    StreamingGrpc.StreamingStub blockingStub = StreamingGrpc.newStub(channel);
-    StreamObserver<Item> sink = blockingStub.pipe(new StreamObserver<Item>() {
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+    StreamObserver<Item> sink = stub.pipe(new StreamObserver<Item>() {
       List<String> items = new ArrayList<>();
       @Override
       public void onNext(Item value) {
