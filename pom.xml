@@ -56,6 +56,16 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-codegen</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-docgen</artifactId>
+      <optional>true</optional>
+    </dependency>
 
     <dependency>
       <groupId>io.grpc</groupId>
@@ -113,6 +123,38 @@
       </plugins>
     </pluginManagement>
     <plugins>
+
+      <plugin>
+        <groupId>org.bsc.maven</groupId>
+        <artifactId>maven-processor-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <systemProperties>
+            <java.util.logging.SimpleFormatter.format>%4$s: %3$s - %5$s %6$s%n</java.util.logging.SimpleFormatter.format>
+          </systemProperties>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-sources</id>
+            <goals>
+              <goal>process</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <processors>
+                <processor>io.vertx.docgen.JavaDocGenProcessor</processor>
+              </processors>
+              <optionMap>
+                <docgen.output>${asciidoc.dir}/java</docgen.output>
+                <maven.groupId>${project.groupId}</maven.groupId>
+                <maven.artifactId>${project.artifactId}</maven.artifactId>
+                <maven.version>${project.version}</maven.version>
+              </optionMap>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
