@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 @RunWith(VertxUnitRunner.class)
-public class ScaleTest {
+public class VerticleTest {
 
   private static final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
   private static int port = 50051;
@@ -79,9 +79,8 @@ public class ScaleTest {
   }
 
   @Test
-  public void testScale(TestContext ctx) throws Exception {
+  public void testScaleVerticle(TestContext ctx) throws Exception {
     Async started = ctx.async();
-
     vertx.deployVerticle(GrpcVerticle.class.getName(), new DeploymentOptions().setInstances(2), ar -> {
       if (ar.succeeded()) {
         started.complete();
@@ -89,7 +88,6 @@ public class ScaleTest {
         ctx.fail(ar.cause());
       }
     });
-
     started.awaitSuccess(10000);
     final int num = 10;
     Async async = ctx.async(num);
@@ -112,5 +110,34 @@ public class ScaleTest {
         }
       }));
     }
+  }
+
+  @Test
+  public void testCloseInVerticle(TestContext ctx) throws Exception {
+    Async started = ctx.async();
+    vertx.deployVerticle(GrpcVerticle.class.getName(), ar1 -> {
+      if (ar1.succeeded()) {
+        vertx.undeploy(ar1.result(), ar2 -> {
+          if (ar2.succeeded()) {
+            started.complete();
+          } else {
+            ctx.fail(ar2.cause());
+          }
+        });
+      } else {
+        ctx.fail(ar1.cause());
+      }
+    });
+    started.awaitSuccess(10000);
+    Async async = ctx.async();
+    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
+        .usePlaintext(true)
+        .build();
+    GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    blockingStub.sayHello(request, StreamHelper.future(ar -> {
+      ctx.assertFalse(ar.succeeded());
+      async.complete();
+    }));
   }
 }

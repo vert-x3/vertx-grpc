@@ -5,6 +5,7 @@ import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Closeable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -12,7 +13,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextImpl;
 import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.impl.HandlerManager;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
@@ -108,6 +108,7 @@ public class VertxServer extends Server {
   private final HttpServerOptions options;
   private ActualServer actual;
   private final ContextImpl context;
+  private Closeable hook;
 
   VertxServer(ServerID id, HttpServerOptions options, NettyServerBuilder builder, ContextImpl context) {
     this.id = id;
@@ -123,7 +124,13 @@ public class VertxServer extends Server {
 
   public VertxServer start(Handler<AsyncResult<Void>> completionHandler) {
     actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder));
-    actual.start(context, completionHandler);
+    actual.start(context, ar1 -> {
+      if (ar1.succeeded()) {
+        hook = ar2 -> shutdown();
+        context.addCloseHook(hook);
+      }
+      completionHandler.handle(ar1);
+    });
     return this;
   }
 
@@ -133,6 +140,9 @@ public class VertxServer extends Server {
   }
 
   public VertxServer shutdown(Handler<AsyncResult<Void>> completionHandler) {
+    if (hook != null) {
+      context.removeCloseHook(hook);
+    }
     actual.stop(context, completionHandler);
     return this;
   }
