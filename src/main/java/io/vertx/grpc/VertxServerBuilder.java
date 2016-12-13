@@ -11,7 +11,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.impl.ContextImpl;
-import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.impl.ServerID;
 

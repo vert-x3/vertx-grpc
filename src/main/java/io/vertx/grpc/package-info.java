@@ -1,9 +1,5 @@
 /**
- *
- * - worker integration
- * - options etc...
- * - auto close in verticle
- * - ReadStream / WriteStream integration
+ * Write doc.
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
