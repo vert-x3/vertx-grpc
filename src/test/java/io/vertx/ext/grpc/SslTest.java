@@ -61,9 +61,9 @@ public class SslTest extends GrpcTestBase {
                   .setPath("tls/client-truststore.jks")
                   .setPassword("wibble")))
           .build();
-      GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      blockingStub.sayHello(request, StreamHelper.future(ar -> {
+      stub.sayHello(request, StreamHelper.future(ar -> {
         if (ar.succeeded()) {
           ctx.assertEquals(clientCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
