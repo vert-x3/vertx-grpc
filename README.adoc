@@ -1,6 +1,8 @@
-# Vert.x gRPC
+= Vert.x gRPC
 
 Currently for Vert.x 3.4.0-SNAPSHOT
+
+link:src/main/asciidoc/java/index.adoc[Documentation]
 
 Supports:
 
