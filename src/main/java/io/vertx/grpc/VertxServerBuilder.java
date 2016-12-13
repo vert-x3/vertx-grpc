@@ -33,6 +33,10 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return new VertxServerBuilder(vertx, address);
   }
 
+  public static VertxServerBuilder forAddress(Vertx vertx, String host, int port) {
+    return new VertxServerBuilder(vertx, new InetSocketAddress(host, port));
+  }
+
   private final ServerID id;
   private Vertx vertx;
   private NettyServerBuilder builder;
