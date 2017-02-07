@@ -1,12 +1,6 @@
 package io.vertx.grpc;
 
-import io.grpc.ClientInterceptor;
-import io.grpc.CompressorRegistry;
-import io.grpc.DecompressorRegistry;
-import io.grpc.LoadBalancer;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.NameResolver;
+import io.grpc.*;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
@@ -113,6 +107,12 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   @Override
   public VertxChannelBuilder loadBalancerFactory(LoadBalancer.Factory loadBalancerFactory) {
     builder.loadBalancerFactory(loadBalancerFactory);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder loadBalancerFactory(LoadBalancer2.Factory factory) {
+    builder.loadBalancerFactory(factory);
     return this;
   }
 

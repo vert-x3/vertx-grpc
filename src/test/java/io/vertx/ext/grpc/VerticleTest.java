@@ -4,15 +4,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.stub.StreamObserver;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.grpc.StreamHelper;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
@@ -55,17 +50,16 @@ public class VerticleTest {
   public static class GrpcVerticle extends AbstractVerticle {
 
     private VertxServer server;
-    private GreeterGrpc.GreeterImplBase service;
+    private GreeterGrpc.GreeterVertxImplBase service;
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
-      service = new GreeterGrpc.GreeterImplBase() {
+      service = new GreeterGrpc.GreeterVertxImplBase() {
         @Override
-        public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+        public void sayHello(HelloRequest req, Handler<AsyncResult<HelloReply>> handler) {
           threads.add(Thread.currentThread());
           HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-          responseObserver.onNext(reply);
-          responseObserver.onCompleted();
+          handler.handle(Future.succeededFuture(reply));
         }
       };
       server = VertxServerBuilder.forPort(vertx, port).addService(service).build();
@@ -95,9 +89,9 @@ public class VerticleTest {
       ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
           .usePlaintext(true)
           .build();
-      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+      GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request, StreamHelper.future(ar -> {
+      stub.sayHello(request, ar -> {
         channel.shutdown();
         if (ar.succeeded()) {
           ctx.assertEquals("Hello Julien", ar.result().getMessage());
@@ -108,7 +102,7 @@ public class VerticleTest {
         } else {
           ctx.fail(ar.cause());
         }
-      }));
+      });
     }
   }
 
@@ -133,11 +127,11 @@ public class VerticleTest {
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
         .usePlaintext(true)
         .build();
-    GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
+    GreeterGrpc.GreeterVertxStub blockingStub = GreeterGrpc.newVertxStub(channel);
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    blockingStub.sayHello(request, StreamHelper.future(ar -> {
+    blockingStub.sayHello(request, ar -> {
       ctx.assertFalse(ar.succeeded());
       async.complete();
-    }));
+    });
   }
 }

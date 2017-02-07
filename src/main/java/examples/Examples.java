@@ -1,11 +1,12 @@
 package examples;
 
 import io.grpc.ManagedChannel;
-import io.grpc.stub.StreamObserver;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
-import io.vertx.grpc.StreamHelper;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
@@ -19,11 +20,10 @@ public class Examples {
   public void simpleServer(Vertx vertx) throws Exception {
 
     // The rcp service
-    GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
+    GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
-        responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
-        responseObserver.onCompleted();
+      public void sayHello(HelloRequest request, Handler<AsyncResult<HelloReply>> handler) {
+        handler.handle(Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build()));
       }
     };
 
@@ -46,19 +46,19 @@ public class Examples {
         .build();
 
     // Get a stub to use for interacting with the remote service
-    GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+    GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
 
     // Make a request
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
 
     // Call the remote service
-    stub.sayHello(request, StreamHelper.future(ar -> {
+    stub.sayHello(request, ar -> {
       if (ar.succeeded()) {
         System.out.println("Got the server response: " + ar.result().getMessage());
       } else {
         System.out.println("Coult not reach server " + ar.cause().getMessage());
       }
-    }));
+    });
   }
 
   public void sslServer(Vertx vertx) {
