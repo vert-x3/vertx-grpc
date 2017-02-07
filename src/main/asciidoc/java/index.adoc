@@ -4,11 +4,10 @@
 
 [source,java]
 ----
-GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
+GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
   @Override
-  public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
-    responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
-    responseObserver.onCompleted();
+  public void sayHello(HelloRequest request, Handler<AsyncResult<HelloReply>> handler) {
+    handler.handle(Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build()));
   }
 };
 
@@ -45,19 +44,19 @@ ManagedChannel channel = VertxChannelBuilder
     .build();
 
 // Get a stub to use for interacting with the remote service
-GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
 
 // Make a request
 HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
 
 // Call the remote service
-stub.sayHello(request, StreamHelper.future(ar -> {
+stub.sayHello(request, ar -> {
   if (ar.succeeded()) {
     System.out.println("Got the server response: " + ar.result().getMessage());
   } else {
     System.out.println("Coult not reach server " + ar.cause().getMessage());
   }
-}));
+});
 ----
 
 SSL configuration

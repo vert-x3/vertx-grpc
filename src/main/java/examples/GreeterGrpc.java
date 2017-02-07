@@ -21,11 +21,53 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.0.2)",
+    value = "by gRPC proto compiler (version 1.1.1)",
     comments = "Source: helloworld.proto")
 public class GreeterGrpc {
 
   private GreeterGrpc() {}
+
+  private static <T> io.grpc.stub.StreamObserver<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {
+    return new io.grpc.stub.StreamObserver<T>() {
+      @Override
+      public void onNext(T value) {
+        handler.handle(io.vertx.core.Future.succeededFuture(value));
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        handler.handle(io.vertx.core.Future.failedFuture(t));
+      }
+
+      @Override
+      public void onCompleted() {
+        handler.handle(io.vertx.core.Future.succeededFuture());
+      }
+    };
+  }
+
+  private static <T> io.grpc.stub.StreamObserver<T> toSingle(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {
+    return new io.grpc.stub.StreamObserver<T>() {
+      private boolean resolved = false;
+      @Override
+      public void onNext(T value) {
+        if (resolved) {
+          throw new RuntimeException("Already Resolved");
+        }
+        resolved = true;
+        handler.handle(io.vertx.core.Future.succeededFuture(value));
+      }
+
+      @Override
+      public void onError(Throwable t) {
+        handler.handle(io.vertx.core.Future.failedFuture(t));
+      }
+
+      @Override
+      public void onCompleted() {
+      }
+    };
+  }
 
   public static final String SERVICE_NAME = "helloworld.Greeter";
 
@@ -64,6 +106,13 @@ public class GreeterGrpc {
   }
 
   /**
+   * Creates a new vertx stub that supports all call types for the service
+   */
+  public static GreeterVertxStub newVertxStub(io.grpc.Channel channel) {
+    return new GreeterVertxStub(channel);
+  }
+
+  /**
    * <pre>
    * The greeting service definition.
    * </pre>
@@ -80,7 +129,7 @@ public class GreeterGrpc {
       asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, responseObserver);
     }
 
-    @java.lang.Override public io.grpc.ServerServiceDefinition bindService() {
+    @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
       return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
           .addMethod(
             METHOD_SAY_HELLO,
@@ -191,6 +240,69 @@ public class GreeterGrpc {
     }
   }
 
+  /**
+   * <pre>
+   * The greeting service definition.
+   * </pre>
+   */
+  public static abstract class GreeterVertxImplBase implements io.grpc.BindableService {
+
+    /**
+     * <pre>
+     * Sends a greeting
+     * </pre>
+     */
+    public void sayHello(examples.HelloRequest request,
+        io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
+      asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, GreeterGrpc.toObserver(responseObserver));
+    }
+
+    @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
+      return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
+          .addMethod(
+            METHOD_SAY_HELLO,
+            asyncUnaryCall(
+              new VertxMethodHandlers<
+                examples.HelloRequest,
+                examples.HelloReply>(
+                  this, METHODID_SAY_HELLO)))
+          .build();
+    }
+  }
+
+  /**
+   * <pre>
+   * The greeting service definition.
+   * </pre>
+   */
+  public static final class GreeterVertxStub extends io.grpc.stub.AbstractStub<GreeterVertxStub> {
+    private GreeterVertxStub(io.grpc.Channel channel) {
+      super(channel);
+    }
+
+    private GreeterVertxStub(io.grpc.Channel channel,
+        io.grpc.CallOptions callOptions) {
+      super(channel, callOptions);
+    }
+
+    @java.lang.Override
+    protected GreeterVertxStub build(io.grpc.Channel channel,
+        io.grpc.CallOptions callOptions) {
+      return new GreeterVertxStub(channel, callOptions);
+    }
+
+    /**
+     * <pre>
+     * Sends a greeting
+     * </pre>
+     */
+    public void sayHello(examples.HelloRequest request,
+        io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
+      asyncUnaryCall(
+          getChannel().newCall(METHOD_SAY_HELLO, getCallOptions()), request, GreeterGrpc.toSingle(responseObserver));
+    }
+  }
+
   private static final int METHODID_SAY_HELLO = 0;
 
   private static class MethodHandlers<Req, Resp> implements
@@ -230,9 +342,72 @@ public class GreeterGrpc {
     }
   }
 
-  public static io.grpc.ServiceDescriptor getServiceDescriptor() {
-    return new io.grpc.ServiceDescriptor(SERVICE_NAME,
-        METHOD_SAY_HELLO);
+  private static class VertxMethodHandlers<Req, Resp> implements
+      io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
+      io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
+      io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
+      io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
+    private final GreeterVertxImplBase serviceImpl;
+    private final int methodId;
+
+    public VertxMethodHandlers(GreeterVertxImplBase serviceImpl, int methodId) {
+      this.serviceImpl = serviceImpl;
+      this.methodId = methodId;
+    }
+
+    @java.lang.Override
+    @java.lang.SuppressWarnings("unchecked")
+    public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
+      switch (methodId) {
+        case METHODID_SAY_HELLO:
+          serviceImpl.sayHello((examples.HelloRequest) request,
+              (io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>>) ar -> {
+                if (ar.succeeded()) {
+                  ((io.grpc.stub.StreamObserver<examples.HelloReply>) responseObserver).onNext(ar.result());
+                  responseObserver.onCompleted();
+                } else {
+                  responseObserver.onError(ar.cause());
+                }
+              });
+          break;
+        default:
+          throw new AssertionError();
+      }
+    }
+
+    @java.lang.Override
+    @java.lang.SuppressWarnings("unchecked")
+    public io.grpc.stub.StreamObserver<Req> invoke(
+        io.grpc.stub.StreamObserver<Resp> responseObserver) {
+      switch (methodId) {
+        default:
+          throw new AssertionError();
+      }
+    }
   }
 
+  private static final class GreeterDescriptorSupplier implements io.grpc.protobuf.ProtoFileDescriptorSupplier {
+    @java.lang.Override
+    public com.google.protobuf.Descriptors.FileDescriptor getFileDescriptor() {
+      return examples.HelloWorldProto.getDescriptor();
+    }
+  }
+
+  private static volatile io.grpc.ServiceDescriptor serviceDescriptor;
+
+  public static io.grpc.ServiceDescriptor getServiceDescriptor() {
+    io.grpc.ServiceDescriptor result = serviceDescriptor;
+    if (result == null) {
+      synchronized (GreeterGrpc.class) {
+        result = serviceDescriptor;
+        if (result == null) {
+          serviceDescriptor = result = io.grpc.ServiceDescriptor.newBuilder(SERVICE_NAME)
+              .setSchemaDescriptor(new GreeterDescriptorSupplier())
+              .addMethod(METHOD_SAY_HELLO)
+              .build();
+        }
+      }
+    }
+    return result;
+  }
 }

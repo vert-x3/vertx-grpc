@@ -1,9 +1,10 @@
 package examples;
 
 import io.grpc.ManagedChannel;
-import io.grpc.stub.StreamObserver;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
-import io.vertx.grpc.StreamHelper;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
@@ -15,12 +16,11 @@ public class Main {
 
   public static void main(String[] args) {
     Vertx vertx = Vertx.vertx();
-    VertxServer server = VertxServerBuilder.forAddress(vertx, "localhost", 8080).addService(new GreeterGrpc.GreeterImplBase() {
+    VertxServer server = VertxServerBuilder.forAddress(vertx, "localhost", 8080).addService(new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+      public void sayHello(HelloRequest request, Handler<AsyncResult<HelloReply>> handler) {
         System.out.println("Hello" + request.getName());
-        responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
-        responseObserver.onCompleted();
+        handler.handle(Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build()));
       }
     }).build();
     server.start(asyncStart -> {
@@ -29,15 +29,15 @@ public class Main {
             .forAddress(vertx, "localhost", 8080)
             .usePlaintext(true)
             .build();
-        GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+        GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
         HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-        stub.sayHello(request, StreamHelper.future(asyncResponse -> {
+        stub.sayHello(request, asyncResponse -> {
           if (asyncResponse.succeeded()) {
             System.out.println("Succeeded " + asyncResponse.result().getMessage());
           } else {
             asyncResponse.cause().printStackTrace();
           }
-        }));
+        });
       } else {
         asyncStart.cause().printStackTrace();
       }

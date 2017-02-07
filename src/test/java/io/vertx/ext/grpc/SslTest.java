@@ -4,13 +4,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.stub.StreamObserver;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.net.JksOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.StreamHelper;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServerBuilder;
 import org.junit.Test;
@@ -25,14 +22,13 @@ public class SslTest extends GrpcTestBase {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> {
-      startServer(new GreeterGrpc.GreeterImplBase() {
+      startServer(new GreeterGrpc.GreeterVertxImplBase() {
         @Override
-        public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+        public void sayHello(HelloRequest req, Handler<AsyncResult<HelloReply>> handler) {
           ctx.assertEquals(serverCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
           HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-          responseObserver.onNext(reply);
-          responseObserver.onCompleted();
+          handler.handle(Future.succeededFuture(reply));
         }
       }, VertxServerBuilder.forPort(vertx, port)
           .useSsl(options -> options
@@ -61,9 +57,9 @@ public class SslTest extends GrpcTestBase {
                   .setPath("tls/client-truststore.jks")
                   .setPassword("wibble")))
           .build();
-      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+      GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request, StreamHelper.future(ar -> {
+      stub.sayHello(request, ar -> {
         if (ar.succeeded()) {
           ctx.assertEquals(clientCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
@@ -72,7 +68,7 @@ public class SslTest extends GrpcTestBase {
         } else {
           ctx.fail(ar.cause());
         }
-      }));
+      });
     });
   }
 }
