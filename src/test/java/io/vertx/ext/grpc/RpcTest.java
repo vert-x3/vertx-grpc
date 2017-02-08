@@ -48,9 +48,9 @@ public class RpcTest extends GrpcTestBase {
     Async async = ctx.async();
     Context clientCtx = vertx.getOrCreateContext();
     clientCtx.runOnContext(v -> {
-      ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
-          .usePlaintext(true)
-          .build();
+      ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+        .usePlaintext(true)
+        .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
       stub.sayHello(request, ar -> {
@@ -72,33 +72,27 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public void source(Empty request, Handler<AsyncResult<Item>> responseObserver) {
+      public void source(Empty request, GrpcWriteStream<Item> stream) {
         int cnt = numItems;
-        while(cnt-- > 0) {
-          responseObserver.handle(Future.succeededFuture(Item.newBuilder().setValue("the-value-" + (numItems - cnt - 1)).build()));
+        while (cnt-- > 0) {
+          stream.write(Item.newBuilder().setValue("the-value-" + (numItems - cnt - 1)).build());
         }
-        responseObserver.handle(Future.succeededFuture());
+        stream.end();
       }
     });
-    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
-            .usePlaintext(true)
-            .build();
+    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .usePlaintext(true)
+      .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    stub.source(Empty.newBuilder().build(), ar -> {
-      if (ar.failed()) {
-        ctx.fail(ar.cause());
-      } else {
-        final Item item = ar.result();
-        if (item != null) {
-          items.add(item.getValue());
-        } else {
-          List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(v -> "the-value-" + v).collect(Collectors.toList());
-          ctx.assertEquals(expected, items);
-          done.complete();
-        }
-      }
-    });
+    stub.source(Empty.newBuilder().build(), GrpcReadStream.<Item>create()
+      .exceptionHandler(ctx::fail)
+      .handler(item -> items.add(item.getValue()))
+      .endHandler(v -> {
+        List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+        ctx.assertEquals(expected, items);
+        done.complete();
+      }));
   }
 
   @Test
@@ -110,19 +104,19 @@ public class RpcTest extends GrpcTestBase {
       public GrpcReadStream<Item> sink(Handler<AsyncResult<Empty>> responseObserver) {
         List<String> items = new ArrayList<>();
         return GrpcReadStream.<Item>create()
-                .exceptionHandler(ctx::fail)
-                .handler(item -> items.add(item.getValue()))
-                .endHandler(v -> {
-                  List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-                  ctx.assertEquals(expected, items);
-                  done.complete();
-                  responseObserver.handle(Future.succeededFuture());
-                });
+          .exceptionHandler(ctx::fail)
+          .handler(item -> items.add(item.getValue()))
+          .endHandler(v -> {
+            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+            ctx.assertEquals(expected, items);
+            done.complete();
+            responseObserver.handle(Future.succeededFuture());
+          });
       }
     });
-    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
-        .usePlaintext(true)
-        .build();
+    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .usePlaintext(true)
+      .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     GrpcWriteStream<Item> sink = stub.sink(ar -> {
       if (ar.failed()) {
@@ -147,32 +141,27 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public GrpcReadStream<Item> pipe(Handler<AsyncResult<Item>> responseObserver) {
+      public GrpcReadStream<Item> pipe(GrpcWriteStream<Item> responseObserver) {
         return GrpcReadStream.<Item>create()
-                .handler(item -> responseObserver.handle(Future.succeededFuture(item)))
-                .exceptionHandler(t -> responseObserver.handle(Future.failedFuture(t)))
-                .endHandler(v -> responseObserver.handle(Future.succeededFuture()));
+          .handler(responseObserver::write)
+          .exceptionHandler(responseObserver::fail)
+          .endHandler(v -> responseObserver.end());
       }
     });
-    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
-        .usePlaintext(true)
-        .build();
+    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .usePlaintext(true)
+      .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    GrpcWriteStream<Item> pipe = stub.pipe(ar -> {
-      if (ar.succeeded()) {
-        final Item value = ar.result();
-        if (value != null) {
-          items.add(value.getValue());
-        } else {
-          List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(v -> "the-value-" + v).collect(Collectors.toList());
-          ctx.assertEquals(expected, items);
-          done.complete();
-        }
-      } else {
-        ctx.fail(ar.cause());
-      }
-    });
+    GrpcWriteStream<Item> pipe = stub.pipe(GrpcReadStream.<Item>create()
+      .exceptionHandler(ctx::fail)
+      .handler(item -> items.add(item.getValue()))
+      .endHandler(V -> {
+        List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+        ctx.assertEquals(expected, items);
+        done.complete();
+      })
+    );
 
     AtomicInteger count = new AtomicInteger(numItems);
     vertx.setPeriodic(10, id -> {

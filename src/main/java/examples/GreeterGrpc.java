@@ -252,7 +252,7 @@ public class GreeterGrpc {
      * Sends a greeting
      * </pre>
      */
-    public void sayHello(examples.HelloRequest request,
+    public /*!client_streaming && !server_streaming*/void sayHello(examples.HelloRequest request,
         io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
       asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, GreeterGrpc.toObserver(responseObserver));
     }
@@ -296,7 +296,7 @@ public class GreeterGrpc {
      * Sends a greeting
      * </pre>
      */
-    public void sayHello(examples.HelloRequest request,
+    public /*!client_streaming && !server_streaming*/void sayHello(examples.HelloRequest request,
         io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
       asyncUnaryCall(
           getChannel().newCall(METHOD_SAY_HELLO, getCallOptions()), request, GreeterGrpc.toSingle(responseObserver));
