@@ -7,6 +7,7 @@ import io.grpc.examples.streaming.StreamingGrpc;
 import io.vertx.core.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.GrpcWriteStream;
 import io.vertx.grpc.VertxChannelBuilder;
 import org.junit.Test;
 
@@ -131,7 +132,7 @@ public class RpcTest extends GrpcTestBase {
         .usePlaintext(true)
         .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
-    Handler<AsyncResult<Item>> sink = stub.sink(ar -> {
+    GrpcWriteStream<Item> sink = stub.sink(ar -> {
       if (ar.failed()) {
         ctx.fail(ar.cause());
       }
@@ -140,10 +141,10 @@ public class RpcTest extends GrpcTestBase {
     vertx.setPeriodic(10, id -> {
       int val = count.decrementAndGet();
       if (val >= 0) {
-        sink.handle(Future.succeededFuture(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build()));
+        sink.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
       } else {
         vertx.cancelTimer(id);
-        sink.handle(Future.succeededFuture());
+        sink.end();
       }
     });
   }
@@ -163,7 +164,7 @@ public class RpcTest extends GrpcTestBase {
         .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    Handler<AsyncResult<Item>> pipe = stub.pipe(ar -> {
+    GrpcWriteStream<Item> pipe = stub.pipe(ar -> {
       if (ar.succeeded()) {
         final Item value = ar.result();
         if (value != null) {
@@ -182,10 +183,10 @@ public class RpcTest extends GrpcTestBase {
     vertx.setPeriodic(10, id -> {
       int val = count.decrementAndGet();
       if (val >= 0) {
-        pipe.handle(Future.succeededFuture(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build()));
+        pipe.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
       } else {
         vertx.cancelTimer(id);
-        pipe.handle(Future.succeededFuture());
+        pipe.end();
       }
     });
   }
