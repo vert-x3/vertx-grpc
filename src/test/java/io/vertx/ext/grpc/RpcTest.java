@@ -7,6 +7,7 @@ import io.grpc.examples.streaming.StreamingGrpc;
 import io.vertx.core.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcWriteStream;
 import io.vertx.grpc.VertxChannelBuilder;
 import org.junit.Test;
@@ -106,26 +107,17 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public Handler<AsyncResult<Item>> sink(Handler<AsyncResult<Empty>> responseObserver) {
+      public GrpcReadStream<Item> sink(Handler<AsyncResult<Empty>> responseObserver) {
         List<String> items = new ArrayList<>();
-        return ar -> {
-          if (ar.failed()) {
-            ctx.fail(ar.cause());
-            return;
-          }
-
-          final Item value = ar.result();
-
-          if (value == null) {
-            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(v -> "the-value-" + v).collect(Collectors.toList());
-            ctx.assertEquals(expected, items);
-            done.complete();
-            responseObserver.handle(Future.succeededFuture());
-            return;
-          }
-
-          items.add(value.getValue());
-        };
+        return GrpcReadStream.<Item>create()
+                .exceptionHandler(ctx::fail)
+                .handler(item -> items.add(item.getValue()))
+                .endHandler(v -> {
+                  List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+                  ctx.assertEquals(expected, items);
+                  done.complete();
+                  responseObserver.handle(Future.succeededFuture());
+                });
       }
     });
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
@@ -155,8 +147,11 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public Handler<AsyncResult<Item>> pipe(Handler<AsyncResult<Item>> responseObserver) {
-        return responseObserver;
+      public GrpcReadStream<Item> pipe(Handler<AsyncResult<Item>> responseObserver) {
+        return GrpcReadStream.<Item>create()
+                .handler(item -> responseObserver.handle(Future.succeededFuture(item)))
+                .exceptionHandler(t -> responseObserver.handle(Future.failedFuture(t)))
+                .endHandler(v -> responseObserver.handle(Future.succeededFuture()));
       }
     });
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
