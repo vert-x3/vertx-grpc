@@ -6,8 +6,8 @@
 ----
 GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
   @Override
-  public void sayHello(HelloRequest request, Handler<AsyncResult<HelloReply>> handler) {
-    handler.handle(Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build()));
+  public void sayHello(HelloRequest request, Future<HelloReply> future) {
+    future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
   }
 };
 

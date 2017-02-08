@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
 public abstract class GrpcTestBase {
 
   /* The port on which the server should run */
-  protected Vertx vertx;
-  protected int port;
-  protected VertxServer server;
+  Vertx vertx;
+  int port;
+  private VertxServer server;
 
   @Before
   public void setUp() {
@@ -46,7 +46,7 @@ public abstract class GrpcTestBase {
     latch.await(10, TimeUnit.SECONDS);
   }
 
-  protected void startServer(BindableService service) throws Exception {
+  void startServer(BindableService service) throws Exception {
     CompletableFuture<Void> fut = new CompletableFuture<>();
     startServer(service, ar -> {
       if (ar.succeeded()) {
@@ -58,11 +58,11 @@ public abstract class GrpcTestBase {
     fut.get(10, TimeUnit.SECONDS);
   }
 
-  protected void startServer(BindableService service, Handler<AsyncResult<Void>> completionHandler) {
+  void startServer(BindableService service, Handler<AsyncResult<Void>> completionHandler) {
     startServer(service, VertxServerBuilder.forPort(vertx, port), completionHandler);
   }
 
-  protected void startServer(BindableService service, VertxServerBuilder builder, Handler<AsyncResult<Void>> completionHandler) {
+  void startServer(BindableService service, VertxServerBuilder builder, Handler<AsyncResult<Void>> completionHandler) {
     server = builder
         .addService(service)
         .build()

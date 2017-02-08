@@ -1,9 +1,7 @@
 package examples;
 
 import io.grpc.ManagedChannel;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
@@ -22,8 +20,8 @@ public class Examples {
     // The rcp service
     GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Handler<AsyncResult<HelloReply>> handler) {
-        handler.handle(Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build()));
+      public void sayHello(HelloRequest request, Future<HelloReply> future) {
+        future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
       }
     };
 

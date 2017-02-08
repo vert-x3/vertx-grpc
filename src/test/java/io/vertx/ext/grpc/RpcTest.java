@@ -31,11 +31,10 @@ public class RpcTest extends GrpcTestBase {
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> startServer(new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest req, Handler<AsyncResult<HelloReply>> handler) {
+      public void sayHello(HelloRequest req, Future<HelloReply> future) {
         ctx.assertEquals(serverCtx, Vertx.currentContext());
         ctx.assertTrue(Context.isOnEventLoopThread());
-        HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-        handler.handle(Future.succeededFuture(reply));
+        future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
     }, ar -> {
       if (ar.succeeded()) {
@@ -101,7 +100,7 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public GrpcReadStream<Item> sink(Handler<AsyncResult<Empty>> responseObserver) {
+      public GrpcReadStream<Item> sink(Future<Empty> responseObserver) {
         List<String> items = new ArrayList<>();
         return GrpcReadStream.<Item>create()
           .exceptionHandler(ctx::fail)
@@ -110,7 +109,7 @@ public class RpcTest extends GrpcTestBase {
             List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
             ctx.assertEquals(expected, items);
             done.complete();
-            responseObserver.handle(Future.succeededFuture());
+            responseObserver.complete();
           });
       }
     });

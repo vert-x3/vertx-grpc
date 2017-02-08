@@ -1,9 +1,7 @@
 package examples;
 
 import io.grpc.ManagedChannel;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServer;
@@ -18,9 +16,9 @@ public class Main {
     Vertx vertx = Vertx.vertx();
     VertxServer server = VertxServerBuilder.forAddress(vertx, "localhost", 8080).addService(new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Handler<AsyncResult<HelloReply>> handler) {
+      public void sayHello(HelloRequest request, Future<HelloReply> future) {
         System.out.println("Hello" + request.getName());
-        handler.handle(Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build()));
+        future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
       }
     }).build();
     server.start(asyncStart -> {

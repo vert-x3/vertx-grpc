@@ -21,30 +21,27 @@ public class SslTest extends GrpcTestBase {
   public void testSimple(TestContext ctx) throws Exception {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
-    serverCtx.runOnContext(v -> {
-      startServer(new GreeterGrpc.GreeterVertxImplBase() {
-        @Override
-        public void sayHello(HelloRequest req, Handler<AsyncResult<HelloReply>> handler) {
-          ctx.assertEquals(serverCtx, Vertx.currentContext());
-          ctx.assertTrue(Context.isOnEventLoopThread());
-          HelloReply reply = HelloReply.newBuilder().setMessage("Hello " + req.getName()).build();
-          handler.handle(Future.succeededFuture(reply));
-        }
-      }, VertxServerBuilder.forPort(vertx, port)
-          .useSsl(options -> options
-              .setSsl(true)
-              .setUseAlpn(true)
-              .setKeyStoreOptions(new JksOptions()
-                  .setPath("tls/server-keystore.jks")
-                  .setPassword("wibble")))
-          , ar -> {
-        if (ar.succeeded()) {
-          started.complete();
-        } else {
-          ctx.fail(ar.cause());
-        }
-      });
-    });
+    serverCtx.runOnContext(v -> startServer(new GreeterGrpc.GreeterVertxImplBase() {
+      @Override
+      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+        ctx.assertEquals(serverCtx, Vertx.currentContext());
+        ctx.assertTrue(Context.isOnEventLoopThread());
+        future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+      }
+    }, VertxServerBuilder.forPort(vertx, port)
+        .useSsl(options -> options
+            .setSsl(true)
+            .setUseAlpn(true)
+            .setKeyStoreOptions(new JksOptions()
+                .setPath("tls/server-keystore.jks")
+                .setPassword("wibble")))
+        , ar -> {
+      if (ar.succeeded()) {
+        started.complete();
+      } else {
+        ctx.fail(ar.cause());
+      }
+    }));
     started.awaitSuccess(10000);
     Async async = ctx.async();
     Context clientCtx = vertx.getOrCreateContext();

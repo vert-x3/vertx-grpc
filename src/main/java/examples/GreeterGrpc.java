@@ -252,9 +252,9 @@ public class GreeterGrpc {
      * Sends a greeting
      * </pre>
      */
-    public /*!client_streaming && !server_streaming*/void sayHello(examples.HelloRequest request,
-        io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
-      asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, GreeterGrpc.toObserver(responseObserver));
+    public /*!client_streaming && impl_base && !server_streaming*/void sayHello(examples.HelloRequest request,
+        io.vertx.core.Future<examples.HelloReply> responseObserver) {
+      asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, GreeterGrpc.toObserver(responseObserver.completer()));
     }
 
     @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
@@ -296,7 +296,7 @@ public class GreeterGrpc {
      * Sends a greeting
      * </pre>
      */
-    public /*!client_streaming && !server_streaming*/void sayHello(examples.HelloRequest request,
+    public /*!client_streaming && !impl_base && !server_streaming*/void sayHello(examples.HelloRequest request,
         io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
       asyncUnaryCall(
           getChannel().newCall(METHOD_SAY_HELLO, getCallOptions()), request, GreeterGrpc.toSingle(responseObserver));
@@ -361,14 +361,14 @@ public class GreeterGrpc {
       switch (methodId) {
         case METHODID_SAY_HELLO:
           serviceImpl.sayHello((examples.HelloRequest) request,
-              (io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>>) ar -> {
+              (io.vertx.core.Future<examples.HelloReply>) io.vertx.core.Future.<examples.HelloReply>future().setHandler(ar -> {
                 if (ar.succeeded()) {
                   ((io.grpc.stub.StreamObserver<examples.HelloReply>) responseObserver).onNext(ar.result());
                   responseObserver.onCompleted();
                 } else {
                   responseObserver.onError(ar.cause());
                 }
-              });
+              }));
           break;
         default:
           throw new AssertionError();
