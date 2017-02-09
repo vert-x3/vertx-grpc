@@ -8,54 +8,54 @@ import io.vertx.grpc.GrpcWriteStream;
 @VertxGen
 public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
 
-    private final StreamObserver<T> observer;
-    private final Handler<Throwable> errHandler;
+  private final StreamObserver<T> observer;
+  private final Handler<Throwable> errHandler;
 
-    public GrpcWriteStreamImpl(StreamObserver<T> observer) {
-        this.observer = observer;
-        this.errHandler = observer::onError;
-    }
+  public GrpcWriteStreamImpl(StreamObserver<T> observer) {
+    this.observer = observer;
+    this.errHandler = observer::onError;
+  }
 
-    @Override
-    public GrpcWriteStreamImpl<T> exceptionHandler(Handler<Throwable> handler) {
-        handler.handle(new RuntimeException("Unsupported Operation"));
-        return this;
-    }
+  @Override
+  public GrpcWriteStreamImpl<T> exceptionHandler(Handler<Throwable> handler) {
+    handler.handle(new RuntimeException("Unsupported Operation"));
+    return this;
+  }
 
-    @Override
-    public GrpcWriteStreamImpl<T> write(T t) {
-        observer.onNext(t);
-        return this;
-    }
+  @Override
+  public GrpcWriteStreamImpl<T> write(T t) {
+    observer.onNext(t);
+    return this;
+  }
 
-    @Override
-    public void end() {
-        observer.onCompleted();
-    }
+  @Override
+  public void end() {
+    observer.onCompleted();
+  }
 
-    @Override
-    public GrpcWriteStreamImpl<T> setWriteQueueMaxSize(int i) {
-        errHandler.handle(new RuntimeException("Unsupported Operation"));
-        return this;
-    }
+  @Override
+  public GrpcWriteStreamImpl<T> setWriteQueueMaxSize(int i) {
+    errHandler.handle(new RuntimeException("Unsupported Operation"));
+    return this;
+  }
 
-    @Override
-    public boolean writeQueueFull() {
-        return false;
-    }
+  @Override
+  public boolean writeQueueFull() {
+    return false;
+  }
 
-    @Override
-    public GrpcWriteStreamImpl<T> drainHandler(Handler<Void> handler) {
-        errHandler.handle(new RuntimeException("Unsupported Operation"));
-        return this;
-    }
+  @Override
+  public GrpcWriteStreamImpl<T> drainHandler(Handler<Void> handler) {
+    errHandler.handle(new RuntimeException("Unsupported Operation"));
+    return this;
+  }
 
-    public GrpcWriteStreamImpl<T> fail(Throwable t) {
-        observer.onError(t);
-        return this;
-    }
+  public GrpcWriteStreamImpl<T> fail(Throwable t) {
+    observer.onError(t);
+    return this;
+  }
 
-    public StreamObserver<T> observer() {
-        return observer;
-    }
+  public StreamObserver<T> writeObserver() {
+    return observer;
+  }
 }

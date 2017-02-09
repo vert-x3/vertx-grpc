@@ -197,21 +197,23 @@ public class GoogleTest extends GrpcTestBase {
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
-        GrpcWriteStream<StreamingOutputCallRequest> request = buildStub().fullDuplexCall(GrpcReadStream.<StreamingOutputCallResponse>create()
-          .exceptionHandler(will::fail)
-          .handler(item -> {
-            will.assertNotNull(item);
-            cnt.incrementAndGet();
-          })
-          .endHandler(v -> {
-            will.assertEquals(10, cnt.get());
-            test.complete();
-          }));
+        buildStub().fullDuplexCall(exchange -> {
+          exchange
+            .exceptionHandler(will::fail)
+            .handler(item -> {
+              will.assertNotNull(item);
+              cnt.incrementAndGet();
+            })
+            .endHandler(v -> {
+              will.assertEquals(10, cnt.get());
+              test.complete();
+            });
 
-        for (int i = 0; i < 10; i++) {
-          request.write(StreamingOutputCallRequest.newBuilder().build());
-        }
-        request.end();
+          for (int i = 0; i < 10; i++) {
+            exchange.write(StreamingOutputCallRequest.newBuilder().build());
+          }
+          exchange.end();
+        });
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -230,6 +232,7 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new TestServiceVertxImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
+
       @Override
       public GrpcReadStream<StreamingOutputCallRequest> halfDuplexCall(GrpcWriteStream<StreamingOutputCallResponse> responseObserver) {
         List<StreamingOutputCallRequest> buffer = new ArrayList<>();
@@ -254,24 +257,26 @@ public class GoogleTest extends GrpcTestBase {
         final AtomicInteger cnt = new AtomicInteger();
         final AtomicBoolean down = new AtomicBoolean();
 
-        GrpcWriteStream<StreamingOutputCallRequest> request = buildStub().halfDuplexCall(GrpcReadStream.<StreamingOutputCallResponse>create()
-          .exceptionHandler(will::fail)
-          .handler(item -> {
-            will.assertTrue(down.get());
-            will.assertNotNull(item);
-            cnt.incrementAndGet();
-          })
-          .endHandler(v -> {
-            will.assertEquals(10, cnt.get());
-            test.complete();
-          }));
+        buildStub().halfDuplexCall(exchange -> {
+          exchange
+            .exceptionHandler(will::fail)
+            .handler(item -> {
+              will.assertTrue(down.get());
+              will.assertNotNull(item);
+              cnt.incrementAndGet();
+            })
+            .endHandler(v -> {
+              will.assertEquals(10, cnt.get());
+              test.complete();
+            });
 
-        for (int i = 0; i < 10; i++) {
-          request.write(StreamingOutputCallRequest.newBuilder().build());
-        }
-        request.end();
-        // down stream is now expected
-        down.set(true);
+          for (int i = 0; i < 10; i++) {
+            exchange.write(StreamingOutputCallRequest.newBuilder().build());
+          }
+          exchange.end();
+          // down stream is now expected
+          down.set(true);
+        });
       } else {
         will.fail(startServer.cause());
         test.complete();
