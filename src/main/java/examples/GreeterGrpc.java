@@ -29,30 +29,11 @@ public class GreeterGrpc {
 
   private static <T> io.grpc.stub.StreamObserver<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {
     return new io.grpc.stub.StreamObserver<T>() {
-      @Override
-      public void onNext(T value) {
-        handler.handle(io.vertx.core.Future.succeededFuture(value));
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        handler.handle(io.vertx.core.Future.failedFuture(t));
-      }
-
-      @Override
-      public void onCompleted() {
-        handler.handle(io.vertx.core.Future.succeededFuture());
-      }
-    };
-  }
-
-  private static <T> io.grpc.stub.StreamObserver<T> toSingle(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {
-    return new io.grpc.stub.StreamObserver<T>() {
       private boolean resolved = false;
       @Override
       public void onNext(T value) {
         if (resolved) {
-          throw new RuntimeException("Already Resolved");
+          throw new IllegalStateException("Already Resolved");
         }
         resolved = true;
         handler.handle(io.vertx.core.Future.succeededFuture(value));
@@ -65,6 +46,11 @@ public class GreeterGrpc {
 
       @Override
       public void onCompleted() {
+        if (resolved) {
+          throw new IllegalStateException("Already Resolved");
+        }
+        resolved = true;
+        handler.handle(io.vertx.core.Future.succeededFuture());
       }
     };
   }
@@ -252,9 +238,9 @@ public class GreeterGrpc {
      * Sends a greeting
      * </pre>
      */
-    public /*!client_streaming && impl_base && !server_streaming*/void sayHello(examples.HelloRequest request,
-        io.vertx.core.Future<examples.HelloReply> responseObserver) {
-      asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, GreeterGrpc.toObserver(responseObserver.completer()));
+    public void sayHello(examples.HelloRequest request,
+        io.vertx.core.Future<examples.HelloReply> response) {
+      asyncUnimplementedUnaryCall(METHOD_SAY_HELLO, GreeterGrpc.toObserver(response.completer()));
     }
 
     @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
@@ -296,10 +282,10 @@ public class GreeterGrpc {
      * Sends a greeting
      * </pre>
      */
-    public /*!client_streaming && !impl_base && !server_streaming*/void sayHello(examples.HelloRequest request,
-        io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> responseObserver) {
+    public void sayHello(examples.HelloRequest request,
+        io.vertx.core.Handler<io.vertx.core.AsyncResult<examples.HelloReply>> response) {
       asyncUnaryCall(
-          getChannel().newCall(METHOD_SAY_HELLO, getCallOptions()), request, GreeterGrpc.toSingle(responseObserver));
+          getChannel().newCall(METHOD_SAY_HELLO, getCallOptions()), request, GreeterGrpc.toObserver(response));
     }
   }
 

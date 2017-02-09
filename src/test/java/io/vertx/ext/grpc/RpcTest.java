@@ -153,25 +153,26 @@ public class RpcTest extends GrpcTestBase {
       .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    GrpcWriteStream<Item> pipe = stub.pipe(GrpcReadStream.<Item>create()
-      .exceptionHandler(ctx::fail)
-      .handler(item -> items.add(item.getValue()))
-      .endHandler(V -> {
-        List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-        ctx.assertEquals(expected, items);
-        done.complete();
-      })
-    );
+    stub.pipe(exchange -> {
+      exchange
+        .exceptionHandler(ctx::fail)
+        .handler(item -> items.add(item.getValue()))
+        .endHandler(V -> {
+          List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+          ctx.assertEquals(expected, items);
+          done.complete();
+        });
 
-    AtomicInteger count = new AtomicInteger(numItems);
-    vertx.setPeriodic(10, id -> {
-      int val = count.decrementAndGet();
-      if (val >= 0) {
-        pipe.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
-      } else {
-        vertx.cancelTimer(id);
-        pipe.end();
-      }
+      AtomicInteger count = new AtomicInteger(numItems);
+      vertx.setPeriodic(10, id -> {
+        int val = count.decrementAndGet();
+        if (val >= 0) {
+          exchange.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+        } else {
+          vertx.cancelTimer(id);
+          exchange.end();
+        }
+      });
     });
   }
 }
