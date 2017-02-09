@@ -22,6 +22,7 @@ import java.util.stream.IntStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
 public class RpcTest extends GrpcTestBase {
 
