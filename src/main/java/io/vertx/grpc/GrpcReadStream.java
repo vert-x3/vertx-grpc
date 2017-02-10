@@ -26,6 +26,8 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    * @param handler the exception handler
    * @return a reference to this, so the API can be used fluently
    */
+  @Override
+  @Fluent
   GrpcReadStream<T> exceptionHandler(Handler<Throwable> handler);
 
   /**
@@ -33,6 +35,7 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    *
    * @return a reference to this, so the API can be used fluently
    */
+  @Override
   @Fluent
   GrpcReadStream<T> handler(@Nullable Handler<T> handler);
 
@@ -41,6 +44,7 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    *
    * @return a reference to this, so the API can be used fluently
    */
+  @Override
   @Fluent
   GrpcReadStream<T> pause();
 
@@ -49,6 +53,7 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    *
    * @return a reference to this, so the API can be used fluently
    */
+  @Override
   @Fluent
   GrpcReadStream<T> resume();
 
@@ -57,6 +62,7 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    *
    * @return a reference to this, so the API can be used fluently
    */
+  @Override
   @Fluent
   GrpcReadStream<T> endHandler(@Nullable Handler<Void> endHandler);
 

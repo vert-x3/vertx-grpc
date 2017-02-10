@@ -22,6 +22,7 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
    * @return a reference to this, so the API can be used fluently
    */
   @Override
+  @Fluent
   GrpcWriteStream<T> exceptionHandler(Handler<Throwable> handler);
 
   /**

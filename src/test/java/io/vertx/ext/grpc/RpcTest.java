@@ -85,14 +85,16 @@ public class RpcTest extends GrpcTestBase {
       .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    stub.source(Empty.newBuilder().build(), GrpcReadStream.<Item>create()
-      .exceptionHandler(ctx::fail)
-      .handler(item -> items.add(item.getValue()))
-      .endHandler(v -> {
-        List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-        ctx.assertEquals(expected, items);
-        done.complete();
-      }));
+    stub.source(Empty.newBuilder().build(), exchange -> {
+      exchange
+        .exceptionHandler(ctx::fail)
+        .handler(item -> items.add(item.getValue()))
+        .endHandler(v -> {
+          List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+          ctx.assertEquals(expected, items);
+          done.complete();
+        });
+    });
   }
 
   @Test
