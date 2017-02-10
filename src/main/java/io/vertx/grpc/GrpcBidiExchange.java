@@ -7,6 +7,9 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.grpc.impl.GrpcBidiExchangeImpl;
 
+/**
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
+ */
 @VertxGen
 public interface GrpcBidiExchange<I, O> extends GrpcReadStream<I>, GrpcWriteStream<O> {
 

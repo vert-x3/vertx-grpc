@@ -1,11 +1,12 @@
 package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
-import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.grpc.GrpcWriteStream;
 
-@VertxGen
+/**
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
+ */
 public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
 
   private final StreamObserver<T> observer;

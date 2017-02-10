@@ -9,6 +9,9 @@ import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.grpc.impl.GrpcReadStreamImpl;
 
+/**
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
+ */
 @VertxGen
 public interface GrpcReadStream<T> extends ReadStream<T> {
 

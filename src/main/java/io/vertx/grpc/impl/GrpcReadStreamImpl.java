@@ -4,6 +4,9 @@ import io.grpc.stub.StreamObserver;
 import io.vertx.core.Handler;
 import io.vertx.grpc.GrpcReadStream;
 
+/**
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
+ */
 public class GrpcReadStreamImpl<T> implements GrpcReadStream<T> {
 
   private Handler<T> streamHandler;
