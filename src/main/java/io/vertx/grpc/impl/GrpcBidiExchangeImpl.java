@@ -2,33 +2,33 @@ package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.Handler;
-import io.vertx.grpc.GrpcExchange;
+import io.vertx.grpc.GrpcBidiExchange;
 import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcWriteStream;
 
-public class GrpcExchangeImpl<I,O> implements GrpcExchange<I,O> {
+public class GrpcBidiExchangeImpl<I,O> implements GrpcBidiExchange<I,O> {
 
   private final GrpcReadStream<I> readStream;
   private final GrpcWriteStream<O> writeStream;
 
-  public GrpcExchangeImpl(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
+  public GrpcBidiExchangeImpl(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
     this.readStream = readStream;
     writeStream = GrpcWriteStream.create(writeObserver);
   }
 
-  public GrpcExchangeImpl(StreamObserver<I> readObserver, StreamObserver<O> writeObserver) {
+  public GrpcBidiExchangeImpl(StreamObserver<I> readObserver, StreamObserver<O> writeObserver) {
     readStream = GrpcReadStream.create(readObserver);
     writeStream = GrpcWriteStream.create(writeObserver);
   }
 
   @Override
-  public GrpcExchange<I, O> exceptionHandler(Handler<Throwable> handler) {
+  public GrpcBidiExchange<I, O> exceptionHandler(Handler<Throwable> handler) {
     readStream.exceptionHandler(handler);
     return this;
   }
 
   @Override
-  public GrpcExchange<I, O> write(O data) {
+  public GrpcBidiExchange<I, O> write(O data) {
     writeStream.write(data);
     return this;
   }
@@ -39,7 +39,7 @@ public class GrpcExchangeImpl<I,O> implements GrpcExchange<I,O> {
   }
 
   @Override
-  public GrpcExchange<I, O> setWriteQueueMaxSize(int maxSize) {
+  public GrpcBidiExchange<I, O> setWriteQueueMaxSize(int maxSize) {
     writeStream.setWriteQueueMaxSize(maxSize);
     return this;
   }
@@ -50,37 +50,37 @@ public class GrpcExchangeImpl<I,O> implements GrpcExchange<I,O> {
   }
 
   @Override
-  public GrpcExchange<I, O> drainHandler(Handler<Void> handler) {
+  public GrpcBidiExchange<I, O> drainHandler(Handler<Void> handler) {
     writeStream.drainHandler(handler);
     return this;
   }
 
   @Override
-  public GrpcExchange<I, O> fail(Throwable t) {
+  public GrpcBidiExchange<I, O> fail(Throwable t) {
     writeStream.fail(t);
     return this;
   }
 
   @Override
-  public GrpcExchange<I, O> handler(Handler<I> handler) {
+  public GrpcBidiExchange<I, O> handler(Handler<I> handler) {
     readStream.handler(handler);
     return this;
   }
 
   @Override
-  public GrpcExchange<I, O> pause() {
+  public GrpcBidiExchange<I, O> pause() {
     readStream.pause();
     return this;
   }
 
   @Override
-  public GrpcExchange<I, O> resume() {
+  public GrpcBidiExchange<I, O> resume() {
     readStream.resume();
     return this;
   }
 
   @Override
-  public GrpcExchange<I, O> endHandler(Handler<Void> handler) {
+  public GrpcBidiExchange<I, O> endHandler(Handler<Void> handler) {
     readStream.endHandler(handler);
     return this;
   }

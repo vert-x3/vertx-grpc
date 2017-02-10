@@ -104,16 +104,18 @@ public class GoogleTest extends GrpcTestBase {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
 
-        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build(), GrpcReadStream.<StreamingOutputCallResponse>create()
-          .exceptionHandler(will::fail)
-          .handler(resp -> {
-            will.assertNotNull(resp);
-            cnt.incrementAndGet();
-          })
-          .endHandler(v -> {
-            will.assertEquals(10, cnt.get());
-            test.complete();
-          }));
+        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build(), exchange -> {
+          exchange
+            .exceptionHandler(will::fail)
+            .handler(resp -> {
+              will.assertNotNull(resp);
+              cnt.incrementAndGet();
+            })
+            .endHandler(v -> {
+              will.assertEquals(10, cnt.get());
+              test.complete();
+            });
+        });
       } else {
         will.fail(startServer.cause());
         test.complete();
