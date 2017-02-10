@@ -4,11 +4,16 @@ import io.grpc.stub.StreamObserver;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
+import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.Pump;
 import io.vertx.core.streams.WriteStream;
 import io.vertx.grpc.impl.GrpcWriteStreamImpl;
 
+/**
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
+ */
+@VertxGen
 public interface GrpcWriteStream<T> extends WriteStream<T> {
 
   static <T> GrpcWriteStream<T> create(StreamObserver<T> observer) {

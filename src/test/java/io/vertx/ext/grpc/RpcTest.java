@@ -120,20 +120,20 @@ public class RpcTest extends GrpcTestBase {
       .usePlaintext(true)
       .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
-    GrpcWriteStream<Item> sink = stub.sink(ar -> {
-      if (ar.failed()) {
-        ctx.fail(ar.cause());
-      }
-    });
-    AtomicInteger count = new AtomicInteger(numItems);
-    vertx.setPeriodic(10, id -> {
-      int val = count.decrementAndGet();
-      if (val >= 0) {
-        sink.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
-      } else {
-        vertx.cancelTimer(id);
-        sink.end();
-      }
+    stub.sink(exchange -> {
+      exchange
+        .exceptionHandler(ctx::fail);
+
+      AtomicInteger count = new AtomicInteger(numItems);
+      vertx.setPeriodic(10, id -> {
+        int val = count.decrementAndGet();
+        if (val >= 0) {
+          exchange.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+        } else {
+          vertx.cancelTimer(id);
+          exchange.end();
+        }
+      });
     });
   }
 

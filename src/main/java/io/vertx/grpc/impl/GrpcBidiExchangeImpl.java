@@ -6,6 +6,9 @@ import io.vertx.grpc.GrpcBidiExchange;
 import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcWriteStream;
 
+/**
+ * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
+ */
 public class GrpcBidiExchangeImpl<I,O> implements GrpcBidiExchange<I,O> {
 
   private final GrpcReadStream<I> readStream;

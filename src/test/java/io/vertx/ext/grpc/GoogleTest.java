@@ -150,19 +150,19 @@ public class GoogleTest extends GrpcTestBase {
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        GrpcWriteStream<StreamingInputCallRequest> request = buildStub().streamingInputCall(res -> {
-          if (res.succeeded()) {
-            will.assertNotNull(res.result());
-          } else {
-            will.fail(res.cause());
-          }
-          test.complete();
-        });
+        buildStub().streamingInputCall(exchange -> {
+          exchange
+            .exceptionHandler(will::fail)
+            .endHandler(result -> {
+              will.assertNotNull(result);
+              test.complete();
+            });
 
-        for (int i = 0; i < 10; i++) {
-          request.write(StreamingInputCallRequest.newBuilder().build());
-        }
-        request.end();
+          for (int i = 0; i < 10; i++) {
+            exchange.write(StreamingInputCallRequest.newBuilder().build());
+          }
+          exchange.end();
+        });
       } else {
         will.fail(startServer.cause());
         test.complete();
