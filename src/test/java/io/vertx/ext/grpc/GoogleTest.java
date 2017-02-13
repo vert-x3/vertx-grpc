@@ -39,9 +39,9 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new TestServiceVertxImplBase() {
       @Override
-      public void emptyCall(Empty request, Future<Empty> responseObserver) {
+      public void emptyCall(Empty request, Future<Empty> response) {
         will.assertNotNull(request);
-        responseObserver.complete(Empty.newBuilder().build());
+        response.complete(Empty.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
@@ -66,9 +66,9 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new TestServiceVertxImplBase() {
       @Override
-      public void unaryCall(SimpleRequest request, Future<SimpleResponse> responseObserver) {
+      public void unaryCall(SimpleRequest request, Future<SimpleResponse> response) {
         will.assertNotNull(request);
-        responseObserver.complete(SimpleResponse.newBuilder().build());
+        response.complete(SimpleResponse.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
@@ -94,12 +94,12 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new TestServiceVertxImplBase() {
       @Override
-      public void streamingOutputCall(StreamingOutputCallRequest request, GrpcWriteStream<StreamingOutputCallResponse> responseObserver) {
+      public void streamingOutputCall(StreamingOutputCallRequest request, GrpcWriteStream<StreamingOutputCallResponse> response) {
         will.assertNotNull(request);
         for (int i = 0; i < 10; i++) {
-          responseObserver.write(StreamingOutputCallResponse.newBuilder().build());
+          response.write(StreamingOutputCallResponse.newBuilder().build());
         }
-        responseObserver.end();
+        response.end();
       }
     }, startServer -> {
       if (startServer.succeeded()) {
