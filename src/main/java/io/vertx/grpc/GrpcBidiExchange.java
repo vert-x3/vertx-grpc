@@ -63,5 +63,9 @@ public interface GrpcBidiExchange<I, O> extends GrpcReadStream<I>, GrpcWriteStre
 
   @GenIgnore
   @Override
+  GrpcBidiExchange<I, O> setReadObserver(StreamObserver<I> observer);
+
+  @GenIgnore
+  @Override
   StreamObserver<O> writeObserver();
 }
