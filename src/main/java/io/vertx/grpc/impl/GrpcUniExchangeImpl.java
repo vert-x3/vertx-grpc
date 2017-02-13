@@ -1,6 +1,8 @@
 package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcUniExchange;
@@ -17,37 +19,45 @@ public class GrpcUniExchangeImpl<O,I> implements GrpcUniExchange<O,I> {
   private final GrpcReadStream<I> readStream;
   private final AtomicBoolean complete = new AtomicBoolean();
 
-  private Handler<I> endHandler;
+  private Handler<AsyncResult<I>> handler;
 
   public GrpcUniExchangeImpl(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
     this.readStream = readStream;
     this.writeStream = GrpcWriteStream.create(writeObserver);
 
     this.readStream.endHandler(v -> {
-      if (!complete.compareAndSet(false, true)) {
-        throw new IllegalStateException("Result is already complete");
+      if (complete.compareAndSet(false, true)) {
+        if (GrpcUniExchangeImpl.this.handler != null) {
+          GrpcUniExchangeImpl.this.handler.handle(Future.succeededFuture());
+        }
       }
     });
 
     this.readStream.handler(input -> {
-      if (complete.get()) {
-        throw new IllegalStateException("Result is already complete");
+      if (complete.compareAndSet(false, true)) {
+        if (GrpcUniExchangeImpl.this.handler != null) {
+          GrpcUniExchangeImpl.this.handler.handle(Future.succeededFuture(input));
+        }
       }
-      if (GrpcUniExchangeImpl.this.endHandler != null) {
-        GrpcUniExchangeImpl.this.endHandler.handle(input);
+    });
+
+    this.readStream.exceptionHandler(t -> {
+      if (complete.compareAndSet(false, true)) {
+        if (GrpcUniExchangeImpl.this.handler != null) {
+          GrpcUniExchangeImpl.this.handler.handle(Future.failedFuture(t));
+        }
       }
     });
   }
 
   @Override
   public GrpcUniExchange<O, I> exceptionHandler(Handler<Throwable> handler) {
-    readStream.exceptionHandler(handler);
-    return this;
+    throw new RuntimeException("Unsupported Operation");
   }
 
   @Override
-  public GrpcUniExchange<O, I> endHandler(Handler<I> handler) {
-    this.endHandler = handler;
+  public GrpcUniExchange<O, I> handler(Handler<AsyncResult<I>> handler) {
+    this.handler = handler;
     return this;
   }
 
