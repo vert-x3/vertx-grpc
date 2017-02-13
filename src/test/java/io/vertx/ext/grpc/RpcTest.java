@@ -123,7 +123,11 @@ public class RpcTest extends GrpcTestBase {
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     stub.sink(exchange -> {
       exchange
-        .exceptionHandler(ctx::fail);
+        .handler(ar -> {
+          if (ar.failed()) {
+            ctx.fail(ar.cause());
+          }
+        });
 
       AtomicInteger count = new AtomicInteger(numItems);
       vertx.setPeriodic(10, id -> {
