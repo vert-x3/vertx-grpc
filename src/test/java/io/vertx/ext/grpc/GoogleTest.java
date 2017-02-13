@@ -153,10 +153,13 @@ public class GoogleTest extends GrpcTestBase {
       if (startServer.succeeded()) {
         buildStub().streamingInputCall(exchange -> {
           exchange
-            .exceptionHandler(will::fail)
-            .endHandler(result -> {
-              will.assertNotNull(result);
-              test.complete();
+            .handler(res -> {
+              if (res.failed()) {
+                will.fail(res.cause());
+              } else {
+                will.assertNotNull(res.result());
+                test.complete();
+              }
             });
 
           for (int i = 0; i < 10; i++) {

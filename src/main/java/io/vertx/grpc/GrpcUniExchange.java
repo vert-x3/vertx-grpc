@@ -5,6 +5,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.grpc.impl.GrpcUniExchangeImpl;
 
@@ -18,12 +19,8 @@ public interface GrpcUniExchange<O,I> extends GrpcWriteStream<O> {
     return new GrpcUniExchangeImpl<>(read, write);
   }
 
-  @Override
   @Fluent
-  GrpcUniExchange<O,I> exceptionHandler(Handler<Throwable> handler);
-
-  @Fluent
-  GrpcUniExchange<O,I> endHandler(Handler<I> handler);
+  GrpcUniExchange<O,I> handler(Handler<AsyncResult<I>> handler);
 
   @Override
   @Fluent
