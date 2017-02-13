@@ -41,13 +41,17 @@ public class GreeterGrpc {
 
       @Override
       public void onError(Throwable t) {
+        if (resolved) {
+          throw new IllegalStateException("Already Resolved");
+        }
+        resolved = true;
         handler.handle(io.vertx.core.Future.failedFuture(t));
       }
 
       @Override
       public void onCompleted() {
         if (resolved) {
-          throw new IllegalStateException("Already Resolved");
+          return;
         }
         resolved = true;
         handler.handle(io.vertx.core.Future.succeededFuture());

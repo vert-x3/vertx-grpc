@@ -7,6 +7,7 @@ import io.grpc.examples.streaming.StreamingGrpc;
 import io.vertx.core.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.GrpcBidiExchange;
 import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcWriteStream;
 import io.vertx.grpc.VertxChannelBuilder;
@@ -103,16 +104,16 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public GrpcReadStream<Item> sink(Future<Empty> responseObserver) {
+      public void sink(GrpcReadStream<Item> request, Future<Empty> response) {
         List<String> items = new ArrayList<>();
-        return GrpcReadStream.<Item>create()
+        request
           .exceptionHandler(ctx::fail)
           .handler(item -> items.add(item.getValue()))
           .endHandler(v -> {
             List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
             ctx.assertEquals(expected, items);
             done.complete();
-            responseObserver.complete();
+            response.complete();
           });
       }
     });
@@ -143,11 +144,11 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new StreamingGrpc.StreamingVertxImplBase() {
       @Override
-      public GrpcReadStream<Item> pipe(GrpcWriteStream<Item> responseObserver) {
-        return GrpcReadStream.<Item>create()
-          .handler(responseObserver::write)
-          .exceptionHandler(responseObserver::fail)
-          .endHandler(v -> responseObserver.end());
+      public void pipe(GrpcBidiExchange<Item, Item> exchange) {
+        exchange
+          .handler(exchange::write)
+          .exceptionHandler(exchange::fail)
+          .endHandler(v -> exchange.end());
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)

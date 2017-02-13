@@ -4,6 +4,7 @@ import io.grpc.ManagedChannel;
 import io.vertx.core.Future;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.GrpcBidiExchange;
 import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcWriteStream;
 import io.vertx.grpc.VertxChannelBuilder;
@@ -134,10 +135,10 @@ public class GoogleTest extends GrpcTestBase {
 
     startServer(new TestServiceVertxImplBase() {
       @Override
-      public GrpcReadStream<StreamingInputCallRequest> streamingInputCall(Future<StreamingInputCallResponse> responseObserver) {
-        will.assertNotNull(responseObserver);
+      public void streamingInputCall(GrpcReadStream<StreamingInputCallRequest> request, Future<StreamingInputCallResponse> response) {
+        will.assertNotNull(response);
 
-        return GrpcReadStream.<StreamingInputCallRequest>create()
+        request
           .exceptionHandler(will::fail)
           .handler(resp -> {
             will.assertNotNull(resp);
@@ -145,7 +146,7 @@ public class GoogleTest extends GrpcTestBase {
           })
           .endHandler(v -> {
             will.assertEquals(10, cnt.get());
-            responseObserver.complete(StreamingInputCallResponse.newBuilder().build());
+            response.complete(StreamingInputCallResponse.newBuilder().build());
           });
       }
     }, startServer -> {
@@ -183,18 +184,19 @@ public class GoogleTest extends GrpcTestBase {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
-      public GrpcReadStream<StreamingOutputCallRequest> fullDuplexCall(GrpcWriteStream<StreamingOutputCallResponse> responseObserver) {
-        return GrpcReadStream.<StreamingOutputCallRequest>create()
+      public void fullDuplexCall(GrpcBidiExchange<StreamingOutputCallRequest, StreamingOutputCallResponse> exchange) {
+        exchange
           .exceptionHandler(will::fail)
           .handler(item -> {
             will.assertNotNull(item);
             cnt.incrementAndGet();
-            responseObserver.write(StreamingOutputCallResponse.newBuilder().build());
+            exchange.write(StreamingOutputCallResponse.newBuilder().build());
           })
           .endHandler(v -> {
             will.assertEquals(10, cnt.get());
-            responseObserver.end();
+            exchange.end();
           });
+
       }
     }, startServer -> {
       if (startServer.succeeded()) {
@@ -236,10 +238,10 @@ public class GoogleTest extends GrpcTestBase {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
-      public GrpcReadStream<StreamingOutputCallRequest> halfDuplexCall(GrpcWriteStream<StreamingOutputCallResponse> responseObserver) {
+      public void halfDuplexCall(GrpcBidiExchange<StreamingOutputCallRequest, StreamingOutputCallResponse> exchange) {
         List<StreamingOutputCallRequest> buffer = new ArrayList<>();
 
-        return GrpcReadStream.<StreamingOutputCallRequest>create()
+        exchange
           .exceptionHandler(will::fail)
           .handler(item -> {
             will.assertNotNull(item);
@@ -249,9 +251,9 @@ public class GoogleTest extends GrpcTestBase {
           .endHandler(v -> {
             will.assertEquals(10, cnt.get());
             for (int i = 0; i < buffer.size(); i++) {
-              responseObserver.write(StreamingOutputCallResponse.newBuilder().build());
+              exchange.write(StreamingOutputCallResponse.newBuilder().build());
             }
-            responseObserver.end();
+            exchange.end();
           });
       }
     }, startServer -> {

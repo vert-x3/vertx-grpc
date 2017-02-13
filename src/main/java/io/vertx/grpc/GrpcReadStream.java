@@ -76,4 +76,7 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    */
   @GenIgnore
   StreamObserver<T> readObserver();
+
+  @GenIgnore
+  GrpcReadStream<T> setReadObserver(StreamObserver<T> observer);
 }

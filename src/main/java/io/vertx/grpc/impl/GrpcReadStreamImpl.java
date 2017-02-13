@@ -72,4 +72,10 @@ public class GrpcReadStreamImpl<T> implements GrpcReadStream<T> {
     }
     return observer;
   }
+
+  @Override
+  public GrpcReadStream<T> setReadObserver(StreamObserver<T> observer) {
+    this.observer = observer;
+    return this;
+  }
 }

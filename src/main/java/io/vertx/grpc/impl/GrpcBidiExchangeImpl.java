@@ -94,6 +94,12 @@ public class GrpcBidiExchangeImpl<I,O> implements GrpcBidiExchange<I,O> {
   }
 
   @Override
+  public GrpcBidiExchange<I, O> setReadObserver(StreamObserver<I> observer) {
+    readStream.setReadObserver(observer);
+    return this;
+  }
+
+  @Override
   public StreamObserver<O> writeObserver() {
     return writeStream.writeObserver();
   }
