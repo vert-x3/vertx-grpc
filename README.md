@@ -1,10 +1,10 @@
 [![Build Status](https://vertx.ci.cloudbees.com/buildStatus/icon?job=vert.x3-grpc)](https://vertx.ci.cloudbees.com/view/vert.x-3/job/vert.x3-grpc/)
 
-= Vert.x gRPC
+# Vert.x gRPC
 
 Currently for Vert.x 3.4.0-SNAPSHOT
 
-link:src/main/asciidoc/java/index.adoc[Documentation]
+[Documentation](src/main/asciidoc/java/index.adoc)
 
 Supports:
 
