@@ -4,8 +4,8 @@
 
 Currently for Vert.x 3.4.0-SNAPSHOT
 
-[Documentation](src/main/asciidoc/java/index.adoc)
-[Vert.x gRPC Java Compiler](https://github.com/vert-x3/vertx-grpc-java-compiler)
+- [Documentation](src/main/asciidoc/java/index.adoc)
+- [Vert.x gRPC Java Compiler](https://github.com/vert-x3/vertx-grpc-java-compiler)
 
 Supports:
 
