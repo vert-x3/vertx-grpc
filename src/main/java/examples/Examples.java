@@ -37,17 +37,19 @@ public class Examples {
     rpcServer.start();
   }
 
-  public void simpleClient(Vertx vertx) {
 
+  public void connectClient(Vertx vertx) {
     // Create the channel
     ManagedChannel channel = VertxChannelBuilder
-        .forAddress(vertx, "localhost", 8080)
-        .usePlaintext(true)
-        .build();
+      .forAddress(vertx, "localhost", 8080)
+      .usePlaintext(true)
+      .build();
 
     // Get a stub to use for interacting with the remote service
     GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
+  }
 
+  public void simpleClient(GreeterGrpc.GreeterVertxStub stub) {
     // Make a request
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
 
