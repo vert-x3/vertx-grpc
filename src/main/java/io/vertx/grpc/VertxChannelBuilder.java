@@ -134,6 +134,12 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     return this;
   }
 
+  @Override
+  public VertxChannelBuilder maxInboundMessageSize(int max) {
+    builder.maxInboundMessageSize(max);
+    return this;
+  }
+
   public VertxChannelBuilder useSsl(Handler<TCPSSLOptions> handler) {
     handler.handle(options);
     return this;
