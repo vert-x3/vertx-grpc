@@ -133,14 +133,35 @@
  * {@link examples.Examples#sslServer}
  * ----
  *
- * == gRPC Client
+ * Congratulations you just completed your first gRPC server.
+ *
+ * === gRPC Client
+ *
+ * A server without a client is of no use, so lets create a client. In order to do this some steps overlap with the
+ * server. First we need to have the RPC definition, which should already done otherwise there would be no server and
+ * the same definition should have been compiled.
+ *
+ * Note that the compiler will always generate both the base server and a client stub so if you already compiled once
+ * you do not need to re-compile it again.
+ *
+ * Every client stub will always require a communication channel to a server so first we need to create a gRPC channel:
+ *
+ * [source,$lang]
+ * ----
+ * {@link examples.Examples#connectClient}
+ * ----
+ *
+ * Once the stub is created we can communicate with our server, this time it is easier since the stub already provides
+ * the correct method definition and parameter types:
  *
  * [source,$lang]
  * ----
  * {@link examples.Examples#simpleClient}
  * ----
  *
- * SSL configuration
+ * ==== SSL configuration
+ *
+ * If you enabled SSL previously your client will also require SSL, in order to do this we need to configure the channel:
  *
  * [source,$lang]
  * ----
