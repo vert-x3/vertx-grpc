@@ -1,5 +1,6 @@
 package examples;
 
+import io.grpc.BindableService;
 import io.grpc.ManagedChannel;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -16,7 +17,6 @@ import io.vertx.grpc.VertxServerBuilder;
 public class Examples {
 
   public void simpleServer(Vertx vertx) throws Exception {
-
     // The rcp service
     GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
       @Override
@@ -24,12 +24,14 @@ public class Examples {
         future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
       }
     };
+  }
 
+  public void startServer(BindableService service, Vertx vertx) throws Exception {
     // Create the server
     VertxServer rpcServer = VertxServerBuilder
-        .forAddress(vertx, "my.host", 8080)
-        .addService(service)
-        .build();
+      .forAddress(vertx, "my.host", 8080)
+      .addService(service)
+      .build();
 
     // Start is asynchronous
     rpcServer.start();
