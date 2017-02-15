@@ -149,19 +149,35 @@ VertxServerBuilder builder = VertxServerBuilder.forPort(vertx, 8080)
             .setPassword("secret")));
 ----
 
-== gRPC Client
+Congratulations you just completed your first gRPC server.
+
+=== gRPC Client
+
+A server without a client is of no use, so lets create a client. In order to do this some steps overlap with the
+server. First we need to have the RPC definition, which should already done otherwise there would be no server and
+the same definition should have been compiled.
+
+Note that the compiler will always generate both the base server and a client stub so if you already compiled once
+you do not need to re-compile it again.
+
+Every client stub will always require a communication channel to a server so first we need to create a gRPC channel:
 
 [source,java]
 ----
 ManagedChannel channel = VertxChannelBuilder
-    .forAddress(vertx, "localhost", 8080)
-    .usePlaintext(true)
-    .build();
+  .forAddress(vertx, "localhost", 8080)
+  .usePlaintext(true)
+  .build();
 
 // Get a stub to use for interacting with the remote service
 GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
+----
 
-// Make a request
+Once the stub is created we can communicate with our server, this time it is easier since the stub already provides
+the correct method definition and parameter types:
+
+[source,java]
+----
 HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
 
 // Call the remote service
@@ -174,7 +190,9 @@ stub.sayHello(request, ar -> {
 });
 ----
 
-SSL configuration
+==== SSL configuration
+
+If you enabled SSL previously your client will also require SSL, in order to do this we need to configure the channel:
 
 [source,java]
 ----
@@ -188,3 +206,9 @@ ManagedChannel channel = VertxChannelBuilder.
             .setPassword("secret")))
     .build();
 ----
+
+== Advanced configuration
+
+Until now all gRPC examples where using sensible defaults but there is more, if you need to have full control over
+the server configuration you should refer to the documentation: `link:../../apidocs/io/vertx/grpc/VertxServerBuilder.html[VertxServerBuilder]`, or if you
+need to control your client channel `link:../../apidocs/io/vertx/grpc/VertxChannelBuilder.html[VertxChannelBuilder]`.

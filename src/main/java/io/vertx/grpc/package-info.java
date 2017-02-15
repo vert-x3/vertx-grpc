@@ -168,6 +168,11 @@
  * {@link examples.Examples#sslClient}
  * ----
  *
+ * == Advanced configuration
+ *
+ * Until now all gRPC examples where using sensible defaults but there is more, if you need to have full control over
+ * the server configuration you should refer to the documentation: {@link io.vertx.grpc.VertxServerBuilder}, or if you
+ * need to control your client channel {@link io.vertx.grpc.VertxChannelBuilder}.
  */
 @Document(fileName = "index.adoc")
 package io.vertx.grpc;
