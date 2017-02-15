@@ -16,16 +16,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class GrpcUniExchangeImpl<O,I> implements GrpcUniExchange<O,I> {
 
   private final GrpcWriteStream<O> writeStream;
-  private final GrpcReadStream<I> readStream;
   private final AtomicBoolean complete = new AtomicBoolean();
 
   private Handler<AsyncResult<I>> handler;
 
   public GrpcUniExchangeImpl(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
-    this.readStream = readStream;
     this.writeStream = GrpcWriteStream.create(writeObserver);
 
-    this.readStream.endHandler(v -> {
+    readStream.endHandler(v -> {
       if (complete.compareAndSet(false, true)) {
         if (GrpcUniExchangeImpl.this.handler != null) {
           GrpcUniExchangeImpl.this.handler.handle(Future.succeededFuture());
@@ -33,7 +31,7 @@ public class GrpcUniExchangeImpl<O,I> implements GrpcUniExchange<O,I> {
       }
     });
 
-    this.readStream.handler(input -> {
+    readStream.handler(input -> {
       if (complete.compareAndSet(false, true)) {
         if (GrpcUniExchangeImpl.this.handler != null) {
           GrpcUniExchangeImpl.this.handler.handle(Future.succeededFuture(input));
@@ -41,7 +39,7 @@ public class GrpcUniExchangeImpl<O,I> implements GrpcUniExchange<O,I> {
       }
     });
 
-    this.readStream.exceptionHandler(t -> {
+    readStream.exceptionHandler(t -> {
       if (complete.compareAndSet(false, true)) {
         if (GrpcUniExchangeImpl.this.handler != null) {
           GrpcUniExchangeImpl.this.handler.handle(Future.failedFuture(t));

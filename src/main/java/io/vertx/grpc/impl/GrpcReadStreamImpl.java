@@ -2,12 +2,17 @@ package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.Handler;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.grpc.GrpcReadStream;
 
 /**
  * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
 public class GrpcReadStreamImpl<T> implements GrpcReadStream<T> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GrpcReadStreamImpl.class);
+
 
   private Handler<T> streamHandler;
   private Handler<Throwable> errorHandler;
@@ -19,7 +24,6 @@ public class GrpcReadStreamImpl<T> implements GrpcReadStream<T> {
   }
 
   public GrpcReadStreamImpl() {
-
   }
 
   @Override
@@ -56,17 +60,25 @@ public class GrpcReadStreamImpl<T> implements GrpcReadStream<T> {
       observer = new StreamObserver<T>() {
         @Override
         public void onNext(T value) {
-          streamHandler.handle(value);
+          if (streamHandler != null) {
+            streamHandler.handle(value);
+          }
         }
 
         @Override
         public void onError(Throwable t) {
-          errorHandler.handle(t);
+          if (errorHandler != null) {
+            errorHandler.handle(t);
+          } else {
+            LOG.error(t.getMessage(), t);
+          }
         }
 
         @Override
         public void onCompleted() {
-          endHandler.handle(null);
+          if (endHandler != null) {
+            endHandler.handle(null);
+          }
         }
       };
     }
