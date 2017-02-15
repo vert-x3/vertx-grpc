@@ -6,6 +6,7 @@ import io.grpc.DecompressorRegistry;
 import io.grpc.HandlerRegistry;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerServiceDefinition;
+import io.grpc.ServerTransportFilter;
 import io.grpc.netty.NettyServerBuilder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -79,6 +80,12 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
 
   public VertxServerBuilder useTransportSecurity(File certChain, File privateKey) {
     builder.useTransportSecurity(certChain, privateKey);
+    return this;
+  }
+
+  @Override
+  public VertxServerBuilder addTransportFilter(ServerTransportFilter filter) {
+    builder.addTransportFilter(filter);
     return this;
   }
 
