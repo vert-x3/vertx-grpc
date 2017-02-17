@@ -194,7 +194,7 @@
  * Congratulations you just completed your first gRPC server.
  *
  * IMPORTANT: since gRPC uses HTTP/2 transport, SSL/TLS setup requires the
- * https://fr.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation[Application-Layer Protocol Negotiation]
+ * https://wikipedia.org/wiki/Application-Layer_Protocol_Negotiation[Application-Layer Protocol Negotiation]
  * in your server
  *
  * === gRPC Client
@@ -231,7 +231,7 @@
  * ----
  *
  * IMPORTANT: since gRPC uses HTTP/2 transport, SSL/TLS setup requires the
- * https://fr.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation[Application-Layer Protocol Negotiation]
+ * https://wikipedia.org/wiki/Application-Layer_Protocol_Negotiation[Application-Layer Protocol Negotiation]
  * in your client
  *
  * == Advanced configuration
