@@ -67,7 +67,12 @@
  *
  * === Compile the RPC definition
  *
- * Using the definition above we need to compile it. If you're using Apache Maven you need to add the plugin:
+ * Using the definition above we need to compile it.
+ *
+ * You can compile the proto file using the `protoc` compiler if you https://github.com/google/protobuf/tree/master/java#installation---without-maven[like]
+ * or you can integrate it in your build.
+ *
+ * If you're using Apache Maven you need to add the plugin:
  *
  * [source,xml]
  * ----
@@ -76,9 +81,9 @@
  *   <artifactId>protobuf-maven-plugin</artifactId>
  *   <version>0.5.0</version>
  *   <configuration>
- *     <protocArtifact>com.google.protobuf:protoc:3.1.0:exe:${os.detected.classifier}</protocArtifact>
+ *     <protocArtifact>com.google.protobuf:protoc:3.2.0:exe:${os.detected.classifier}</protocArtifact>
  *     <pluginId>grpc-java</pluginId>
- *     <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+ *     <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:${os.detected.classifier}</pluginArtifact>
  *   </configuration>
  *   <executions>
  *     <execution>
@@ -103,7 +108,60 @@
  * </plugin>
  * ----
  *
+ * The `${os.detected.classifier}` property is used to make the build OS independant, on OSX it is replaced
+ * by _osx-x86_64_ and so on. To use it you need to add the os-maven-plugin[https://github.com/trustin/os-maven-plugin]
+ * in the `build` section of your `pom.xml`:
+ *
+ * [source,xml]
+ * ----
+ * <build>
+ *   ...
+ *   <extensions>
+ *     <extension>
+ *       <groupId>kr.motd.maven</groupId>
+ *       <artifactId>os-maven-plugin</artifactId>
+ *       <version>1.4.1.Final</version>
+ *     </extension>
+ *   </extensions>
+ *   ...
+ * </build>
+ * ----
+ *
  * This plugin will compile your proto files under `src/main/proto` and make them available to your project.
+ *
+ * If you're using Gradle you need to add the plugin:
+ *
+ * [source,groovy]
+ * ----
+ * ...
+ * apply plugin: 'com.google.protobuf'
+ * ...
+ * buildscript {
+ *   ...
+ *   dependencies {
+ *     // ASSUMES GRADLE 2.12 OR HIGHER. Use plugin version 0.7.5 with earlier gradle versions
+ *     classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
+ *   }
+ * }
+ * ...
+ * protobuf {
+ *   protoc {
+ *     artifact = 'com.google.protobuf:protoc:3.2.0'
+ *   }
+ *   plugins {
+ *   grpc {
+ *     artifact = "io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}"
+ *   }
+ * }
+ *   generateProtoTasks {
+ *     all()*.plugins {
+ *       grpc
+ *     }
+ *   }
+ * }
+ * ----
+ *
+ * This plugin will compile your proto files under `build/generated/source/proto/main` and make them available to your project.
  *
  * === gRPC Server
  *
