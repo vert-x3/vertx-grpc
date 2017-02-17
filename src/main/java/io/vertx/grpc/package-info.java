@@ -184,7 +184,7 @@
  *
  * ==== SSL configuration
  *
- * The previous example was simple but your RPC is not secure. In order to make it secure we should enable SSL:
+ * The previous example was simple but your RPC is not secure. In order to make it secure we should enable SSL/TLS:
  *
  * [source,$lang]
  * ----
@@ -192,6 +192,10 @@
  * ----
  *
  * Congratulations you just completed your first gRPC server.
+ *
+ * IMPORTANT: since gRPC uses HTTP/2 transport, SSL/TLS setup requires the
+ * https://fr.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation[Application-Layer Protocol Negotiation]
+ * in your server
  *
  * === gRPC Client
  *
@@ -226,11 +230,17 @@
  * {@link examples.Examples#sslClient}
  * ----
  *
+ * IMPORTANT: since gRPC uses HTTP/2 transport, SSL/TLS setup requires the
+ * https://fr.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation[Application-Layer Protocol Negotiation]
+ * in your client
+ *
  * == Advanced configuration
  *
  * Until now all gRPC examples where using sensible defaults but there is more, if you need to have full control over
  * the server configuration you should refer to the documentation: {@link io.vertx.grpc.VertxServerBuilder}, or if you
- * need to control your client channel {@link io.vertx.grpc.VertxChannelBuilder}.
+ * need to control your client channel {@link io.vertx.grpc.VertxChannelBuilder}. Vert.x gRPC extends the grpc-java
+ * project (Netty transport) and therefore reading its http://www.grpc.io/grpc-java/javadoc/[documentation] is
+ * recommended.
  */
 @Document(fileName = "index.adoc")
 package io.vertx.grpc;
