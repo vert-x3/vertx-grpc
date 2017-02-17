@@ -79,7 +79,7 @@ public  final class HelloReply extends
   public static final int MESSAGE_FIELD_NUMBER = 1;
   private volatile java.lang.Object message_;
   /**
-   * <code>optional string message = 1;</code>
+   * <code>string message = 1;</code>
    */
   public java.lang.String getMessage() {
     java.lang.Object ref = message_;
@@ -94,7 +94,7 @@ public  final class HelloReply extends
     }
   }
   /**
-   * <code>optional string message = 1;</code>
+   * <code>string message = 1;</code>
    */
   public com.google.protobuf.ByteString
       getMessageBytes() {
@@ -162,7 +162,7 @@ public  final class HelloReply extends
       return memoizedHashCode;
     }
     int hash = 41;
-    hash = (19 * hash) + getDescriptorForType().hashCode();
+    hash = (19 * hash) + getDescriptor().hashCode();
     hash = (37 * hash) + MESSAGE_FIELD_NUMBER;
     hash = (53 * hash) + getMessage().hashCode();
     hash = (29 * hash) + unknownFields.hashCode();
@@ -385,7 +385,7 @@ public  final class HelloReply extends
 
     private java.lang.Object message_ = "";
     /**
-     * <code>optional string message = 1;</code>
+     * <code>string message = 1;</code>
      */
     public java.lang.String getMessage() {
       java.lang.Object ref = message_;
@@ -400,7 +400,7 @@ public  final class HelloReply extends
       }
     }
     /**
-     * <code>optional string message = 1;</code>
+     * <code>string message = 1;</code>
      */
     public com.google.protobuf.ByteString
         getMessageBytes() {
@@ -416,7 +416,7 @@ public  final class HelloReply extends
       }
     }
     /**
-     * <code>optional string message = 1;</code>
+     * <code>string message = 1;</code>
      */
     public Builder setMessage(
         java.lang.String value) {
@@ -429,7 +429,7 @@ public  final class HelloReply extends
       return this;
     }
     /**
-     * <code>optional string message = 1;</code>
+     * <code>string message = 1;</code>
      */
     public Builder clearMessage() {
       
@@ -438,7 +438,7 @@ public  final class HelloReply extends
       return this;
     }
     /**
-     * <code>optional string message = 1;</code>
+     * <code>string message = 1;</code>
      */
     public Builder setMessageBytes(
         com.google.protobuf.ByteString value) {
