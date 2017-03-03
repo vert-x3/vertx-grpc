@@ -21,7 +21,7 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.1.1)",
+    value = "by gRPC proto compiler (version 1.1.2)",
     comments = "Source: helloworld.proto")
 public class GreeterGrpc {
 
@@ -29,32 +29,29 @@ public class GreeterGrpc {
 
   private static <T> io.grpc.stub.StreamObserver<T> toObserver(final io.vertx.core.Handler<io.vertx.core.AsyncResult<T>> handler) {
     return new io.grpc.stub.StreamObserver<T>() {
-      private boolean resolved = false;
+      private volatile boolean resolved = false;
       @Override
       public void onNext(T value) {
-        if (resolved) {
-          throw new IllegalStateException("Already Resolved");
+        if (!resolved) {
+          resolved = true;
+          handler.handle(io.vertx.core.Future.succeededFuture(value));
         }
-        resolved = true;
-        handler.handle(io.vertx.core.Future.succeededFuture(value));
       }
 
       @Override
       public void onError(Throwable t) {
-        if (resolved) {
-          throw new IllegalStateException("Already Resolved");
+        if (!resolved) {
+          resolved = true;
+          handler.handle(io.vertx.core.Future.failedFuture(t));
         }
-        resolved = true;
-        handler.handle(io.vertx.core.Future.failedFuture(t));
       }
 
       @Override
       public void onCompleted() {
-        if (resolved) {
-          return;
+        if (!resolved) {
+          resolved = true;
+          handler.handle(io.vertx.core.Future.succeededFuture());
         }
-        resolved = true;
-        handler.handle(io.vertx.core.Future.succeededFuture());
       }
     };
   }
