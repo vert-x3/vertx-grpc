@@ -13,10 +13,7 @@
   ~      http://www.opensource.org/licenses/apache2.0.php
   ~
   ~  You may elect to redistribute this code under either of these licenses.
-  -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -27,14 +24,16 @@
   </parent>
 
   <artifactId>vertx-grpc</artifactId>
-  <version>3.4.0-SNAPSHOT</version>
+  <version>3.4.0</version>
 
   <name>Vert.x gRPC</name>
 
   <properties>
-    <stack.version>3.4.0-SNAPSHOT</stack.version>
-    <grpc.version>1.1.2</grpc.version><!-- CURRENT_GRPC_VERSION -->
-    <vertx.grpc.version>1.1.2</vertx.grpc.version><!-- CURRENT_GRPC_VERSION -->
+    <stack.version>3.4.0</stack.version>
+    <grpc.version>1.1.2</grpc.version>
+<!-- CURRENT_GRPC_VERSION -->
+    <vertx.grpc.version>1.1.2</vertx.grpc.version>
+<!-- CURRENT_GRPC_VERSION -->
     <jetty.alpnAgent.version>2.0.6</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
   </properties>
