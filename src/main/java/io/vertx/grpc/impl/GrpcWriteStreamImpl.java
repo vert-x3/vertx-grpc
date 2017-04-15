@@ -1,5 +1,6 @@
 package io.vertx.grpc.impl;
 
+import io.grpc.stub.CallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.Handler;
 import io.vertx.grpc.GrpcWriteStream;
@@ -9,12 +10,25 @@ import io.vertx.grpc.GrpcWriteStream;
  */
 public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
 
-  private final StreamObserver<T> observer;
+  private final CallStreamObserver<T> observer;
   private final Handler<Throwable> errHandler;
+  private Handler<Void> drainHandler;
 
   public GrpcWriteStreamImpl(StreamObserver<T> observer) {
-    this.observer = observer;
+    this.observer = (CallStreamObserver<T>) observer;
     this.errHandler = observer::onError;
+    try {
+      ((CallStreamObserver<T>) observer).setOnReadyHandler(this::drain);
+    } catch (Exception e) {
+      // Fails in some situation - for now we swallow it so the flow control can be implemented
+    }
+  }
+
+  private void drain() {
+    Handler<Void> handler = this.drainHandler;
+    if (handler != null) {
+      handler.handle(null);
+    }
   }
 
   @Override
@@ -42,12 +56,12 @@ public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
 
   @Override
   public boolean writeQueueFull() {
-    return false;
+    return !observer.isReady();
   }
 
   @Override
   public GrpcWriteStreamImpl<T> drainHandler(Handler<Void> handler) {
-    errHandler.handle(new RuntimeException("Unsupported Operation"));
+    drainHandler = handler;
     return this;
   }
 
