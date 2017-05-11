@@ -21,7 +21,7 @@ public class GrpcUniExchangeImpl<O,I> implements GrpcUniExchange<O,I> {
   private Handler<AsyncResult<I>> handler;
 
   public GrpcUniExchangeImpl(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
-    this.writeStream = GrpcWriteStream.create(writeObserver);
+    this.writeStream = GrpcWriteStream.create(writeObserver, true);
 
     readStream.endHandler(v -> {
       if (complete.compareAndSet(false, true)) {

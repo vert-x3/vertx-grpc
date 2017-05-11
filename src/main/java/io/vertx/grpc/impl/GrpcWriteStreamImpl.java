@@ -11,23 +11,22 @@ import io.vertx.grpc.GrpcWriteStream;
 public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
 
   private final CallStreamObserver<T> observer;
+  private final boolean internal;
   private final Handler<Throwable> errHandler;
   private Handler<Void> drainHandler;
 
-  public GrpcWriteStreamImpl(StreamObserver<T> observer) {
+  public GrpcWriteStreamImpl(StreamObserver<T> observer, boolean internal) {
     this.observer = (CallStreamObserver<T>) observer;
+    this.internal = internal;
     this.errHandler = observer::onError;
-    try {
-      ((CallStreamObserver<T>) observer).setOnReadyHandler(this::drain);
-    } catch (Exception e) {
-      // Fails in some situation - for now we swallow it so the flow control can be implemented
+    if (!internal) {
+      this.observer.setOnReadyHandler(this::drain);
     }
   }
 
   private void drain() {
-    Handler<Void> handler = this.drainHandler;
-    if (handler != null) {
-      handler.handle(null);
+    if (drainHandler != null) {
+      drainHandler.handle(null);
     }
   }
 
@@ -61,6 +60,9 @@ public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
 
   @Override
   public GrpcWriteStreamImpl<T> drainHandler(Handler<Void> handler) {
+    if (internal) {
+      throw new IllegalStateException("This is an internally managed stream, drainHandler is not allowed");
+    }
     drainHandler = handler;
     return this;
   }

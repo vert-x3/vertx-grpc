@@ -111,12 +111,6 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   }
 
   @Override
-  public VertxChannelBuilder loadBalancerFactory(LoadBalancer2.Factory factory) {
-    builder.loadBalancerFactory(factory);
-    return this;
-  }
-
-  @Override
   public VertxChannelBuilder decompressorRegistry(DecompressorRegistry registry) {
     builder.decompressorRegistry(registry);
     return this;

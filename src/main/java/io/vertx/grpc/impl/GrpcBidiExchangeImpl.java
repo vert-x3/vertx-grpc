@@ -16,7 +16,7 @@ public class GrpcBidiExchangeImpl<I,O> implements GrpcBidiExchange<I,O> {
 
   public GrpcBidiExchangeImpl(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
     this.readStream = readStream;
-    writeStream = GrpcWriteStream.create(writeObserver);
+    writeStream = GrpcWriteStream.create(writeObserver, true);
   }
 
   public GrpcBidiExchangeImpl(StreamObserver<I> readObserver, StreamObserver<O> writeObserver) {

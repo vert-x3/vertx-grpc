@@ -16,10 +16,16 @@ import io.vertx.grpc.impl.GrpcWriteStreamImpl;
 @VertxGen
 public interface GrpcWriteStream<T> extends WriteStream<T> {
 
+  /**
+   * When using this factory, it is expected that the observer is not coming from the gRPC internal API
+   */
   static <T> GrpcWriteStream<T> create(StreamObserver<T> observer) {
-    return new GrpcWriteStreamImpl<T>(observer);
+    return new GrpcWriteStreamImpl<T>(observer, false);
   }
 
+  static <T> GrpcWriteStream<T> create(StreamObserver<T> observer, boolean internal) {
+    return new GrpcWriteStreamImpl<T>(observer, internal);
+  }
   /**
    * Set an exception handler on the write stream.
    *
