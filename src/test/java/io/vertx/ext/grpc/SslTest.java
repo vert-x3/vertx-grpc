@@ -5,6 +5,7 @@ import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.vertx.core.*;
+import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.JksOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -18,7 +19,23 @@ import org.junit.Test;
 public class SslTest extends GrpcTestBase {
 
   @Test
-  public void testSimple(TestContext ctx) throws Exception {
+  public void testConnect(TestContext ctx) throws Exception {
+    testSimple(options -> options.setSsl(true)
+      .setUseAlpn(true)
+      .setTrustStoreOptions(new JksOptions()
+        .setPath("tls/client-truststore.jks")
+        .setPassword("wibble")), ctx);
+  }
+
+  @Test
+  public void testTrustAll(TestContext ctx) throws Exception {
+    testSimple(options -> options
+      .setTrustAll(true)
+      .setSsl(true)
+      .setUseAlpn(true), ctx);
+  }
+
+  private void testSimple(Handler<ClientOptionsBase> clientOptionsHandler, TestContext ctx) throws Exception {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> startServer(new GreeterGrpc.GreeterVertxImplBase() {
@@ -48,11 +65,7 @@ public class SslTest extends GrpcTestBase {
     clientCtx.runOnContext(v -> {
       ManagedChannel channel = VertxChannelBuilder.
           forAddress(vertx, "localhost", port)
-          .useSsl(options -> options.setSsl(true)
-              .setUseAlpn(true)
-              .setTrustStoreOptions(new JksOptions()
-                  .setPath("tls/client-truststore.jks")
-                  .setPassword("wibble")))
+          .useSsl(clientOptionsHandler)
           .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();

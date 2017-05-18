@@ -11,6 +11,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
+import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.impl.SSLHelper;
 
@@ -140,7 +141,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     return this;
   }
 
-  public VertxChannelBuilder useSsl(Handler<TCPSSLOptions> handler) {
+  public VertxChannelBuilder useSsl(Handler<ClientOptionsBase> handler) {
     handler.handle(options);
     return this;
   }
