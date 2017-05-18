@@ -82,7 +82,7 @@ If you're using Apache Maven you need to add the plugin:
   <configuration>
     <protocArtifact>com.google.protobuf:protoc:3.2.0:exe:${os.detected.classifier}</protocArtifact>
     <pluginId>grpc-java</pluginId>
-    <pluginArtifact>io.vertx:protoc-gen-grpc-java:1.1.2:exe:${os.detected.classifier}</pluginArtifact>
+    <pluginArtifact>io.vertx:protoc-gen-grpc-java:1.1.2:${os.detected.classifier}</pluginArtifact>
   </configuration>
   <executions>
     <execution>
