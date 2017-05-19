@@ -6,6 +6,7 @@ import io.grpc.DecompressorRegistry;
 import io.grpc.HandlerRegistry;
 import io.grpc.ServerBuilder;
 import io.grpc.ServerServiceDefinition;
+import io.grpc.ServerStreamTracer;
 import io.grpc.ServerTransportFilter;
 import io.grpc.netty.NettyServerBuilder;
 import io.vertx.core.Handler;
@@ -86,6 +87,12 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   @Override
   public VertxServerBuilder addTransportFilter(ServerTransportFilter filter) {
     builder.addTransportFilter(filter);
+    return this;
+  }
+
+  @Override
+  public VertxServerBuilder addStreamTracerFactory(ServerStreamTracer.Factory factory) {
+    builder.addStreamTracerFactory(factory);
     return this;
   }
 

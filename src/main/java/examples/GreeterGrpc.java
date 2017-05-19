@@ -21,9 +21,9 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedStreamingCall;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.1.2)",
+    value = "by gRPC proto compiler (version 1.3.0)",
     comments = "Source: helloworld.proto")
-public class GreeterGrpc {
+public final class GreeterGrpc {
 
   private GreeterGrpc() {}
 
@@ -292,7 +292,7 @@ public class GreeterGrpc {
 
   private static final int METHODID_SAY_HELLO = 0;
 
-  private static class MethodHandlers<Req, Resp> implements
+  private static final class MethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
       io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
       io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
@@ -300,7 +300,7 @@ public class GreeterGrpc {
     private final GreeterImplBase serviceImpl;
     private final int methodId;
 
-    public MethodHandlers(GreeterImplBase serviceImpl, int methodId) {
+    MethodHandlers(GreeterImplBase serviceImpl, int methodId) {
       this.serviceImpl = serviceImpl;
       this.methodId = methodId;
     }
@@ -329,7 +329,7 @@ public class GreeterGrpc {
     }
   }
 
-  private static class VertxMethodHandlers<Req, Resp> implements
+  private static final class VertxMethodHandlers<Req, Resp> implements
       io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
       io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
       io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
@@ -337,7 +337,7 @@ public class GreeterGrpc {
     private final GreeterVertxImplBase serviceImpl;
     private final int methodId;
 
-    public VertxMethodHandlers(GreeterVertxImplBase serviceImpl, int methodId) {
+    VertxMethodHandlers(GreeterVertxImplBase serviceImpl, int methodId) {
       this.serviceImpl = serviceImpl;
       this.methodId = methodId;
     }
