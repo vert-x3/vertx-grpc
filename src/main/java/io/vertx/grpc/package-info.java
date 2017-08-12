@@ -81,7 +81,7 @@
  *   <artifactId>protobuf-maven-plugin</artifactId>
  *   <version>0.5.0</version>
  *   <configuration>
- *     <protocArtifact>com.google.protobuf:protoc:3.2.0:exe:${os.detected.classifier}</protocArtifact>
+ *     <protocArtifact>com.google.protobuf:protoc:3.3.0:exe:${os.detected.classifier}</protocArtifact>
  *     <pluginId>grpc-java</pluginId>
  *     <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:${os.detected.classifier}</pluginArtifact>
  *   </configuration>
@@ -120,7 +120,7 @@
  *     <extension>
  *       <groupId>kr.motd.maven</groupId>
  *       <artifactId>os-maven-plugin</artifactId>
- *       <version>1.4.1.Final</version>
+ *       <version>1.5.0.Final</version>
  *     </extension>
  *   </extensions>
  *   ...
@@ -140,13 +140,13 @@
  *   ...
  *   dependencies {
  *     // ASSUMES GRADLE 2.12 OR HIGHER. Use plugin version 0.7.5 with earlier gradle versions
- *     classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.0'
+ *     classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.1'
  *   }
  * }
  * ...
  * protobuf {
  *   protoc {
- *     artifact = 'com.google.protobuf:protoc:3.2.0'
+ *     artifact = 'com.google.protobuf:protoc:3.3.0'
  *   }
  *   plugins {
  *   grpc {
