@@ -1,7 +1,6 @@
 package io.vertx.grpc;
 
 import io.grpc.Server;
-import io.grpc.internal.ServerImpl;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.AsyncResult;
@@ -41,7 +40,7 @@ public class VertxServer extends Server {
     final AtomicInteger count = new AtomicInteger();
     final VertxEventLoopGroup group = new VertxEventLoopGroup();
     final HandlerManager<String> manager = new HandlerManager<>(group);
-    final ServerImpl server;
+    final Server server;
     final ThreadLocal<List<ContextImpl>> contextLocal = new ThreadLocal<>();
 
     private ActualServer(Vertx vertx, ServerID id, HttpServerOptions options, NettyServerBuilder builder) {
