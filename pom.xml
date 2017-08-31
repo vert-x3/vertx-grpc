@@ -30,10 +30,7 @@
 
   <properties>
     <stack.version>3.5.0-SNAPSHOT</stack.version>
-    <grpc.version>1.3.0</grpc.version>
-<!-- CURRENT_GRPC_VERSION -->
-    <vertx.grpc.version>1.3.0</vertx.grpc.version>
-<!-- CURRENT_GRPC_VERSION -->
+    <vertx.grpc.version>1.6.1</vertx.grpc.version>
     <jetty.alpnAgent.version>2.0.6</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
   </properties>
@@ -70,17 +67,17 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>
-      <version>${grpc.version}</version>
+      <version>${vertx.grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-protobuf</artifactId>
-      <version>${grpc.version}</version>
+      <version>${vertx.grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
-      <version>${grpc.version}</version>
+      <version>${vertx.grpc.version}</version>
     </dependency>
 
     <dependency>
@@ -166,7 +163,7 @@
             protobuf-java directly, you will be transitively depending on the
             protobuf-java version that grpc depends on.
           -->
-          <protocArtifact>com.google.protobuf:protoc:3.2.0:exe:${os.detected.classifier}</protocArtifact>
+          <protocArtifact>com.google.protobuf:protoc:3.3.0:exe:${os.detected.classifier}</protocArtifact>
           <pluginId>grpc-java</pluginId>
           <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
         </configuration>
