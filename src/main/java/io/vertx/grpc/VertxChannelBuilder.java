@@ -14,6 +14,7 @@ import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.impl.SSLHelper;
+import io.vertx.core.net.impl.transport.Transport;
 
 import java.net.SocketAddress;
 import java.util.Collections;
@@ -149,7 +150,12 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
       sslContext = helper.getContext((VertxInternal) vertx);
     }
-    return builder.eventLoopGroup(context.nettyEventLoop()).sslContext(sslContext).executor(command -> {
+    Transport transport = ((VertxInternal) vertx).transport();
+    return builder
+      .eventLoopGroup(context.nettyEventLoop())
+      .channelType(transport.channelType(false))
+      .sslContext(sslContext)
+      .executor(command -> {
       if (Context.isOnEventLoopThread()) {
         context.executeFromIO(command::run);
       } else {
