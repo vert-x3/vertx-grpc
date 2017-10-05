@@ -16,6 +16,7 @@ import io.vertx.core.net.impl.HandlerManager;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
+import io.vertx.core.net.impl.transport.Transport;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,12 +54,15 @@ public class VertxServer extends Server {
         sslContext = helper.getContext((VertxInternal) vertx);
       }
 
+      Transport transport = ((VertxInternal) vertx).transport();
+
       this.id = id;
       this.options = options;
       this.server = builder
           .executor(command -> {
             contextLocal.get().get(0).executeFromIO(command::run);
           })
+          .channelType(transport.serverChannelType(false))
           .workerEventLoopGroup(group)
           .sslContext(sslContext)
           .build();
