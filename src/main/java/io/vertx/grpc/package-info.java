@@ -83,7 +83,7 @@
  *   <configuration>
  *     <protocArtifact>com.google.protobuf:protoc:3.2.0:exe:${os.detected.classifier}</protocArtifact>
  *     <pluginId>grpc-java</pluginId>
- *     <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:${os.detected.classifier}</pluginArtifact>
+ *     <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
  *   </configuration>
  *   <executions>
  *     <execution>
