@@ -151,6 +151,11 @@ public class VertxServer extends Server {
   }
 
   @Override
+  public int getPort() {
+    return actual.server.getPort();
+  }
+
+  @Override
   public VertxServer shutdownNow() {
     throw new UnsupportedOperationException();
   }
