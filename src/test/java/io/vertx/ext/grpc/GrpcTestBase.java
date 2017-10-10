@@ -24,7 +24,7 @@ public abstract class GrpcTestBase {
   /* The port on which the server should run */
   Vertx vertx;
   int port;
-  private VertxServer server;
+  protected VertxServer server;
 
   @Before
   public void setUp() {
