@@ -182,4 +182,27 @@ public class RpcTest extends GrpcTestBase {
       });
     });
   }
+
+  @Test
+  public void testRandomPort(TestContext ctx) throws Exception {
+    Async started = ctx.async();
+    port = 0;
+    startServer(new GreeterGrpc.GreeterVertxImplBase() {
+      @Override
+      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+        future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+      }
+    }, ar -> {
+      if (ar.succeeded()) {
+        started.complete();
+      } else {
+        ctx.fail(ar.cause());
+      }
+    });
+
+    started.awaitSuccess(10000);
+
+    ctx.assertTrue(server.getPort() > 0);
+    ctx.assertTrue(server.getPort() < 65536);
+  }
 }
