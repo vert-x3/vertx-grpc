@@ -4,7 +4,6 @@ import io.grpc.*;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.NettyServerBuilder;
@@ -14,7 +13,6 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
-
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.JksOptions;
@@ -26,7 +24,6 @@ import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServerBuilder;
 import org.junit.Test;
 
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.security.auth.x500.X500Principal;
@@ -38,10 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static junit.framework.TestCase.assertEquals;
 
-
-public class ClientCertSslTest extends GrpcTestBase  {
+public class ClientCertSslTest extends GrpcTestBase {
   private static final Context.Key<String> SSL_COMMON_NAME = Context.key("SSLCOMMONNAME");
 
   @Test
@@ -58,7 +53,7 @@ public class ClientCertSslTest extends GrpcTestBase  {
     };
     ServerServiceDefinition sd = getServerServiceDefinition(service);
 
-    serverCtx.runOnContext(v -> startServer(sd, VertxServerBuilder.forPort(vertx,port)
+    serverCtx.runOnContext(v -> startServer(sd, VertxServerBuilder.forPort(vertx, port)
         .useSsl(options -> {
           options
             .setSsl(true)
@@ -68,7 +63,7 @@ public class ClientCertSslTest extends GrpcTestBase  {
               .setPassword("testpw"));
           PemTrustOptions trustOptions = new PemTrustOptions()
             .addCertPath("tls/TestCA.crt");
-          HttpServerOptions sslOptions = (HttpServerOptions)options;
+          HttpServerOptions sslOptions = (HttpServerOptions) options;
           sslOptions.setClientAuth(ClientAuth.REQUIRED)
             .setTrustOptions(trustOptions);
 
@@ -94,7 +89,7 @@ public class ClientCertSslTest extends GrpcTestBase  {
             .setUseAlpn(true)
             .setPemTrustOptions(trustOptions)
             .setPemKeyCertOptions(new PemKeyCertOptions().addKeyPath("tls/TestClient.p8")
-            .addCertPath("tls/TestClient.crt"));
+              .addCertPath("tls/TestClient.crt"));
         })
         .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
@@ -129,19 +124,19 @@ public class ClientCertSslTest extends GrpcTestBase  {
           String cn = "";
           try {
             Certificate[] certs = sslSession.getPeerCertificates();
-            System.out.println("Certs:"+certs.length);
+            System.out.println("Certs:" + certs.length);
             Principal principal = sslSession.getPeerPrincipal();
             if (!(principal instanceof X500Principal)) {
               throw new IllegalArgumentException("Not authenticated");
             }
-            X500Principal x509principal = (X500Principal)principal;
+            X500Principal x509principal = (X500Principal) principal;
             Pattern p = Pattern.compile("(^|,)CN=([^,]*)(,|$)");
             Matcher matcher = p.matcher(x509principal.getName());
-            if(matcher.find()) cn = matcher.group(2);
-            System.out.println("CN:"+cn);
+            if (matcher.find()) cn = matcher.group(2);
+            System.out.println("CN:" + cn);
           } catch (SSLPeerUnverifiedException e) {
-            System.out.println("Peer is not verified:"+e.getMessage());
-            throw new IllegalArgumentException("Peer is not verified:"+e.getMessage());
+            System.out.println("Peer is not verified:" + e.getMessage());
+            throw new IllegalArgumentException("Peer is not verified:" + e.getMessage());
           }
           return Contexts.interceptCall(
             Context.current().withValue(SSL_COMMON_NAME, cn), serverCall, metadata, serverCallHandler);
@@ -162,7 +157,7 @@ public class ClientCertSslTest extends GrpcTestBase  {
           new File("src/test/resources/tls/TestClient.p8"))
         .build());
     ManagedChannel channel = builder.build();
-    GreeterGrpc.GreeterBlockingStub stub  = GreeterGrpc.newBlockingStub(channel);
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
     //Async started = ctx.async();
     //io.vertx.core.Context serverCtx = vertx.getOrCreateContext();
     BindableService service = new GreeterGrpc.GreeterImplBase() {
@@ -173,21 +168,21 @@ public class ClientCertSslTest extends GrpcTestBase  {
       }
     };
     ServerServiceDefinition sslSd = getServerServiceDefinition(service);
-  SslProvider sslProvider = SslContext.defaultServerProvider();
-  SslContextBuilder contextBuilder = SslContextBuilder.forServer(new File("src/test/resources/tls/TestServerChain.pem"),
-    new File("src/test/resources/tls/TestServer.p8"));
-  GrpcSslContexts.configure(contextBuilder, sslProvider);
+    SslProvider sslProvider = SslContext.defaultServerProvider();
+    SslContextBuilder contextBuilder = SslContextBuilder.forServer(new File("src/test/resources/tls/TestServerChain.pem"),
+      new File("src/test/resources/tls/TestServer.p8"));
+    GrpcSslContexts.configure(contextBuilder, sslProvider);
 
-  SslContext sslContext = contextBuilder
-    .startTls(true)
-    .trustManager(new File("src/test/resources/tls/TestCA.crt"))
-    .clientAuth(io.netty.handler.ssl.ClientAuth.REQUIRE).build();
-   Server ssl_server = NettyServerBuilder.forPort(port).sslContext(sslContext)
+    SslContext sslContext = contextBuilder
+      .startTls(true)
+      .trustManager(new File("src/test/resources/tls/TestCA.crt"))
+      .clientAuth(io.netty.handler.ssl.ClientAuth.REQUIRE).build();
+    Server ssl_server = NettyServerBuilder.forPort(port).sslContext(sslContext)
 
-    .addService(sslSd)
-    .build();
+      .addService(sslSd)
+      .build();
 
-  ssl_server.start();
+    ssl_server.start();
 
 
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
@@ -195,7 +190,7 @@ public class ClientCertSslTest extends GrpcTestBase  {
     System.out.println("Reply:" + reply.getMessage());
     ctx.assertEquals("Hello Julien", reply.getMessage());
     channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-    ssl_server.shutdownNow().awaitTermination(5,TimeUnit.SECONDS);
-}
+    ssl_server.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+  }
 
 }
