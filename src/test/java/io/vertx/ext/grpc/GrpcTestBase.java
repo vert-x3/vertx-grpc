@@ -1,6 +1,7 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.BindableService;
+import io.grpc.ServerServiceDefinition;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -68,4 +69,12 @@ public abstract class GrpcTestBase {
         .build()
         .start(completionHandler);
   }
+
+  void startServer(ServerServiceDefinition service, VertxServerBuilder builder, Handler<AsyncResult<Void>> completionHandler) {
+    server = builder
+      .addService(service)
+      .build()
+      .start(completionHandler);
+  }
+
 }
