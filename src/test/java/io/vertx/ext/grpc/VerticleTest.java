@@ -16,9 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -29,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 public class VerticleTest {
 
   private static final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
-  private static int port = 50051;
 
   /* The port on which the server should run */
   private Vertx vertx;
@@ -49,8 +46,17 @@ public class VerticleTest {
 
   public static class GrpcVerticle extends AbstractVerticle {
 
-    private VertxServer server;
+    private final int port;
+    private volatile VertxServer server;
     private GreeterGrpc.GreeterVertxImplBase service;
+
+    public GrpcVerticle(int port) {
+      this.port = port;
+    }
+
+    public GrpcVerticle() {
+      this(50051);
+    }
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
@@ -85,7 +91,7 @@ public class VerticleTest {
     final int num = 10;
     Async async = ctx.async(num);
     for (int i = 0;i < num;i++) {
-      ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
           .usePlaintext(true)
           .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
@@ -123,7 +129,7 @@ public class VerticleTest {
     });
     started.awaitSuccess(10000);
     Async async = ctx.async();
-    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", port)
+    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
         .usePlaintext(true)
         .build();
     GreeterGrpc.GreeterVertxStub blockingStub = GreeterGrpc.newVertxStub(channel);
@@ -132,5 +138,19 @@ public class VerticleTest {
       ctx.assertFalse(ar.succeeded());
       async.complete();
     });
+  }
+
+  @Test
+  public void testBilto(TestContext ctx) throws Exception {
+    Async started = ctx.async();
+    List<GrpcVerticle> verticles = Collections.synchronizedList(new ArrayList<>());
+    vertx.deployVerticle(() -> {
+      GrpcVerticle verticle = new GrpcVerticle(0);
+      verticles.add(verticle);
+      return verticle;
+    }, new DeploymentOptions().setInstances(2), ctx.asyncAssertSuccess(v -> started.complete()));
+    started.awaitSuccess(10000);
+    ctx.assertEquals(2, verticles.size());
+    ctx.assertNotEquals(verticles.get(0).server.getPort(), verticles.get(1).server.getPort());
   }
 }
