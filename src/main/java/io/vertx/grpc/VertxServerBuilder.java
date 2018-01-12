@@ -106,7 +106,7 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return this;
   }
 
-  public VertxServerBuilder useSsl(Handler<TCPSSLOptions> handler) {
+  public VertxServerBuilder useSsl(Handler<HttpServerOptions> handler) {
     handler.handle(options);
     return this;
   }

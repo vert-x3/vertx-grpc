@@ -158,11 +158,11 @@ public final class GreeterGrpc {
    * </pre>
    */
   public static final class GreeterStub extends io.grpc.stub.AbstractStub<GreeterStub> {
-    private GreeterStub(io.grpc.Channel channel) {
+    public GreeterStub(io.grpc.Channel channel) {
       super(channel);
     }
 
-    private GreeterStub(io.grpc.Channel channel,
+    public GreeterStub(io.grpc.Channel channel,
         io.grpc.CallOptions callOptions) {
       super(channel, callOptions);
     }
@@ -191,11 +191,11 @@ public final class GreeterGrpc {
    * </pre>
    */
   public static final class GreeterBlockingStub extends io.grpc.stub.AbstractStub<GreeterBlockingStub> {
-    private GreeterBlockingStub(io.grpc.Channel channel) {
+    public GreeterBlockingStub(io.grpc.Channel channel) {
       super(channel);
     }
 
-    private GreeterBlockingStub(io.grpc.Channel channel,
+    public GreeterBlockingStub(io.grpc.Channel channel,
         io.grpc.CallOptions callOptions) {
       super(channel, callOptions);
     }
@@ -223,11 +223,11 @@ public final class GreeterGrpc {
    * </pre>
    */
   public static final class GreeterFutureStub extends io.grpc.stub.AbstractStub<GreeterFutureStub> {
-    private GreeterFutureStub(io.grpc.Channel channel) {
+    public GreeterFutureStub(io.grpc.Channel channel) {
       super(channel);
     }
 
-    private GreeterFutureStub(io.grpc.Channel channel,
+    public GreeterFutureStub(io.grpc.Channel channel,
         io.grpc.CallOptions callOptions) {
       super(channel, callOptions);
     }
@@ -286,11 +286,11 @@ public final class GreeterGrpc {
    * </pre>
    */
   public static final class GreeterVertxStub extends io.grpc.stub.AbstractStub<GreeterVertxStub> {
-    private GreeterVertxStub(io.grpc.Channel channel) {
+    public GreeterVertxStub(io.grpc.Channel channel) {
       super(channel);
     }
 
-    private GreeterVertxStub(io.grpc.Channel channel,
+    public GreeterVertxStub(io.grpc.Channel channel,
         io.grpc.CallOptions callOptions) {
       super(channel, callOptions);
     }
