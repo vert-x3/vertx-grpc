@@ -3,6 +3,7 @@ package io.vertx.grpc;
 import io.grpc.*;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.netty.NettyChannelBuilder;
+import io.netty.handler.ssl.DelegatingSslContext;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -16,6 +17,7 @@ import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.transport.Transport;
 
+import javax.net.ssl.SSLEngine;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.List;
@@ -144,17 +146,21 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   @Override
   public ManagedChannel build() {
     // SSL
-    SslContext sslContext = null;
     if (options.isSsl()) {
       SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
       helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
-      sslContext = helper.getContext((VertxInternal) vertx);
+      SslContext ctx = helper.getContext((VertxInternal) vertx);
+      builder.sslContext(new DelegatingSslContext(ctx) {
+        @Override
+        protected void initEngine(SSLEngine engine) {
+          helper.configureEngine(engine, null);
+        }
+      });
     }
     Transport transport = ((VertxInternal) vertx).transport();
     return builder
       .eventLoopGroup(context.nettyEventLoop())
       .channelType(transport.channelType(false))
-      .sslContext(sslContext)
       .executor(command -> {
       if (Context.isOnEventLoopThread()) {
         context.executeFromIO(command::run);

@@ -2,6 +2,7 @@ package io.vertx.grpc;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.handler.ssl.DelegatingSslContext;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Closeable;
@@ -18,6 +19,7 @@ import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.net.impl.transport.Transport;
 
+import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,11 +49,16 @@ public class VertxServer extends Server {
     private ActualServer(Vertx vertx, ServerID id, HttpServerOptions options, NettyServerBuilder builder) {
 
       // SSL
-      SslContext sslContext = null;
       if (options.isSsl()) {
         SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
         helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
-        sslContext = helper.getContext((VertxInternal) vertx);
+        SslContext ctx = helper.getContext((VertxInternal) vertx);
+        builder.sslContext(new DelegatingSslContext(ctx) {
+          @Override
+          protected void initEngine(SSLEngine engine) {
+            helper.configureEngine(engine, null);
+          }
+        });
       }
 
       Transport transport = ((VertxInternal) vertx).transport();
@@ -64,7 +71,6 @@ public class VertxServer extends Server {
           })
           .channelType(transport.serverChannelType(false))
           .workerEventLoopGroup(group)
-          .sslContext(sslContext)
           .build();
     }
 
