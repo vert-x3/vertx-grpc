@@ -132,7 +132,11 @@ public class VertxServer extends Server {
   }
 
   public VertxServer start(Handler<AsyncResult<Void>> completionHandler) {
-    actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder));
+    if (id.port > 0) {
+      actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder));
+    } else {
+      actual = new ActualServer(context.owner(), id, options, builder);
+    }
     actual.start(context, ar1 -> {
       if (ar1.succeeded()) {
         hook = ar2 -> shutdown();
