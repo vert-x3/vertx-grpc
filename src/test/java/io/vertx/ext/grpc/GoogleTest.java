@@ -26,8 +26,10 @@ import static io.grpc.testing.integration.TestServiceGrpc.*;
  */
 public class GoogleTest extends GrpcTestBase {
 
+  private ManagedChannel channel;
+
   private TestServiceVertxStub buildStub() {
-    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext(true).build();
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext(true).build();
     return newVertxStub(channel);
   }
 
@@ -50,6 +52,7 @@ public class GoogleTest extends GrpcTestBase {
             will.assertNotNull(res.result());
             test.complete();
           }
+          channel.shutdown();
         });
       } else {
         will.fail(startServer.cause());
@@ -77,6 +80,7 @@ public class GoogleTest extends GrpcTestBase {
             will.assertNotNull(res.result());
             test.complete();
           }
+          channel.shutdown();
         });
       } else {
         will.fail(startServer.cause());
@@ -115,6 +119,7 @@ public class GoogleTest extends GrpcTestBase {
             .endHandler(v -> {
               will.assertEquals(10, cnt.get());
               test.complete();
+              channel.shutdown();
             });
         });
       } else {
@@ -159,6 +164,7 @@ public class GoogleTest extends GrpcTestBase {
               } else {
                 will.assertNotNull(res.result());
                 test.complete();
+                channel.shutdown();
               }
             });
 
@@ -214,6 +220,7 @@ public class GoogleTest extends GrpcTestBase {
             .endHandler(v -> {
               will.assertEquals(10, cnt.get());
               test.complete();
+              channel.shutdown();
             });
 
           for (int i = 0; i < 10; i++) {
@@ -275,6 +282,7 @@ public class GoogleTest extends GrpcTestBase {
             .endHandler(v -> {
               will.assertEquals(10, cnt.get());
               test.complete();
+              channel.shutdown();
             });
 
           for (int i = 0; i < 10; i++) {
@@ -310,6 +318,7 @@ public class GoogleTest extends GrpcTestBase {
             will.assertNotNull(res.cause());
           }
           test.complete();
+          channel.shutdown();
         });
       } else {
         will.fail(startServer.cause());

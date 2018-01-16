@@ -91,7 +91,7 @@ public class VerticleTest {
     final int num = 10;
     Async async = ctx.async(num);
     for (int i = 0;i < num;i++) {
-      ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
+      ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
           .usePlaintext(true)
           .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
@@ -137,6 +137,7 @@ public class VerticleTest {
     blockingStub.sayHello(request, ar -> {
       ctx.assertFalse(ar.succeeded());
       async.complete();
+      channel.shutdown();
     });
   }
 
