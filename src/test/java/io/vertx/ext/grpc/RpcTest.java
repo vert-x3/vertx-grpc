@@ -63,6 +63,7 @@ public class RpcTest extends GrpcTestBase {
         } else {
           ctx.fail(ar.cause());
         }
+        channel.shutdown();
       });
     });
   }
@@ -94,6 +95,7 @@ public class RpcTest extends GrpcTestBase {
           List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
           ctx.assertEquals(expected, items);
           done.complete();
+          channel.shutdown();
         });
     });
   }
@@ -137,6 +139,7 @@ public class RpcTest extends GrpcTestBase {
         } else {
           vertx.cancelTimer(id);
           exchange.end();
+          channel.shutdown();
         }
       });
     });
@@ -178,6 +181,7 @@ public class RpcTest extends GrpcTestBase {
         } else {
           vertx.cancelTimer(id);
           exchange.end();
+          channel.shutdown();
         }
       });
     });

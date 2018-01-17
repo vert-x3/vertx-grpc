@@ -143,6 +143,7 @@ public class SslTest extends GrpcTestBase {
             async.complete();
           }
         }
+        channel.shutdown();
       });
     });
   }
