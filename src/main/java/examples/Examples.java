@@ -1,11 +1,11 @@
 package examples;
 
-import io.grpc.BindableService;
-import io.grpc.ManagedChannel;
+import io.grpc.*;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
+import io.vertx.grpc.BlockingServerInterceptor;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
@@ -83,5 +83,40 @@ public class Examples {
                 .setPath("client-truststore.jks")
                 .setPassword("secret")))
         .build();
+  }
+
+  public void blockingInterceptor() {
+    class MyInterceptor implements ServerInterceptor {
+      @Override
+      public <Q, A> ServerCall.Listener<Q> interceptCall(
+        ServerCall<Q, A> call, Metadata headers, ServerCallHandler<Q, A> next) {
+        // do something hard and update the metadata, for example
+        return next.startCall(call, headers);
+      }
+    }
+    MyInterceptor myInterceptor = new MyInterceptor();
+  }
+
+  public <MyInterceptor extends ServerInterceptor> void nonblockingInterceptorUsage(
+    MyInterceptor myInterceptor, Vertx vertx, BindableService service)  throws Exception {
+    VertxServer rpcServer = VertxServerBuilder
+      .forAddress(vertx, "my.host", 8080)
+      .addService(ServerInterceptors.intercept(service, myInterceptor))
+      .build();
+  }
+
+  public <MyInterceptor extends ServerInterceptor> void blockingInterceptorUsage(
+    MyInterceptor myInterceptor, Vertx vertx, BindableService service)  throws Exception {
+    // wrap interceptor to execute on worker thread instead of event loop
+    ServerInterceptor wrapped = BlockingServerInterceptor.wrap(vertx, myInterceptor);
+
+    // Create the server
+    VertxServer rpcServer = VertxServerBuilder
+      .forAddress(vertx, "my.host", 8080)
+      .addService(ServerInterceptors.intercept(service, wrapped))
+      .build();
+
+    // Start it
+    rpcServer.start();
   }
 }

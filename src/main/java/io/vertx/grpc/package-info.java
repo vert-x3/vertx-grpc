@@ -241,6 +241,32 @@
  * need to control your client channel {@link io.vertx.grpc.VertxChannelBuilder}. Vert.x gRPC extends the grpc-java
  * project (Netty transport) and therefore reading its http://www.grpc.io/grpc-java/javadoc/[documentation] is
  * recommended.
+ *
+ * == BlockingServerInterceptor
+ *
+ * gRPC https://grpc.io/grpc-java/javadoc/io/grpc/ServerInterceptor.html[ServerInterceptor] is a mechanism
+ * for intercepting incoming calls before they are sent to the service.
+ * It has synchronous behavior and will be execute on the Vert.x event loop.
+ *
+ * [source,$lang]
+ * ----
+ * {@link examples.Examples#nonblockingInterceptorUsage}
+ * ----
+ *
+ * Suppose we have an interceptor that does something blocking the event loop:
+ *
+ * [source,$lang]
+ * ----
+ * {@link examples.Examples#blockingInterceptor}
+ * ----
+ *
+ * To avoid the blocking one should wrap the interceptor. Then it will be called on the Vert.x worker thread.
+ *
+ * [source,$lang]
+ * ----
+ * {@link examples.Examples#blockingInterceptorUsage}
+ * ----
+ *
  */
 @Document(fileName = "index.adoc")
 package io.vertx.grpc;
