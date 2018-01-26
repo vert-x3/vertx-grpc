@@ -1,9 +1,6 @@
 package io.vertx.grpc;
 
-import io.grpc.Metadata;
-import io.grpc.ServerCall;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerInterceptor;
+import io.grpc.*;
 import io.vertx.core.Vertx;
 
 import java.util.LinkedList;
@@ -42,8 +39,11 @@ public class BlockingServerInterceptor implements ServerInterceptor {
         if (ar.succeeded()) {
           asyncListener.setDelegate(ar.result());
         } else {
-          asyncListener.setDelegate(new ServerCall.Listener<ReqT>() {
-          });
+          Metadata md = Status.trailersFromThrowable(ar.cause());
+          if (md == null) {
+            md = new Metadata();
+          }
+          serverCall.close(Status.fromThrowable(ar.cause()), md);
         }
       });
     return asyncListener;
