@@ -1,16 +1,14 @@
 package io.vertx.ext.grpc;
 
-import io.grpc.ManagedChannel;
+import io.grpc.*;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.vertx.core.*;
+import io.vertx.core.Context;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.GrpcBidiExchange;
-import io.vertx.grpc.GrpcReadStream;
-import io.vertx.grpc.GrpcWriteStream;
-import io.vertx.grpc.VertxChannelBuilder;
+import io.vertx.grpc.*;
 import org.junit.Test;
 
 import io.grpc.examples.helloworld.*;
@@ -66,6 +64,115 @@ public class RpcTest extends GrpcTestBase {
         channel.shutdown();
       });
     });
+  }
+
+  @Test
+  public void testBlocking(TestContext ctx) {
+    ServerInterceptor blockingInterceptor = new ServerInterceptor() {
+      @Override
+      public <Q, A> ServerCall.Listener<Q> interceptCall(ServerCall<Q, A> call, Metadata m, ServerCallHandler<Q, A> h) {
+        // run on worker
+        ctx.assertTrue(Context.isOnWorkerThread());
+        System.out.println("sleep on " + Thread.currentThread());
+        try {
+          Thread.sleep(3000);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        return h.startCall(call, m);
+      }
+    };
+    BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
+      @Override
+      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+        ctx.assertTrue(Context.isOnEventLoopThread());
+        future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+      }
+    };
+    Async started = ctx.async();
+    server = VertxServerBuilder.forPort(vertx, port)
+      .addService(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
+      .build()
+      .start(ar -> {
+        if (ar.succeeded()) {
+          started.complete();
+        } else {
+          ctx.fail(ar.cause());
+        }
+      });
+    started.awaitSuccess(10000);
+    Async async = ctx.async(2);
+    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .usePlaintext(true)
+      .build();
+    GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
+    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build(), ar -> {
+      if (ar.succeeded()) {
+        ctx.assertEquals("Hello Julien", ar.result().getMessage());
+        async.countDown();
+      } else {
+        ctx.fail(ar.cause());
+      }
+    });
+    stub.sayHello(HelloRequest.newBuilder().setName("Paulo").build(), ar -> {
+      if (ar.succeeded()) {
+        ctx.assertEquals("Hello Paulo", ar.result().getMessage());
+        async.countDown();
+      } else {
+        ctx.fail(ar.cause());
+      }
+    });
+    async.awaitSuccess(10000);
+    channel.shutdown();
+  }
+
+  @Test
+  public void testBlockingException(TestContext ctx) {
+    Metadata.Key<String> mdKey = Metadata.Key.of("mdkey", Metadata.ASCII_STRING_MARSHALLER);
+    ServerInterceptor blockingInterceptor = new ServerInterceptor() {
+      @Override
+      public <Q, A> ServerCall.Listener<Q> interceptCall(ServerCall<Q, A> call, Metadata m, ServerCallHandler<Q, A> h) {
+        Metadata md = new Metadata();
+        md.put(mdKey, "mdvalue");
+        throw new StatusRuntimeException(Status.ABORTED, md);
+      }
+    };
+    BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
+      @Override
+      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+        future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+      }
+    };
+    Async started = ctx.async();
+    server = VertxServerBuilder.forPort(vertx, port)
+      .addService(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
+      .build()
+      .start(ar -> {
+        if (ar.succeeded()) {
+          started.complete();
+        } else {
+          ctx.fail(ar.cause());
+        }
+      });
+    started.awaitSuccess(10000);
+    Async async = ctx.async();
+    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .usePlaintext(true)
+      .build();
+    GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
+    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build(), ar -> {
+      if (ar.succeeded()) {
+        ctx.fail("StatusRuntimeException expected");
+      } else {
+        ctx.assertTrue(ar.cause() instanceof StatusRuntimeException);
+        StatusRuntimeException sre = (StatusRuntimeException) ar.cause();
+        ctx.assertEquals(Status.ABORTED, sre.getStatus());
+        ctx.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
+        async.countDown();
+      }
+    });
+    async.awaitSuccess(10000);
+    channel.shutdown();
   }
 
   @Test
