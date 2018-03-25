@@ -11,7 +11,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
-import io.vertx.core.impl.ContextImpl;
+import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.HandlerManager;
 import io.vertx.core.net.impl.SSLHelper;
@@ -44,7 +44,7 @@ public class VertxServer extends Server {
     final VertxEventLoopGroup group = new VertxEventLoopGroup();
     final HandlerManager<String> manager = new HandlerManager<>(group);
     final Server server;
-    final ThreadLocal<List<ContextImpl>> contextLocal = new ThreadLocal<>();
+    final ThreadLocal<List<ContextInternal>> contextLocal = new ThreadLocal<>();
 
     private ActualServer(Vertx vertx, ServerID id, HttpServerOptions options, NettyServerBuilder builder) {
 
@@ -74,7 +74,7 @@ public class VertxServer extends Server {
           .build();
     }
 
-    void start(ContextImpl context, Handler<AsyncResult<Void>> completionHandler) {
+    void start(ContextInternal context, Handler<AsyncResult<Void>> completionHandler) {
       boolean start = count.getAndIncrement() == 0;
       context.runOnContext(v -> {
         if (contextLocal.get() == null) {
@@ -97,7 +97,7 @@ public class VertxServer extends Server {
       });
     }
 
-    void stop(ContextImpl context, Handler<AsyncResult<Void>> completionHandler) {
+    void stop(ContextInternal context, Handler<AsyncResult<Void>> completionHandler) {
       boolean shutdown = count.decrementAndGet() == 0;
       context.runOnContext(v -> {
         manager.removeHandler("foo", context);
@@ -116,10 +116,10 @@ public class VertxServer extends Server {
   private final NettyServerBuilder builder;
   private final HttpServerOptions options;
   private ActualServer actual;
-  private final ContextImpl context;
+  private final ContextInternal context;
   private Closeable hook;
 
-  VertxServer(ServerID id, HttpServerOptions options, NettyServerBuilder builder, ContextImpl context) {
+  VertxServer(ServerID id, HttpServerOptions options, NettyServerBuilder builder, ContextInternal context) {
     this.id = id;
     this.options = options;
     this.builder = builder;
