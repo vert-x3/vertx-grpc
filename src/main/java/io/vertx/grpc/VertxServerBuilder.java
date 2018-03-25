@@ -12,8 +12,8 @@ import io.grpc.netty.NettyServerBuilder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.impl.ContextImpl;
-import io.vertx.core.net.TCPSSLOptions;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.ServerID;
 
 import javax.annotation.Nullable;
@@ -40,19 +40,19 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   }
 
   private final ServerID id;
-  private Vertx vertx;
+  private VertxInternal vertx;
   private NettyServerBuilder builder;
   private HttpServerOptions options = new HttpServerOptions();
 
   private VertxServerBuilder(Vertx vertx, int port) {
     this.id = new ServerID(port, "0.0.0.0");
-    this.vertx = vertx;
+    this.vertx = (VertxInternal) vertx;
     this.builder = NettyServerBuilder.forPort(port);
   }
 
   private VertxServerBuilder(Vertx vertx, SocketAddress address) {
     this.id = new ServerID(((InetSocketAddress) address).getPort(), ((InetSocketAddress) address).getHostString());
-    this.vertx = vertx;
+    this.vertx = (VertxInternal) vertx;
     this.builder = NettyServerBuilder.forAddress(address);
   }
 
@@ -112,7 +112,7 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   }
 
   public VertxServer build() {
-    ContextImpl context = (ContextImpl) vertx.getOrCreateContext();
+    ContextInternal context = vertx.getOrCreateContext();
     return new VertxServer(id, options, builder, context);
   }
 }
