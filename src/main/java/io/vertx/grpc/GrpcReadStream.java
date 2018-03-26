@@ -12,7 +12,6 @@ import io.vertx.grpc.impl.GrpcReadStreamImpl;
 /**
  * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
-@VertxGen
 public interface GrpcReadStream<T> extends ReadStream<T> {
 
   static <T> GrpcReadStream<T> create(StreamObserver<T> observer) {

@@ -10,7 +10,6 @@ import io.vertx.grpc.impl.GrpcBidiExchangeImpl;
 /**
  * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
-@VertxGen
 public interface GrpcBidiExchange<I, O> extends GrpcReadStream<I>, GrpcWriteStream<O> {
 
   static <I, O> GrpcBidiExchange<I, O> create(GrpcReadStream<I> readStream, StreamObserver<O> writeObserver) {
