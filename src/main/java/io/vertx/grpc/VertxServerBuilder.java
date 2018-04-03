@@ -1,13 +1,6 @@
 package io.vertx.grpc;
 
-import io.grpc.BindableService;
-import io.grpc.CompressorRegistry;
-import io.grpc.DecompressorRegistry;
-import io.grpc.HandlerRegistry;
-import io.grpc.ServerBuilder;
-import io.grpc.ServerServiceDefinition;
-import io.grpc.ServerStreamTracer;
-import io.grpc.ServerTransportFilter;
+import io.grpc.*;
 import io.grpc.netty.NettyServerBuilder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -103,6 +96,11 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
 
   public VertxServerBuilder compressorRegistry(@Nullable CompressorRegistry registry) {
     builder.compressorRegistry(registry);
+    return this;
+  }
+
+  public VertxServerBuilder maxMessageSize(int maxMessageSize) {
+    builder.maxMessageSize(maxMessageSize);
     return this;
   }
 
