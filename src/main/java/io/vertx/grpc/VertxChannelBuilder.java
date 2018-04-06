@@ -163,7 +163,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       .channelType(transport.channelType(false))
       .executor(command -> {
       if (Context.isOnEventLoopThread()) {
-        context.executeFromIO(command::run);
+        context.executeFromIO(event -> command.run());
       } else {
         command.run();
       }
