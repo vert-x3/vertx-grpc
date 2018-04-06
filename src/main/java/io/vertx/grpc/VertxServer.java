@@ -67,7 +67,7 @@ public class VertxServer extends Server {
       this.options = options;
       this.server = builder
           .executor(command -> {
-            contextLocal.get().get(0).executeFromIO(command::run);
+            contextLocal.get().get(0).executeFromIO(event -> command.run());
           })
           .channelType(transport.serverChannelType(false))
           .workerEventLoopGroup(group)
