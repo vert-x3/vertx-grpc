@@ -70,6 +70,7 @@ public class VertxServer extends Server {
             contextLocal.get().get(0).executeFromIO(event -> command.run());
           })
           .channelType(transport.serverChannelType(false))
+          .bossEventLoopGroup(group)
           .workerEventLoopGroup(group)
           .build();
     }
