@@ -1,8 +1,7 @@
 package examples;
 
 import io.grpc.*;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
 import io.vertx.grpc.BlockingServerInterceptor;
@@ -73,6 +72,35 @@ public class Examples {
                 .setPassword("secret")));
   }
 
+  public void serverScaling(Vertx vertx) {
+
+    vertx.deployVerticle(
+
+      // Verticle supplier - should be called 4 times
+      () -> new AbstractVerticle() {
+
+        BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
+          @Override
+          public void sayHello(HelloRequest request, Future<HelloReply> future) {
+            future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
+          }
+        };
+
+        @Override
+        public void start() throws Exception {
+          VertxServerBuilder
+            .forAddress(vertx, "my.host", 8080)
+            .addService(service)
+            .build()
+            .start();
+        }
+      },
+
+      // Deploy 4 instances, i.e the service is scaled on 4 event-loops
+      new DeploymentOptions()
+        .setInstances(4));
+  }
+
   public void sslClient(Vertx vertx) {
     ManagedChannel channel = VertxChannelBuilder.
         forAddress(vertx, "localhost", 8080)
@@ -118,5 +146,12 @@ public class Examples {
 
     // Start it
     rpcServer.start();
+  }
+
+  public void nativeTransport() {
+
+    // Use native transports
+    Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
+
   }
 }
