@@ -83,6 +83,12 @@ public class GrpcBidiExchangeImpl<I,O> implements GrpcBidiExchange<I,O> {
   }
 
   @Override
+  public GrpcBidiExchange<I, O> fetch(long amount) {
+    readStream.fetch(amount);
+    return this;
+  }
+
+  @Override
   public GrpcBidiExchange<I, O> endHandler(Handler<Void> handler) {
     readStream.endHandler(handler);
     return this;

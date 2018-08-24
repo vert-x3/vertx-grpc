@@ -49,6 +49,11 @@ public class GrpcReadStreamImpl<T> implements GrpcReadStream<T> {
   }
 
   @Override
+  public GrpcReadStream<T> fetch(long amount) {
+    return this;
+  }
+
+  @Override
   public GrpcReadStream<T> endHandler(Handler<Void> handler) {
     this.endHandler = handler;
     return this;
