@@ -60,6 +60,17 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
   GrpcReadStream<T> resume();
 
   /**
+   * Fetch the specified {@code amount} of elements. If the {@code ReadStream} has been paused, reading will
+   * recommence with the specified {@code amount} of items, otherwise the specified {@code amount} will
+   * be added to the current stream demand.
+   *
+   * @return a reference to this, so the API can be used fluently
+   */
+  @Override
+  @Fluent
+  GrpcReadStream<T> fetch(long amount);
+
+  /**
    * Set an end handler. Once the stream has ended, and there is no more data to be read, this handler will be called.
    *
    * @return a reference to this, so the API can be used fluently
