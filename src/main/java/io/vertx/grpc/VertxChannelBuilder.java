@@ -13,7 +13,6 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.ClientOptionsBase;
-import io.vertx.core.net.TCPSSLOptions;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.transport.Transport;
 
