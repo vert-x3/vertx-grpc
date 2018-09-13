@@ -2,7 +2,6 @@ package io.vertx.grpc;
 
 import io.grpc.*;
 import io.grpc.netty.NettyServerBuilder;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.impl.ContextInternal;
@@ -11,9 +10,11 @@ import io.vertx.core.net.impl.ServerID;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -47,6 +48,13 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     this.id = new ServerID(((InetSocketAddress) address).getPort(), ((InetSocketAddress) address).getHostString());
     this.vertx = (VertxInternal) vertx;
     this.builder = NettyServerBuilder.forAddress(address);
+  }
+
+  /**
+   * @return the underlying {@code NettyServerBuilder}
+   */
+  public NettyServerBuilder nettyBuilder() {
+    return builder;
   }
 
   public VertxServerBuilder directExecutor() {
@@ -99,13 +107,33 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return this;
   }
 
-  public VertxServerBuilder maxMessageSize(int maxMessageSize) {
-    builder.maxMessageSize(maxMessageSize);
+  @Override
+  public VertxServerBuilder intercept(ServerInterceptor interceptor) {
+    builder.intercept(interceptor);
     return this;
   }
 
-  public VertxServerBuilder useSsl(Handler<HttpServerOptions> handler) {
-    handler.handle(options);
+  @Override
+  public VertxServerBuilder useTransportSecurity(InputStream certChain, InputStream privateKey) {
+    builder.useTransportSecurity(certChain, privateKey);
+    return this;
+  }
+
+  @Override
+  public VertxServerBuilder handshakeTimeout(long timeout, TimeUnit unit) {
+    builder.handshakeTimeout(timeout, unit);
+    return this;
+  }
+
+  @Override
+  public VertxServerBuilder maxInboundMessageSize(int bytes) {
+    builder.maxInboundMessageSize(bytes);
+    return this;
+  }
+
+  @Override
+  public VertxServerBuilder setBinaryLog(BinaryLog binaryLog) {
+    builder.setBinaryLog(binaryLog);
     return this;
   }
 

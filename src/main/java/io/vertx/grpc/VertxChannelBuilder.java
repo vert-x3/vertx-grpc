@@ -61,6 +61,13 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     this.context = (ContextInternal) vertx.getOrCreateContext();
   }
 
+  /**
+   * @return the underlying {@code NettyChannelBuilder}
+   */
+  public NettyChannelBuilder nettyBuilder() {
+    return builder;
+  }
+
   @Override
   public VertxChannelBuilder directExecutor() {
     throw new UnsupportedOperationException();
@@ -134,6 +141,90 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   @Override
   public VertxChannelBuilder maxInboundMessageSize(int max) {
     builder.maxInboundMessageSize(max);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder usePlaintext() {
+    builder.usePlaintext();
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder useTransportSecurity() {
+    builder.useTransportSecurity();
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder enableFullStreamDecompression() {
+    builder.enableFullStreamDecompression();
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder keepAliveTime(long keepAliveTime, TimeUnit timeUnit) {
+    builder.keepAliveTime(keepAliveTime, timeUnit);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder keepAliveTimeout(long keepAliveTimeout, TimeUnit timeUnit) {
+    builder.keepAliveTimeout(keepAliveTimeout, timeUnit);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder keepAliveWithoutCalls(boolean enable) {
+    builder.keepAliveWithoutCalls(enable);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder maxRetryAttempts(int maxRetryAttempts) {
+    builder.maxRetryAttempts(maxRetryAttempts);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder maxHedgedAttempts(int maxHedgedAttempts) {
+    builder.maxHedgedAttempts(maxHedgedAttempts);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder retryBufferSize(long bytes) {
+    builder.retryBufferSize(bytes);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder perRpcBufferLimit(long bytes) {
+    builder.perRpcBufferLimit(bytes);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder disableRetry() {
+    builder.disableRetry();
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder enableRetry() {
+    builder.enableRetry();
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder setBinaryLog(BinaryLog binaryLog) {
+    builder.setBinaryLog(binaryLog);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder maxTraceEvents(int maxTraceEvents) {
+    builder.maxTraceEvents(maxTraceEvents);
     return this;
   }
 
