@@ -1,4 +1,4 @@
-[![Build Status](https://vertx.ci.cloudbees.com/buildStatus/icon?job=vert.x3-grpc)](https://vertx.ci.cloudbees.com/view/vert.x-3/job/vert.x3-grpc/)
+[![Build Status](https://travis-ci.org/vert-x3/vertx-grpc.svg?branch=master?branch=master)](https://travis-ci.org/vert-x3/vertx-grpc)
 
 # Vert.x gRPC
 
