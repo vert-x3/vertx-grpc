@@ -2,6 +2,7 @@ package io.vertx.grpc;
 
 import io.grpc.*;
 import io.grpc.netty.NettyServerBuilder;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.impl.ContextInternal;
@@ -134,6 +135,11 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   @Override
   public VertxServerBuilder setBinaryLog(BinaryLog binaryLog) {
     builder.setBinaryLog(binaryLog);
+    return this;
+  }
+
+  public VertxServerBuilder useSsl(Handler<HttpServerOptions> handler) {
+    handler.handle(options);
     return this;
   }
 
