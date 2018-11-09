@@ -24,12 +24,12 @@
   </parent>
 
   <artifactId>vertx-grpc</artifactId>
-  <version>3.6.0.CR1</version>
+  <version>3.6.0-SNAPSHOT</version>
 
   <name>Vert.x gRPC</name>
 
   <properties>
-    <stack.version>3.6.0.CR1</stack.version>
+    <stack.version>3.6.0-SNAPSHOT</stack.version>
     <vertx.grpc.version>1.15.0</vertx.grpc.version>
     <jetty.alpnAgent.version>2.0.7</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
