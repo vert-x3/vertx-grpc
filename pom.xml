@@ -70,6 +70,10 @@
       <version>${vertx.grpc.version}</version>
       <exclusions>
         <exclusion>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+        <exclusion>
           <groupId>io.netty</groupId>
           <artifactId>netty-codec-http2</artifactId>
         </exclusion>
@@ -87,11 +91,22 @@
       <groupId>io.grpc</groupId>
       <artifactId>grpc-protobuf</artifactId>
       <version>${vertx.grpc.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.guava</groupId>
+          <artifactId>guava</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
       <version>${vertx.grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>20.0</version>
     </dependency>
 
     <dependency>
