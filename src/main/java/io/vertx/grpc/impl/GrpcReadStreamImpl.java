@@ -2,8 +2,8 @@ package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.Handler;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import io.vertx.grpc.GrpcReadStream;
 
 /**
