@@ -4,6 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
+import io.grpc.stub.StreamObserver;
 import io.vertx.core.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -48,7 +49,7 @@ public class VerticleTest {
 
     private final int port;
     private volatile VertxServer server;
-    private GreeterGrpc.GreeterVertxImplBase service;
+    private GreeterGrpc.GreeterImplBase service;
 
     public GrpcVerticle(int port) {
       this.port = port;
@@ -60,20 +61,21 @@ public class VerticleTest {
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
-      service = new GreeterGrpc.GreeterVertxImplBase() {
+      service = new GreeterGrpc.GreeterImplBase() {
         @Override
-        public void sayHello(HelloRequest req, Future<HelloReply> future) {
+        public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
           threads.add(Thread.currentThread());
-          future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+          responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+          responseObserver.onCompleted();
         }
       };
       server = VertxServerBuilder.forPort(vertx, port).addService(service).build();
-      server.start(startFuture.completer());
+      server.start(startFuture);
     }
 
     @Override
     public void stop(Future<Void> stopFuture) throws Exception {
-      server.shutdown(stopFuture.completer());
+      server.shutdown(stopFuture);
     }
   }
 
@@ -94,18 +96,25 @@ public class VerticleTest {
       ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
           .usePlaintext(true)
           .build();
-      GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
+      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request, ar -> {
-        channel.shutdown();
-        if (ar.succeeded()) {
-          ctx.assertEquals("Hello Julien", ar.result().getMessage());
+      stub.sayHello(request, new StreamObserver<HelloReply>() {
+        private HelloReply result;
+        @Override
+        public void onNext(HelloReply helloReply) {
+          result = helloReply;
+        }
+        @Override
+        public void onError(Throwable throwable) {
+          ctx.fail(throwable);
+        }
+        @Override
+        public void onCompleted() {
+          ctx.assertEquals("Hello Julien", result.getMessage());
           async.countDown();
           if (async.count() == 0) {
             ctx.assertEquals(2, threads.size());
           }
-        } else {
-          ctx.fail(ar.cause());
         }
       });
     }
@@ -132,12 +141,22 @@ public class VerticleTest {
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
         .usePlaintext(true)
         .build();
-    GreeterGrpc.GreeterVertxStub blockingStub = GreeterGrpc.newVertxStub(channel);
+    GreeterGrpc.GreeterStub blockingStub = GreeterGrpc.newStub(channel);
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    blockingStub.sayHello(request, ar -> {
-      ctx.assertFalse(ar.succeeded());
-      async.complete();
-      channel.shutdown();
+    blockingStub.sayHello(request, new StreamObserver<HelloReply>() {
+      @Override
+      public void onNext(HelloReply helloReply) {
+
+      }
+      @Override
+      public void onError(Throwable throwable) {
+        async.complete();
+        channel.shutdown();
+      }
+      @Override
+      public void onCompleted() {
+        ctx.fail();
+      }
     });
   }
 
