@@ -1,6 +1,7 @@
 package examples;
 
 import io.grpc.*;
+import io.grpc.stub.StreamObserver;
 import io.vertx.core.*;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
@@ -17,10 +18,11 @@ public class Examples {
 
   public void simpleServer(Vertx vertx) throws Exception {
     // The rcp service
-    GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
+    GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Future<HelloReply> future) {
-        future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
+        responseObserver.onCompleted();
       }
     };
   }
@@ -45,19 +47,27 @@ public class Examples {
       .build();
 
     // Get a stub to use for interacting with the remote service
-    GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
+    GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
   }
 
-  public void simpleClient(GreeterGrpc.GreeterVertxStub stub) {
+  public void simpleClient(GreeterGrpc.GreeterStub stub) {
     // Make a request
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
 
     // Call the remote service
-    stub.sayHello(request, ar -> {
-      if (ar.succeeded()) {
-        System.out.println("Got the server response: " + ar.result().getMessage());
-      } else {
-        System.out.println("Coult not reach server " + ar.cause().getMessage());
+    stub.sayHello(request, new StreamObserver<HelloReply>() {
+      private HelloReply helloReply;
+      @Override
+      public void onNext(HelloReply helloReply) {
+        this.helloReply = helloReply;
+      }
+      @Override
+      public void onError(Throwable throwable) {
+        System.out.println("Coult not reach server " + throwable.getMessage());
+      }
+      @Override
+      public void onCompleted() {
+        System.out.println("Got the server response: " +helloReply.getMessage());
       }
     });
   }
@@ -79,10 +89,11 @@ public class Examples {
       // Verticle supplier - should be called 4 times
       () -> new AbstractVerticle() {
 
-        BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
+        BindableService service = new GreeterGrpc.GreeterImplBase() {
           @Override
-          public void sayHello(HelloRequest request, Future<HelloReply> future) {
-            future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
+          public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+            responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
+            responseObserver.onCompleted();
           }
         };
 

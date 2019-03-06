@@ -1,12 +1,9 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.ManagedChannel;
-import io.vertx.core.Future;
+import io.grpc.stub.StreamObserver;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.GrpcBidiExchange;
-import io.vertx.grpc.GrpcReadStream;
-import io.vertx.grpc.GrpcWriteStream;
 import io.vertx.grpc.VertxChannelBuilder;
 import org.junit.Test;
 
@@ -28,9 +25,9 @@ public class GoogleTest extends GrpcTestBase {
 
   private ManagedChannel channel;
 
-  private TestServiceVertxStub buildStub() {
+  private TestServiceStub buildStub() {
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext(true).build();
-    return newVertxStub(channel);
+    return newStub(channel);
   }
 
   /**
@@ -39,20 +36,31 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void emptyCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       @Override
-      public void emptyCall(Empty request, Future<Empty> response) {
+      public void emptyCall(Empty request, StreamObserver<Empty> responseObserver) {
         will.assertNotNull(request);
-        response.complete(Empty.newBuilder().build());
+        responseObserver.onNext(Empty.newBuilder().build());
+        responseObserver.onCompleted();
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().emptyCall(Empty.newBuilder().build(), res -> {
-          if (res.succeeded()) {
-            will.assertNotNull(res.result());
-            test.complete();
+        buildStub().emptyCall(Empty.newBuilder().build(), new StreamObserver<Empty>() {
+          private Empty result;
+          @Override
+          public void onNext(Empty empty) {
+            result = empty;
           }
-          channel.shutdown();
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
+            will.assertNotNull(result);
+            test.complete();
+            channel.shutdown();
+          }
         });
       } else {
         will.fail(startServer.cause());
@@ -67,20 +75,32 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void emptyUnaryTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       @Override
-      public void unaryCall(SimpleRequest request, Future<SimpleResponse> response) {
+      public void unaryCall(SimpleRequest request, StreamObserver<SimpleResponse> responseObserver) {
         will.assertNotNull(request);
-        response.complete(SimpleResponse.newBuilder().build());
+        responseObserver.onNext(SimpleResponse.newBuilder().build());
+        responseObserver.onCompleted();
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().unaryCall(SimpleRequest.newBuilder().build(), res -> {
-          if (res.succeeded()) {
-            will.assertNotNull(res.result());
-            test.complete();
+        buildStub().unaryCall(SimpleRequest.newBuilder().build(), new StreamObserver<SimpleResponse>() {
+          private SimpleResponse result;
+          @Override
+          public void onNext(SimpleResponse simpleResponse) {
+            result = simpleResponse;
           }
-          channel.shutdown();
+
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
+            will.assertNotNull(result);
+            test.complete();
+            channel.shutdown();
+          }
         });
       } else {
         will.fail(startServer.cause());
@@ -96,31 +116,34 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void streamingOutputCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       @Override
-      public void streamingOutputCall(StreamingOutputCallRequest request, GrpcWriteStream<StreamingOutputCallResponse> response) {
+      public void streamingOutputCall(StreamingOutputCallRequest request, StreamObserver<StreamingOutputCallResponse> responseObserver) {
         will.assertNotNull(request);
         for (int i = 0; i < 10; i++) {
-          response.write(StreamingOutputCallResponse.newBuilder().build());
+          responseObserver.onNext(StreamingOutputCallResponse.newBuilder().build());
         }
-        response.end();
+        responseObserver.onCompleted();
       }
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
-
-        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build(), exchange -> {
-          exchange
-            .exceptionHandler(will::fail)
-            .handler(resp -> {
-              will.assertNotNull(resp);
-              cnt.incrementAndGet();
-            })
-            .endHandler(v -> {
-              will.assertEquals(10, cnt.get());
-              test.complete();
-              channel.shutdown();
-            });
+        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build(), new StreamObserver<StreamingOutputCallResponse>() {
+          @Override
+          public void onNext(StreamingOutputCallResponse resp) {
+            will.assertNotNull(resp);
+            cnt.incrementAndGet();
+          }
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
+            will.assertEquals(10, cnt.get());
+            test.complete();
+            channel.shutdown();
+          }
         });
       } else {
         will.fail(startServer.cause());
@@ -138,41 +161,51 @@ public class GoogleTest extends GrpcTestBase {
     final Async test = will.async();
     final AtomicInteger cnt = new AtomicInteger();
 
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       @Override
-      public void streamingInputCall(GrpcReadStream<StreamingInputCallRequest> request, Future<StreamingInputCallResponse> response) {
-        will.assertNotNull(response);
-
-        request
-          .exceptionHandler(will::fail)
-          .handler(resp -> {
-            will.assertNotNull(resp);
+      public StreamObserver<StreamingInputCallRequest> streamingInputCall(StreamObserver<StreamingInputCallResponse> responseObserver) {
+        will.assertNotNull(responseObserver);
+        return new StreamObserver<StreamingInputCallRequest>() {
+          @Override
+          public void onNext(StreamingInputCallRequest streamingInputCallRequest) {
+            will.assertNotNull(streamingInputCallRequest);
             cnt.incrementAndGet();
-          })
-          .endHandler(v -> {
+          }
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
             will.assertEquals(10, cnt.get());
-            response.complete(StreamingInputCallResponse.newBuilder().build());
-          });
+            responseObserver.onNext(StreamingInputCallResponse.newBuilder().build());
+            responseObserver.onCompleted();
+          }
+        };
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().streamingInputCall(exchange -> {
-          exchange
-            .handler(res -> {
-              if (res.failed()) {
-                will.fail(res.cause());
-              } else {
-                will.assertNotNull(res.result());
-                test.complete();
-                channel.shutdown();
-              }
-            });
-
-          for (int i = 0; i < 10; i++) {
-            exchange.write(StreamingInputCallRequest.newBuilder().build());
+        StreamObserver<StreamingInputCallRequest> val = buildStub().streamingInputCall(new StreamObserver<StreamingInputCallResponse>() {
+          private StreamingInputCallResponse result;
+          @Override
+          public void onNext(StreamingInputCallResponse streamingInputCallResponse) {
+            result = streamingInputCallResponse;
           }
-          exchange.end();
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
+            will.assertNotNull(result);
+            test.complete();
+            channel.shutdown();
+          }
         });
+        for (int i = 0; i < 10; i++) {
+          val.onNext(StreamingInputCallRequest.newBuilder().build());
+        }
+        val.onCompleted();
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -189,45 +222,53 @@ public class GoogleTest extends GrpcTestBase {
   public void fullDuplexCallTest(TestContext will) throws Exception {
     final Async test = will.async();
 
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
-      public void fullDuplexCall(GrpcBidiExchange<StreamingOutputCallRequest, StreamingOutputCallResponse> exchange) {
-        exchange
-          .exceptionHandler(will::fail)
-          .handler(item -> {
+      public StreamObserver<StreamingOutputCallRequest> fullDuplexCall(StreamObserver<StreamingOutputCallResponse> responseObserver) {
+        return new StreamObserver<StreamingOutputCallRequest>() {
+          @Override
+          public void onNext(StreamingOutputCallRequest item) {
             will.assertNotNull(item);
             cnt.incrementAndGet();
-            exchange.write(StreamingOutputCallResponse.newBuilder().build());
-          })
-          .endHandler(v -> {
+            responseObserver.onNext(StreamingOutputCallResponse.newBuilder().build());
+          }
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
             will.assertEquals(10, cnt.get());
-            exchange.end();
-          });
-
+            responseObserver.onCompleted();
+          }
+        };
       }
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
-        buildStub().fullDuplexCall(exchange -> {
-          exchange
-            .exceptionHandler(will::fail)
-            .handler(item -> {
-              will.assertNotNull(item);
-              cnt.incrementAndGet();
-            })
-            .endHandler(v -> {
-              will.assertEquals(10, cnt.get());
-              test.complete();
-              channel.shutdown();
-            });
-
-          for (int i = 0; i < 10; i++) {
-            exchange.write(StreamingOutputCallRequest.newBuilder().build());
+        StreamObserver<StreamingOutputCallRequest> val = buildStub().fullDuplexCall(new StreamObserver<StreamingOutputCallResponse>() {
+          @Override
+          public void onNext(StreamingOutputCallResponse item) {
+            will.assertNotNull(item);
+            cnt.incrementAndGet();
           }
-          exchange.end();
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
+            will.assertEquals(10, cnt.get());
+            test.complete();
+            channel.shutdown();
+          }
         });
+        for (int i = 0; i < 10; i++) {
+          val.onNext(StreamingOutputCallRequest.newBuilder().build());
+        }
+        val.onCompleted();
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -244,54 +285,61 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void halfDuplexCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
-      public void halfDuplexCall(GrpcBidiExchange<StreamingOutputCallRequest, StreamingOutputCallResponse> exchange) {
+      public StreamObserver<StreamingOutputCallRequest> halfDuplexCall(StreamObserver<StreamingOutputCallResponse> responseObserver) {
         List<StreamingOutputCallRequest> buffer = new ArrayList<>();
-
-        exchange
-          .exceptionHandler(will::fail)
-          .handler(item -> {
+        return new StreamObserver<StreamingOutputCallRequest>() {
+          @Override
+          public void onNext(StreamingOutputCallRequest item) {
             will.assertNotNull(item);
             cnt.incrementAndGet();
             buffer.add(item);
-          })
-          .endHandler(v -> {
+          }
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
             will.assertEquals(10, cnt.get());
             for (int i = 0; i < buffer.size(); i++) {
-              exchange.write(StreamingOutputCallResponse.newBuilder().build());
+              responseObserver.onNext(StreamingOutputCallResponse.newBuilder().build());
             }
-            exchange.end();
-          });
+            responseObserver.onCompleted();
+          }
+        };
       }
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
         final AtomicBoolean down = new AtomicBoolean();
-
-        buildStub().halfDuplexCall(exchange -> {
-          exchange
-            .exceptionHandler(will::fail)
-            .handler(item -> {
-              will.assertTrue(down.get());
-              will.assertNotNull(item);
-              cnt.incrementAndGet();
-            })
-            .endHandler(v -> {
-              will.assertEquals(10, cnt.get());
-              test.complete();
-              channel.shutdown();
-            });
-
-          for (int i = 0; i < 10; i++) {
-            exchange.write(StreamingOutputCallRequest.newBuilder().build());
+        StreamObserver<StreamingOutputCallRequest> val = buildStub().halfDuplexCall(new StreamObserver<StreamingOutputCallResponse>() {
+          @Override
+          public void onNext(StreamingOutputCallResponse item) {
+            will.assertTrue(down.get());
+            will.assertNotNull(item);
+            cnt.incrementAndGet();
           }
-          exchange.end();
-          // down stream is now expected
-          down.set(true);
+          @Override
+          public void onError(Throwable throwable) {
+            will.fail(throwable);
+          }
+          @Override
+          public void onCompleted() {
+            will.assertEquals(10, cnt.get());
+            test.complete();
+            channel.shutdown();
+          }
         });
+        for (int i = 0; i < 10; i++) {
+          val.onNext(StreamingOutputCallRequest.newBuilder().build());
+        }
+        val.onCompleted();
+        // down stream is now expected
+        down.set(true);
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -306,19 +354,25 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void unimplementedCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceVertxImplBase() {
+    startServer(new TestServiceImplBase() {
       // The test server will not implement this method. It will be used
       // to test the behavior when clients call unimplemented methods.
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().unimplementedCall(Empty.newBuilder().build(), res -> {
-          if (res.succeeded()) {
-            will.fail("Should not succeed, there is no implementation");
-          } else {
-            will.assertNotNull(res.cause());
+        buildStub().unimplementedCall(Empty.newBuilder().build(), new StreamObserver<Empty>() {
+          @Override
+          public void onNext(Empty empty) {
           }
-          test.complete();
-          channel.shutdown();
+          @Override
+          public void onError(Throwable throwable) {
+            will.assertNotNull(throwable);
+            test.complete();
+            channel.shutdown();
+          }
+          @Override
+          public void onCompleted() {
+            will.fail("Should not succeed, there is no implementation");
+          }
         });
       } else {
         will.fail(startServer.cause());
