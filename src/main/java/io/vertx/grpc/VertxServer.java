@@ -140,7 +140,7 @@ public class VertxServer extends Server {
     }
     actual.start(context, ar1 -> {
       if (ar1.succeeded()) {
-        hook = ar2 -> shutdown();
+        hook = ar2 -> shutdown(ar2);
         context.addCloseHook(hook);
       }
       completionHandler.handle(ar1);
