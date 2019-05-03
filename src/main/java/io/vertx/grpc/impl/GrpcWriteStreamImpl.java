@@ -1,7 +1,10 @@
 package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.grpc.GrpcWriteStream;
 
 /**
@@ -24,6 +27,13 @@ public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
   }
 
   @Override
+  public WriteStream<T> write(T data, Handler<AsyncResult<Void>> handler) {
+    observer.onNext(data);
+    handler.handle(Future.succeededFuture());
+    return this;
+  }
+
+  @Override
   public GrpcWriteStreamImpl<T> write(T t) {
     observer.onNext(t);
     return this;
@@ -32,6 +42,12 @@ public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
   @Override
   public void end() {
     observer.onCompleted();
+  }
+
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    observer.onCompleted();
+    handler.handle(Future.succeededFuture());
   }
 
   @Override
