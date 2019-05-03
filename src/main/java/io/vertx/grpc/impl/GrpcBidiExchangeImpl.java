@@ -1,7 +1,9 @@
 package io.vertx.grpc.impl;
 
 import io.grpc.stub.StreamObserver;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.grpc.GrpcBidiExchange;
 import io.vertx.grpc.GrpcReadStream;
 import io.vertx.grpc.GrpcWriteStream;
@@ -37,8 +39,19 @@ public class GrpcBidiExchangeImpl<I,O> implements GrpcBidiExchange<I,O> {
   }
 
   @Override
+  public WriteStream<O> write(O data, Handler<AsyncResult<Void>> handler) {
+    writeStream.write(data, handler);
+    return this;
+  }
+
+  @Override
   public void end() {
     writeStream.end();
+  }
+
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    writeStream.end(handler);
   }
 
   @Override
