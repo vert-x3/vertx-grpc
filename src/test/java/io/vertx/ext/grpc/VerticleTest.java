@@ -59,7 +59,7 @@ public class VerticleTest {
     }
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Promise<Void> startFuture) throws Exception {
       service = new GreeterGrpc.GreeterVertxImplBase() {
         @Override
         public void sayHello(HelloRequest req, Future<HelloReply> future) {
@@ -68,12 +68,12 @@ public class VerticleTest {
         }
       };
       server = VertxServerBuilder.forPort(vertx, port).addService(service).build();
-      server.start(startFuture.completer());
+      server.start(startFuture);
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
-      server.shutdown(stopFuture.completer());
+    public void stop(Promise<Void> stopFuture) throws Exception {
+      server.shutdown(stopFuture);
     }
   }
 
