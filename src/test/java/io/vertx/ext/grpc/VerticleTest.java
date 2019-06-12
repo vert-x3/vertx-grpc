@@ -60,7 +60,7 @@ public class VerticleTest {
     }
 
     @Override
-    public void start(Future<Void> startFuture) throws Exception {
+    public void start(Promise<Void> startFuture) throws Exception {
       service = new GreeterGrpc.GreeterImplBase() {
         @Override
         public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
@@ -74,7 +74,7 @@ public class VerticleTest {
     }
 
     @Override
-    public void stop(Future<Void> stopFuture) throws Exception {
+    public void stop(Promise<Void> stopFuture) throws Exception {
       server.shutdown(stopFuture);
     }
   }
