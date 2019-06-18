@@ -5,6 +5,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.Pump;
 import io.vertx.core.streams.WriteStream;
@@ -28,17 +29,6 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
   @Override
   @Fluent
   GrpcWriteStream<T> exceptionHandler(Handler<Throwable> handler);
-
-  /**
-   * Write some data to the stream. The data is put on an internal write queue, and the write actually happens
-   * asynchronously. To avoid running out of memory by putting too much on the write queue,
-   * check the {@link #writeQueueFull} method before writing. This is done automatically if using a {@link Pump}.
-   *
-   * @param data the data to write
-   * @return a reference to this, so the API can be used fluently
-   */
-  @Fluent
-  GrpcWriteStream<T> write(T data);
 
   /**
    * Set the maximum size of the write queue to {@code maxSize}. You will still be able to write to the stream even
