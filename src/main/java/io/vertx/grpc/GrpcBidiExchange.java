@@ -4,6 +4,7 @@ import io.grpc.stub.StreamObserver;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.grpc.impl.GrpcBidiExchangeImpl;
@@ -24,10 +25,6 @@ public interface GrpcBidiExchange<I, O> extends GrpcReadStream<I>, GrpcWriteStre
   @Fluent
   @Override
   GrpcBidiExchange<I, O> exceptionHandler(Handler<Throwable> handler);
-
-  @Fluent
-  @Override
-  GrpcBidiExchange<I, O> write(O data);
 
   @Fluent
   @Override

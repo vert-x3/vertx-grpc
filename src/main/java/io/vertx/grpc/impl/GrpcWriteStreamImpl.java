@@ -27,21 +27,15 @@ public class GrpcWriteStreamImpl<T> implements GrpcWriteStream<T> {
   }
 
   @Override
-  public WriteStream<T> write(T data, Handler<AsyncResult<Void>> handler) {
+  public void write(T data, Handler<AsyncResult<Void>> handler) {
     observer.onNext(data);
     handler.handle(Future.succeededFuture());
-    return this;
   }
 
   @Override
-  public GrpcWriteStreamImpl<T> write(T t) {
+  public Future<Void> write(T t) {
     observer.onNext(t);
-    return this;
-  }
-
-  @Override
-  public void end() {
-    observer.onCompleted();
+    return Future.succeededFuture();
   }
 
   @Override

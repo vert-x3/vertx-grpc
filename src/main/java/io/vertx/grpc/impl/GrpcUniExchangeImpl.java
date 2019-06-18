@@ -61,20 +61,14 @@ public class GrpcUniExchangeImpl<O,I> implements GrpcUniExchange<O,I> {
   }
 
   @Override
-  public GrpcUniExchange<O, I> write(O data) {
+  public Future<Void> write(O data) {
     writeStream.write(data);
-    return this;
+    return Future.succeededFuture();
   }
 
   @Override
-  public WriteStream<O> write(O data, Handler<AsyncResult<Void>> handler) {
+  public void write(O data, Handler<AsyncResult<Void>> handler) {
     writeStream.write(data, handler);
-    return this;
-  }
-
-  @Override
-  public void end() {
-    writeStream.end();
   }
 
   @Override
