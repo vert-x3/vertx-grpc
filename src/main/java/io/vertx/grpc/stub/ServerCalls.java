@@ -4,15 +4,10 @@ import com.google.common.base.Preconditions;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import io.vertx.codegen.annotations.Nullable;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.streams.ReadStream;
-import io.vertx.core.streams.WriteStream;
 
 import java.util.function.Function;
 
@@ -28,17 +23,21 @@ public final class ServerCalls {
       final Future<TRequest> futureRequest = Promise.succeededPromise(request).future();
 
       final Future<TResponse> futureResponse = Preconditions.checkNotNull(delegate.apply(futureRequest));
-      futureResponse.setHandler(res -> {
-        if (res.succeeded()) {
-          responseObserver.onNext(res.result());
-          responseObserver.onCompleted();
-        } else {
-          responseObserver.onError(prepareError(res.cause()));
-        }
-      });
+      sendOne(responseObserver, futureResponse);
     } catch (Throwable throwable) {
       responseObserver.onError(prepareError(throwable));
     }
+  }
+
+  private static <TResponse> void sendOne(StreamObserver<TResponse> responseObserver, Future<TResponse> futureResponse) {
+    futureResponse.setHandler(res -> {
+      if (res.succeeded()) {
+        responseObserver.onNext(res.result());
+        responseObserver.onCompleted();
+      } else {
+        responseObserver.onError(prepareError(res.cause()));
+      }
+    });
   }
 
   public static <TRequest, TResponse> void oneToMany(
@@ -49,70 +48,38 @@ public final class ServerCalls {
       final Future<TRequest> futureRequest = Promise.succeededPromise(request).future();
 
       final ReadStream<TResponse> readStreamResponse = Preconditions.checkNotNull(delegate.apply(futureRequest));
-      readStreamResponse.pause();
-      readStreamResponse.handler(responseObserver::onNext);
-      readStreamResponse.endHandler(v -> responseObserver.onCompleted());
-      readStreamResponse.exceptionHandler(e -> responseObserver.onError(prepareError(e)));
-      readStreamResponse.resume();
+      sendMany(responseObserver, readStreamResponse);
     } catch (Throwable throwable) {
       responseObserver.onError(prepareError(throwable));
     }
+  }
+
+  private static <TResponse> void sendMany(StreamObserver<TResponse> responseObserver, ReadStream<TResponse> readStreamResponse) {
+    readStreamResponse.pause();
+    readStreamResponse.handler(responseObserver::onNext);
+    readStreamResponse.endHandler(v -> responseObserver.onCompleted());
+    readStreamResponse.exceptionHandler(e -> responseObserver.onError(prepareError(e)));
+    readStreamResponse.resume();
   }
 
   public static <TRequest, TResponse> StreamObserver<TRequest> manyToOne(
     final StreamObserver<TResponse> responseObserver,
     final Function<ReadStream<TRequest>, Future<TResponse>> delegate) {
-    final RxServerStreamObserverAndPublisher<TRequest> streamObserverPublisher =
-      new RxServerStreamObserverAndPublisher<TRequest>((ServerCallStreamObserver<TResponse>) responseObserver, null);
+    final StreamObserverReadStream<TRequest> requestStreamReader = new StreamObserverReadStream<>();
+    final Future<TResponse> readStreamResponse = Preconditions.checkNotNull(delegate.apply(requestStreamReader));
+    sendOne(responseObserver, readStreamResponse);
 
-    try {
-      final Single<TResponse> rxResponse = Preconditions.checkNotNull(delegate.apply(Flowable.fromPublisher(streamObserverPublisher)));
-      rxResponse.subscribe(
-        new Consumer<TResponse>() {
-          @Override
-          public void accept(TResponse value) {
-            // Don't try to respond if the server has already canceled the request
-            if (!streamObserverPublisher.isCancelled()) {
-              responseObserver.onNext(value);
-              responseObserver.onCompleted();
-            }
-          }
-        },
-        new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) {
-            // Don't try to respond if the server has already canceled the request
-            if (!streamObserverPublisher.isCancelled()) {
-              streamObserverPublisher.abortPendingCancel();
-              responseObserver.onError(prepareError(throwable));
-            }
-          }
-        }
-      );
-    } catch (Throwable throwable) {
-      responseObserver.onError(prepareError(throwable));
-    }
-
-    return streamObserverPublisher;
+    return requestStreamReader;
   }
 
   public static <TRequest, TResponse> StreamObserver<TRequest> manyToMany(
     final StreamObserver<TResponse> responseObserver,
-    final Function<Flowable<TRequest>, Flowable<TResponse>> delegate) {
-    final RxServerStreamObserverAndPublisher<TRequest> streamObserverPublisher =
-      new RxServerStreamObserverAndPublisher<TRequest>((ServerCallStreamObserver<TResponse>) responseObserver, null);
+    final Function<ReadStream<TRequest>, ReadStream<TResponse>> delegate) {
+    final StreamObserverReadStream<TRequest> requestStreamReader = new StreamObserverReadStream<>();
+    final ReadStream<TResponse> readStreamResponse = Preconditions.checkNotNull(delegate.apply(requestStreamReader));
+    sendMany(responseObserver, readStreamResponse);
 
-    try {
-      final Flowable<TResponse> rxResponse = Preconditions.checkNotNull(delegate.apply(Flowable.fromPublisher(streamObserverPublisher)));
-      final RxSubscriberAndServerProducer<TResponse> subscriber = new RxSubscriberAndServerProducer<TResponse>();
-      subscriber.subscribe((ServerCallStreamObserver<TResponse>) responseObserver);
-      // Don't try to respond if the server has already canceled the request
-      rxResponse.subscribe(subscriber);
-    } catch (Throwable throwable) {
-      responseObserver.onError(prepareError(throwable));
-    }
-
-    return streamObserverPublisher;
+    return requestStreamReader;
   }
 
   private static Throwable prepareError(Throwable throwable) {
