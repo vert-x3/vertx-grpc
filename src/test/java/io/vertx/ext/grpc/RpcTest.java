@@ -3,10 +3,12 @@ package io.vertx.ext.grpc;
 import io.grpc.*;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
-import io.grpc.examples.streaming.StreamingGrpc;
-import io.grpc.stub.StreamObserver;
+import io.grpc.examples.streaming.VertxStreamingGrpc;
 import io.vertx.core.*;
 import io.vertx.core.Context;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.ext.grpc.utils.IterableReadStream;
+import io.vertx.ext.grpc.utils.ManualReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.*;
@@ -31,13 +33,13 @@ public class RpcTest extends GrpcTestBase {
   public void testSimple(TestContext ctx) throws Exception {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
-    serverCtx.runOnContext(v -> startServer(new GreeterGrpc.GreeterImplBase() {
+    serverCtx.runOnContext(v -> startServer(new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+      public Future<HelloReply> sayHello(Future<HelloRequest> futureRequest) {
         ctx.assertEquals(serverCtx, Vertx.currentContext());
         ctx.assertTrue(Context.isOnEventLoopThread());
-        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-        responseObserver.onCompleted();
+
+        return futureRequest.map(request -> HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     }, ar -> {
       if (ar.succeeded()) {
@@ -53,25 +55,17 @@ public class RpcTest extends GrpcTestBase {
       ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
         .usePlaintext(true)
         .build();
-      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+      VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request, new StreamObserver<HelloReply>() {
-        private HelloReply result;
-        @Override
-        public void onNext(HelloReply helloReply) {
-          result = helloReply;
-        }
-        @Override
-        public void onError(Throwable throwable) {
-          ctx.fail(throwable);
-          channel.shutdown();
-        }
-        @Override
-        public void onCompleted() {
+      stub.sayHello(request).setHandler(res -> {
+        if (res.succeeded()) {
           ctx.assertEquals(clientCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
-          ctx.assertEquals("Hello Julien", result.getMessage());
+          ctx.assertEquals("Hello Julien", res.result().getMessage());
           async.complete();
+          channel.shutdown();
+        } else {
+          ctx.fail(res.cause());
           channel.shutdown();
         }
       });
@@ -94,12 +88,11 @@ public class RpcTest extends GrpcTestBase {
         return h.startCall(call, m);
       }
     };
-    BindableService service = new GreeterGrpc.GreeterImplBase() {
+    BindableService service = new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+      public Future<HelloReply> sayHello(Future<HelloRequest> futureRequest) {
         ctx.assertTrue(Context.isOnEventLoopThread());
-        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
-        responseObserver.onCompleted();
+        return futureRequest.map(req -> HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
     };
     Async started = ctx.async();
@@ -118,22 +111,14 @@ public class RpcTest extends GrpcTestBase {
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
       .usePlaintext(true)
       .build();
-    GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+    VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
     Arrays.asList("Julien", "Paulo").forEach(name -> {
-      stub.sayHello(HelloRequest.newBuilder().setName(name).build(), new StreamObserver<HelloReply>() {
-        private HelloReply result;
-        @Override
-        public void onNext(HelloReply helloReply) {
-          result = helloReply;
-        }
-        @Override
-        public void onError(Throwable throwable) {
-          ctx.fail(throwable);
-        }
-        @Override
-        public void onCompleted() {
-          ctx.assertEquals("Hello " + name, result.getMessage());
+      stub.sayHello(HelloRequest.newBuilder().setName(name).build()).setHandler(res -> {
+        if (res.succeeded()) {
+          ctx.assertEquals("Hello " + name, res.result().getMessage());
           async.countDown();
+        } else {
+          ctx.fail(res.cause());
         }
       });
     });
@@ -152,11 +137,10 @@ public class RpcTest extends GrpcTestBase {
         throw new StatusRuntimeException(Status.ABORTED, md);
       }
     };
-    BindableService service = new GreeterGrpc.GreeterImplBase() {
+    BindableService service = new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
-        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
-        responseObserver.onCompleted();
+      public Future<HelloReply> sayHello(Future<HelloRequest> futureRequest) {
+        return futureRequest.map(req -> HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
     };
     Async started = ctx.async();
@@ -175,23 +159,17 @@ public class RpcTest extends GrpcTestBase {
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
       .usePlaintext(true)
       .build();
-    GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
-    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build(), new StreamObserver<HelloReply>() {
-      @Override
-      public void onNext(HelloReply helloReply) {
-
-      }
-      @Override
-      public void onError(Throwable throwable) {
+    VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
+    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).setHandler(res -> {
+      if (res.succeeded()) {
+        ctx.fail("StatusRuntimeException expected");
+      } else {
+        Throwable throwable = res.cause();
         ctx.assertTrue(throwable instanceof StatusRuntimeException);
         StatusRuntimeException sre = (StatusRuntimeException) throwable;
         ctx.assertEquals(Status.ABORTED, sre.getStatus());
         ctx.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
         async.countDown();
-      }
-      @Override
-      public void onCompleted() {
-        ctx.fail("StatusRuntimeException expected");
       }
     });
     async.awaitSuccess(10000);
@@ -202,92 +180,70 @@ public class RpcTest extends GrpcTestBase {
   public void testStreamSource(TestContext ctx) throws Exception {
     int numItems = 128;
     Async done = ctx.async();
-    startServer(new StreamingGrpc.StreamingImplBase() {
+    startServer(new VertxStreamingGrpc.StreamingImplBase() {
       @Override
-      public void source(Empty request, StreamObserver<Item> stream) {
-        int cnt = numItems;
-        while (cnt-- > 0) {
-          stream.onNext(Item.newBuilder().setValue("the-value-" + (numItems - cnt - 1)).build());
-        }
-        stream.onCompleted();
+      public ReadStream<Item> source(Future<Empty> request) {
+        return new IterableReadStream<>(cnt -> Item.newBuilder().setValue("the-value-" + cnt).build(), numItems);
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
       .usePlaintext(true)
       .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+    VertxStreamingGrpc.VertxStreamingStub stub = VertxStreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    stub.source(Empty.newBuilder().build(), new StreamObserver<Item>() {
-      @Override
-      public void onNext(Item item) {
-       items.add(item.getValue());
-      }
-      @Override
-      public void onError(Throwable throwable) {
-        ctx.fail(throwable);
-      }
-      @Override
-      public void onCompleted() {
+    stub.source(Empty.newBuilder().build())
+      .endHandler(v -> {
         List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
         ctx.assertEquals(expected, items);
         done.complete();
         channel.shutdown();
-      }
-    });
+      })
+      .exceptionHandler(ctx::fail)
+      .handler(item -> items.add(item.getValue()));
   }
 
   @Test
   public void testStreamSink(TestContext ctx) throws Exception {
     int numItems = 128;
     Async done = ctx.async();
-    startServer(new StreamingGrpc.StreamingImplBase() {
+    startServer(new VertxStreamingGrpc.StreamingImplBase() {
       @Override
-      public StreamObserver<Item> sink(StreamObserver<Empty> response) {
+      public Future<Empty> sink(ReadStream<Item> request) {
         List<String> items = new ArrayList<>();
-        return new StreamObserver<Item>() {
-          @Override
-          public void onNext(Item item) {
-            items.add(item.getValue());
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            ctx.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
+        Promise<Empty> promise = Promise.promise();
+
+        request
+          .endHandler(v -> {
             List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
             ctx.assertEquals(expected, items);
             done.complete();
-            response.onNext(Empty.getDefaultInstance());
-            response.onCompleted();
-          }
-        };
+            promise.complete(Empty.getDefaultInstance());
+          })
+          .exceptionHandler(ctx::fail)
+          .handler(item -> items.add(item.getValue()));
+
+        return promise.future();
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
       .usePlaintext(true)
       .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-    StreamObserver<Item> sink = stub.sink(new StreamObserver<Empty>() {
-      @Override
-      public void onNext(Empty empty) {
-      }
-      @Override
-      public void onError(Throwable throwable) {
-        ctx.fail(throwable);
-      }
-      @Override
-      public void onCompleted() {
-      }
-    });
+    VertxStreamingGrpc.VertxStreamingStub stub = VertxStreamingGrpc.newVertxStub(channel);
+    ManualReadStream<Item> requestStream = new ManualReadStream<>();
+    stub.sink(requestStream)
+      .setHandler(res -> {
+        if (res.failed()) {
+          ctx.fail();
+        }
+      });
     AtomicInteger count = new AtomicInteger(numItems);
     vertx.setPeriodic(10, id -> {
       int val = count.decrementAndGet();
       if (val >= 0) {
-        sink.onNext(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+        requestStream.send(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
       } else {
         vertx.cancelTimer(id);
-        sink.onCompleted();
+        requestStream.end();
         channel.shutdown();
       }
     });
@@ -297,56 +253,42 @@ public class RpcTest extends GrpcTestBase {
   public void testStreamPipe(TestContext ctx) throws Exception {
     int numItems = 128;
     Async done = ctx.async();
-    startServer(new StreamingGrpc.StreamingImplBase() {
+    startServer(new VertxStreamingGrpc.StreamingImplBase() {
       @Override
-      public StreamObserver<Item> pipe(StreamObserver<Item> responseObserver) {
-        return new StreamObserver<Item>() {
-          @Override
-          public void onNext(Item item) {
-            responseObserver.onNext(item);
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            responseObserver.onError(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            responseObserver.onCompleted();
-          }
-        };
+      public ReadStream<Item> pipe(ReadStream<Item> requestStream) {
+        ManualReadStream<Item> responseStream = new ManualReadStream<>();
+
+        requestStream
+          .endHandler(v -> responseStream.end())
+          .exceptionHandler(throwable -> responseStream.fail(throwable))
+          .handler(responseStream::send);
+
+        return responseStream;
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
       .usePlaintext(true)
       .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+    VertxStreamingGrpc.VertxStreamingStub stub = VertxStreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
-    StreamObserver<Item> pipe = stub.pipe(new StreamObserver<Item>() {
-      @Override
-      public void onNext(Item item) {
-        items.add(item.getValue());
-      }
-
-      @Override
-      public void onError(Throwable throwable) {
-        ctx.fail(throwable);
-      }
-
-      @Override
-      public void onCompleted() {
+    ManualReadStream<Item> requestStream = new ManualReadStream<>();
+    stub.pipe(requestStream)
+      .endHandler(v -> {
         List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
         ctx.assertEquals(expected, items);
         done.complete();
-      }
-    });
+      })
+      .exceptionHandler(ctx::fail)
+      .handler(item -> items.add(item.getValue()));
+
     AtomicInteger count = new AtomicInteger(numItems);
     vertx.setPeriodic(10, id -> {
       int val = count.decrementAndGet();
       if (val >= 0) {
-        pipe.onNext(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+        requestStream.send(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
       } else {
         vertx.cancelTimer(id);
-        pipe.onCompleted();
+        requestStream.end();
         channel.shutdown();
       }
     });
@@ -356,11 +298,10 @@ public class RpcTest extends GrpcTestBase {
   public void testRandomPort(TestContext ctx) throws Exception {
     Async started = ctx.async();
     port = 0;
-    startServer(new GreeterGrpc.GreeterImplBase() {
+    startServer(new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
-        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
-        responseObserver.onCompleted();
+      public Future<HelloReply> sayHello(Future<HelloRequest> futureRequest) {
+        return futureRequest.map(req -> HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
     }, ar -> {
       if (ar.succeeded()) {
