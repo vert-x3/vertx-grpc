@@ -1,10 +1,9 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.*;
-import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.stub.StreamObserver;
+import io.grpc.examples.helloworld.VertxGreeterGrpc;
 import io.vertx.core.*;
 import io.vertx.core.Context;
 import io.vertx.core.http.ClientAuth;
@@ -99,13 +98,13 @@ public class SslTest extends GrpcTestBase {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> {
-      GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
+      VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
         @Override
-        public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+        public Future<HelloReply> sayHello(Future<HelloRequest> futureRequest) {
           ctx.assertEquals(serverCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
-          responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
-          responseObserver.onCompleted();
+
+          return futureRequest.map(req -> HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
         }
       };
       startServer(service, VertxServerBuilder.forPort(vertx, port)
@@ -126,32 +125,24 @@ public class SslTest extends GrpcTestBase {
           forAddress(vertx, "localhost", port)
           .useSsl(clientSslBuilder)
           .build();
-      GreeterGrpc.GreeterStub stub = GreeterGrpc.newStub(channel);
+      VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request, new StreamObserver<HelloReply>() {
-        private HelloReply result;
-        @Override
-        public void onNext(HelloReply helloReply) {
-          result = helloReply;
-        }
-        @Override
-        public void onError(Throwable throwable) {
-          if (pass) {
-            ctx.fail(throwable);
-          } else {
-            async.complete();
-          }
-          channel.shutdown();
-        }
-        @Override
-        public void onCompleted() {
+      stub.sayHello(request).setHandler(res -> {
+        if (res.succeeded()) {
           if (pass) {
             ctx.assertEquals(clientCtx, Vertx.currentContext());
             ctx.assertTrue(Context.isOnEventLoopThread());
-            ctx.assertEquals("Hello Julien", result.getMessage());
+            ctx.assertEquals("Hello Julien", res.result().getMessage());
             async.complete();
           } else {
             ctx.fail("Expected failure");
+          }
+          channel.shutdown();
+        } else {
+          if (pass) {
+            ctx.fail(res.cause());
+          } else {
+            async.complete();
           }
           channel.shutdown();
         }
