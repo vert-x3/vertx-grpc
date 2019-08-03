@@ -30,6 +30,7 @@
 
   <properties>
     <stack.version>4.0.0-SNAPSHOT</stack.version>
+    <protoc.version>3.5.1</protoc.version>
     <vertx.grpc.version>1.20.0</vertx.grpc.version>
     <jetty.alpnAgent.version>2.0.7</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
@@ -172,21 +173,30 @@
             protobuf-java directly, you will be transitively depending on the
             protobuf-java version that grpc depends on.
           -->
-          <protocArtifact>com.google.protobuf:protoc:3.5.1:exe:${os.detected.classifier}</protocArtifact>
+          <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
           <pluginId>grpc-java</pluginId>
           <pluginArtifact>io.grpc:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
         </configuration>
         <executions>
           <execution>
             <id>compile</id>
-            <configuration>
-              <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
-              <clearOutputDirectory>false</clearOutputDirectory>
-            </configuration>
             <goals>
               <goal>compile</goal>
               <goal>compile-custom</goal>
             </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
+              <clearOutputDirectory>false</clearOutputDirectory>
+              <protocPlugins>
+                <protocPlugin>
+                  <id>vertx-grpc-protoc-plugin</id>
+                  <groupId>io.vertx</groupId>
+                  <artifactId>vertx-grpc-protoc-plugin</artifactId>
+                  <version>${stack.version}</version>
+                  <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
+                </protocPlugin>
+              </protocPlugins>
+            </configuration>
           </execution>
           <execution>
             <id>test-compile</id>
@@ -194,6 +204,17 @@
               <goal>test-compile</goal>
               <goal>test-compile-custom</goal>
             </goals>
+            <configuration>
+              <protocPlugins>
+                <protocPlugin>
+                  <id>vertx-grpc-protoc-plugin</id>
+                  <groupId>io.vertx</groupId>
+                  <artifactId>vertx-grpc-protoc-plugin</artifactId>
+                  <version>${stack.version}</version>
+                  <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
+                </protocPlugin>
+              </protocPlugins>
+            </configuration>
           </execution>
         </executions>
       </plugin>
