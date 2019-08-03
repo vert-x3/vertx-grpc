@@ -11,6 +11,9 @@ import io.vertx.core.streams.ReadStream;
 
 import java.util.function.Function;
 
+/**
+ * @author Rogelio Orts
+ */
 public final class ServerCalls {
 
   private ServerCalls() {
