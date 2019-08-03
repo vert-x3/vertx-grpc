@@ -1,7 +1,11 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.ManagedChannel;
-import io.grpc.stub.StreamObserver;
+import io.grpc.testing.integration.VertxTestServiceGrpc;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.streams.ReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
@@ -11,10 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static com.google.protobuf.EmptyProtos.*;
 import static io.grpc.testing.integration.Messages.*;
-import static io.grpc.testing.integration.TestServiceGrpc.*;
 
 /**
  * A simple test to showcase the various types of RPCs.
@@ -25,9 +29,9 @@ public class GoogleTest extends GrpcTestBase {
 
   private ManagedChannel channel;
 
-  private TestServiceStub buildStub() {
+  private VertxTestServiceGrpc.VertxTestServiceStub buildStub() {
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext(true).build();
-    return newStub(channel);
+    return VertxTestServiceGrpc.newVertxStub(channel);
   }
 
   /**
@@ -36,30 +40,22 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void emptyCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public void emptyCall(Empty request, StreamObserver<Empty> responseObserver) {
+      public Future<Empty> emptyCall(Future<Empty> request) {
         will.assertNotNull(request);
-        responseObserver.onNext(Empty.newBuilder().build());
-        responseObserver.onCompleted();
+
+        return request.map(Empty.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().emptyCall(Empty.newBuilder().build(), new StreamObserver<Empty>() {
-          private Empty result;
-          @Override
-          public void onNext(Empty empty) {
-            result = empty;
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            will.assertNotNull(result);
+        buildStub().emptyCall(Empty.newBuilder().build()).setHandler(res -> {
+          if (res.succeeded()) {
+            will.assertNotNull(res.result());
             test.complete();
             channel.shutdown();
+          } else {
+            will.fail(res.cause());
           }
         });
       } else {
@@ -75,31 +71,22 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void emptyUnaryTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public void unaryCall(SimpleRequest request, StreamObserver<SimpleResponse> responseObserver) {
+      public Future<SimpleResponse> unaryCall(Future<SimpleRequest> request) {
         will.assertNotNull(request);
-        responseObserver.onNext(SimpleResponse.newBuilder().build());
-        responseObserver.onCompleted();
+
+        return request.map(SimpleResponse.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().unaryCall(SimpleRequest.newBuilder().build(), new StreamObserver<SimpleResponse>() {
-          private SimpleResponse result;
-          @Override
-          public void onNext(SimpleResponse simpleResponse) {
-            result = simpleResponse;
-          }
-
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            will.assertNotNull(result);
+        buildStub().unaryCall(SimpleRequest.newBuilder().build()).setHandler(res -> {
+          if (res.succeeded()) {
+            will.assertNotNull(res.result());
             test.complete();
             channel.shutdown();
+          } else {
+            will.fail(res.cause());
           }
         });
       } else {
@@ -116,35 +103,27 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void streamingOutputCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public void streamingOutputCall(StreamingOutputCallRequest request, StreamObserver<StreamingOutputCallResponse> responseObserver) {
+      public ReadStream<StreamingOutputCallResponse> streamingOutputCall(Future<StreamingOutputCallRequest> request) {
         will.assertNotNull(request);
-        for (int i = 0; i < 10; i++) {
-          responseObserver.onNext(StreamingOutputCallResponse.newBuilder().build());
-        }
-        responseObserver.onCompleted();
+
+        return new IterableReadStream<>(() -> StreamingOutputCallResponse.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
-        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build(), new StreamObserver<StreamingOutputCallResponse>() {
-          @Override
-          public void onNext(StreamingOutputCallResponse resp) {
+        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build())
+          .handler(resp -> {
             will.assertNotNull(resp);
             cnt.incrementAndGet();
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
+          })
+          .exceptionHandler(will::fail)
+          .endHandler(v -> {
             will.assertEquals(10, cnt.get());
             test.complete();
             channel.shutdown();
-          }
-        });
+          });
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -161,51 +140,37 @@ public class GoogleTest extends GrpcTestBase {
     final Async test = will.async();
     final AtomicInteger cnt = new AtomicInteger();
 
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public StreamObserver<StreamingInputCallRequest> streamingInputCall(StreamObserver<StreamingInputCallResponse> responseObserver) {
-        will.assertNotNull(responseObserver);
-        return new StreamObserver<StreamingInputCallRequest>() {
-          @Override
-          public void onNext(StreamingInputCallRequest streamingInputCallRequest) {
-            will.assertNotNull(streamingInputCallRequest);
-            cnt.incrementAndGet();
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            will.assertEquals(10, cnt.get());
-            responseObserver.onNext(StreamingInputCallResponse.newBuilder().build());
-            responseObserver.onCompleted();
-          }
-        };
+      public Future<StreamingInputCallResponse> streamingInputCall(ReadStream<StreamingInputCallRequest> requestReadStream) {
+        will.assertNotNull(requestReadStream);
+
+        Promise<StreamingInputCallResponse> promise = Promise.promise();
+
+        requestReadStream.endHandler(v -> {
+          will.assertEquals(10, cnt.get());
+          promise.complete(StreamingInputCallResponse.newBuilder().build());
+        });
+        requestReadStream.exceptionHandler(will::fail);
+        requestReadStream.handler(streamingInputCallRequest -> {
+          will.assertNotNull(streamingInputCallRequest);
+          cnt.incrementAndGet();
+        });
+
+        return promise.future();
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        StreamObserver<StreamingInputCallRequest> val = buildStub().streamingInputCall(new StreamObserver<StreamingInputCallResponse>() {
-          private StreamingInputCallResponse result;
-          @Override
-          public void onNext(StreamingInputCallResponse streamingInputCallResponse) {
-            result = streamingInputCallResponse;
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            will.assertNotNull(result);
-            test.complete();
-            channel.shutdown();
-          }
-        });
-        for (int i = 0; i < 10; i++) {
-          val.onNext(StreamingInputCallRequest.newBuilder().build());
-        }
-        val.onCompleted();
+        buildStub().streamingInputCall(new IterableReadStream<>(() -> StreamingInputCallRequest.newBuilder().build()))
+          .setHandler(res -> {
+            if (res.succeeded()) {
+              will.assertNotNull(res.result());
+              test.complete();
+              channel.shutdown();
+            } else {
+              will.fail(res.cause());
+            }
+          });
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -222,53 +187,40 @@ public class GoogleTest extends GrpcTestBase {
   public void fullDuplexCallTest(TestContext will) throws Exception {
     final Async test = will.async();
 
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
-      public StreamObserver<StreamingOutputCallRequest> fullDuplexCall(StreamObserver<StreamingOutputCallResponse> responseObserver) {
-        return new StreamObserver<StreamingOutputCallRequest>() {
-          @Override
-          public void onNext(StreamingOutputCallRequest item) {
-            will.assertNotNull(item);
-            cnt.incrementAndGet();
-            responseObserver.onNext(StreamingOutputCallResponse.newBuilder().build());
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            will.assertEquals(10, cnt.get());
-            responseObserver.onCompleted();
-          }
-        };
+      public ReadStream<StreamingOutputCallResponse> fullDuplexCall(ReadStream<StreamingOutputCallRequest> request) {
+        ManualReadStream result = new ManualReadStream();
+
+        request.endHandler(v -> {
+          will.assertEquals(10, cnt.get());
+          result.end();
+        });
+        request.exceptionHandler(will::fail);
+        request.handler(item -> {
+          will.assertNotNull(item);
+          cnt.incrementAndGet();
+          result.send();
+        });
+
+        return result;
       }
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
-        StreamObserver<StreamingOutputCallRequest> val = buildStub().fullDuplexCall(new StreamObserver<StreamingOutputCallResponse>() {
-          @Override
-          public void onNext(StreamingOutputCallResponse item) {
-            will.assertNotNull(item);
-            cnt.incrementAndGet();
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
+        buildStub().fullDuplexCall(new IterableReadStream<>(() -> StreamingOutputCallRequest.newBuilder().build()))
+          .endHandler(v -> {
             will.assertEquals(10, cnt.get());
             test.complete();
             channel.shutdown();
-          }
-        });
-        for (int i = 0; i < 10; i++) {
-          val.onNext(StreamingOutputCallRequest.newBuilder().build());
-        }
-        val.onCompleted();
+          })
+          .exceptionHandler(will::fail)
+          .handler(item -> {
+            will.assertNotNull(item);
+            cnt.incrementAndGet();
+          });
       } else {
         will.fail(startServer.cause());
         test.complete();
@@ -285,59 +237,46 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void halfDuplexCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
-      public StreamObserver<StreamingOutputCallRequest> halfDuplexCall(StreamObserver<StreamingOutputCallResponse> responseObserver) {
+      public ReadStream<StreamingOutputCallResponse> halfDuplexCall(ReadStream<StreamingOutputCallRequest> request) {
         List<StreamingOutputCallRequest> buffer = new ArrayList<>();
-        return new StreamObserver<StreamingOutputCallRequest>() {
-          @Override
-          public void onNext(StreamingOutputCallRequest item) {
-            will.assertNotNull(item);
-            cnt.incrementAndGet();
-            buffer.add(item);
+        ManualReadStream result = new ManualReadStream();
+
+        request.endHandler(v -> {
+          will.assertEquals(10, cnt.get());
+          for (int i = 0; i < buffer.size(); i++) {
+            result.send();
           }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
-            will.assertEquals(10, cnt.get());
-            for (int i = 0; i < buffer.size(); i++) {
-              responseObserver.onNext(StreamingOutputCallResponse.newBuilder().build());
-            }
-            responseObserver.onCompleted();
-          }
-        };
+          result.end();
+        });
+        request.exceptionHandler(will::fail);
+        request.handler(item -> {
+          will.assertNotNull(item);
+          cnt.incrementAndGet();
+          buffer.add(item);
+        });
+
+        return result;
       }
     }, startServer -> {
       if (startServer.succeeded()) {
         final AtomicInteger cnt = new AtomicInteger();
         final AtomicBoolean down = new AtomicBoolean();
-        StreamObserver<StreamingOutputCallRequest> val = buildStub().halfDuplexCall(new StreamObserver<StreamingOutputCallResponse>() {
-          @Override
-          public void onNext(StreamingOutputCallResponse item) {
-            will.assertTrue(down.get());
-            will.assertNotNull(item);
-            cnt.incrementAndGet();
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.fail(throwable);
-          }
-          @Override
-          public void onCompleted() {
+        buildStub().halfDuplexCall(new IterableReadStream<>(() -> StreamingOutputCallRequest.newBuilder().build()))
+          .endHandler(v -> {
             will.assertEquals(10, cnt.get());
             test.complete();
             channel.shutdown();
-          }
-        });
-        for (int i = 0; i < 10; i++) {
-          val.onNext(StreamingOutputCallRequest.newBuilder().build());
-        }
-        val.onCompleted();
+          })
+          .exceptionHandler(will::fail)
+          .handler(item -> {
+            will.assertTrue(down.get());
+            will.assertNotNull(item);
+            cnt.incrementAndGet();
+          });
         // down stream is now expected
         down.set(true);
       } else {
@@ -354,24 +293,18 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void unimplementedCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       // The test server will not implement this method. It will be used
       // to test the behavior when clients call unimplemented methods.
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().unimplementedCall(Empty.newBuilder().build(), new StreamObserver<Empty>() {
-          @Override
-          public void onNext(Empty empty) {
-          }
-          @Override
-          public void onError(Throwable throwable) {
-            will.assertNotNull(throwable);
+        buildStub().unimplementedCall(Empty.newBuilder().build()).setHandler(res -> {
+          if (res.succeeded()) {
+            will.fail("Should not succeed, there is no implementation");
+          } else {
+            will.assertNotNull(res.cause());
             test.complete();
             channel.shutdown();
-          }
-          @Override
-          public void onCompleted() {
-            will.fail("Should not succeed, there is no implementation");
           }
         });
       } else {
@@ -380,4 +313,95 @@ public class GoogleTest extends GrpcTestBase {
       }
     });
   }
+
+  private class IterableReadStream<T> extends BaseReadStream<T> {
+
+    private final Supplier<T> builder;
+
+    public IterableReadStream(Supplier<T> builder) {
+      this.builder = builder;
+    }
+
+    @Override
+    public ReadStream<T> handler(Handler<T> handler) {
+      for(int i = 0; i < 10; i++) {
+        handler.handle(builder.get());
+      }
+      if (endHandler != null) {
+        endHandler.handle(null);
+      }
+
+      return this;
+    }
+
+  }
+
+  private class ManualReadStream extends BaseReadStream<StreamingOutputCallResponse> {
+
+    private Handler<StreamingOutputCallResponse> handler;
+
+    @Override
+    public ReadStream<StreamingOutputCallResponse> handler(Handler<StreamingOutputCallResponse> handler) {
+      this.handler = handler;
+
+      return this;
+    }
+
+    public void end() {
+      if (endHandler != null) {
+        endHandler.handle(null);
+      }
+    }
+
+    public void send() {
+      if (handler != null) {
+        handler.handle(StreamingOutputCallResponse.newBuilder().build());
+      }
+    }
+
+    public void fail(Throwable throwable) {
+      if (exceptionHandler != null) {
+        exceptionHandler.handle(throwable);
+      }
+    }
+
+  }
+
+  private abstract class BaseReadStream<T> implements ReadStream<T> {
+
+    protected Handler<Throwable> exceptionHandler;
+
+    protected Handler<Void> endHandler;
+
+    @Override
+    public ReadStream<T> exceptionHandler(Handler<Throwable> handler) {
+      this.exceptionHandler = handler;
+
+      return this;
+    }
+
+    @Override
+    public ReadStream<T> pause() {
+      return this;
+    }
+
+    @Override
+    public ReadStream<T> resume() {
+      return this;
+    }
+
+    @Override
+    public ReadStream<T> fetch(long l) {
+      return this;
+    }
+
+    @Override
+    public ReadStream<T> endHandler(Handler<Void> handler) {
+      this.endHandler = handler;
+
+      return this;
+    }
+
+  }
+
 }
