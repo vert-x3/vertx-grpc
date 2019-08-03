@@ -13,6 +13,7 @@ import io.vertx.grpc.impl.GrpcUniExchangeImpl;
 /**
  * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
+@Deprecated
 public interface GrpcUniExchange<O,I> extends GrpcWriteStream<O> {
 
   static <O,I> GrpcUniExchange<O,I> create(GrpcReadStream<I> read, StreamObserver<O> write) {

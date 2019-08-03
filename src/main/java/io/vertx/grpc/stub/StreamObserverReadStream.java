@@ -5,6 +5,9 @@ import io.vertx.codegen.annotations.Nullable;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 
+/**
+ * @author Rogelio Orts
+ */
 class StreamObserverReadStream<T> implements StreamObserver<T>, ReadStream<T> {
 
   private Handler<Throwable> exceptionHandler;

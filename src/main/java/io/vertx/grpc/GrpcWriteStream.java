@@ -14,6 +14,7 @@ import io.vertx.grpc.impl.GrpcWriteStreamImpl;
 /**
  * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
+@Deprecated
 public interface GrpcWriteStream<T> extends WriteStream<T> {
 
   static <T> GrpcWriteStream<T> create(StreamObserver<T> observer) {
