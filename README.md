@@ -18,3 +18,29 @@ Todo:
 
 - contribute support to grpc-java Netty implementation to provide async start/shutdown
 - worker integration ?
+
+## Plugin installation
+
+To use Reactor-gRPC with the protobuf-maven-plugin, add a [custom protoc plugin configuration section](https://www.xolstice.org/protobuf-maven-plugin/examples/protoc-plugin.html).
+
+```
+<protocPlugins>
+    <protocPlugin>
+        <id>vertx-grpc-protoc-plugin</id>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-grpc-protoc-plugin</artifactId>
+        <version>[VERSION]</version>
+        <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
+    </protocPlugin>
+</protocPlugins>
+``` 
+
+And add the [vertx-grpc](https://github.com/vert-x3/vertx-grpc) dependency:
+
+```
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-grpc</artifactId>
+  <version>[VERSION]</version>
+</dependency>
+```

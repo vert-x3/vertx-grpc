@@ -1,0 +1,157 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import static {{packageName}}.{{serviceName}}Grpc.getServiceDescriptor;
+import static io.grpc.stub.ServerCalls.asyncUnaryCall;
+import static io.grpc.stub.ServerCalls.asyncServerStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncClientStreamingCall;
+import static io.grpc.stub.ServerCalls.asyncBidiStreamingCall;
+
+
+{{#deprecated}}
+@java.lang.Deprecated
+{{/deprecated}}
+@javax.annotation.Generated(
+value = "by VertxGrpc generator",
+comments = "Source: {{protoName}}")
+public final class {{className}} {
+    private {{className}}() {}
+
+    public static Vertx{{serviceName}}Stub newVertxStub(io.grpc.Channel channel) {
+        return new Vertx{{serviceName}}Stub(channel);
+    }
+
+    {{#javaDoc}}
+    {{{javaDoc}}}
+    {{/javaDoc}}
+    public static final class Vertx{{serviceName}}Stub extends io.grpc.stub.AbstractStub<Vertx{{serviceName}}Stub> {
+        private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
+
+        private Vertx{{serviceName}}Stub(io.grpc.Channel channel) {
+            super(channel);
+            delegateStub = {{serviceName}}Grpc.newStub(channel);
+        }
+
+        private Vertx{{serviceName}}Stub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+            super(channel, callOptions);
+            delegateStub = {{serviceName}}Grpc.newStub(channel).build(channel, callOptions);
+        }
+
+        @Override
+        protected Vertx{{serviceName}}Stub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+            return new Vertx{{serviceName}}Stub(channel, callOptions);
+        }
+
+        {{#methods}}
+            {{#javaDoc}}
+        {{{javaDoc}}}
+            {{/javaDoc}}
+            {{#deprecated}}
+        @java.lang.Deprecated
+            {{/deprecated}}
+        public {{#isManyOutput}}io.vertx.core.streams.ReadStream{{/isManyOutput}}{{^isManyOutput}}io.vertx.core.Future{{/isManyOutput}}<{{outputType}}> {{methodName}}({{#isManyInput}}io.vertx.core.streams.ReadStream{{/isManyInput}}{{^isManyInput}}io.vertx.core.Future{{/isManyInput}}<{{inputType}}> request) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(request, delegateStub::{{methodName}});
+        }
+
+        {{/methods}}
+        {{#unaryRequestMethods}}
+            {{#javaDoc}}
+        {{{javaDoc}}}
+           {{/javaDoc}}
+           {{#deprecated}}
+        @java.lang.Deprecated
+           {{/deprecated}}
+        public {{#isManyOutput}}io.vertx.core.streams.ReadStream{{/isManyOutput}}{{^isManyOutput}}io.vertx.core.Future{{/isManyOutput}}<{{outputType}}> {{methodName}}({{inputType}} request) {
+           return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(io.vertx.core.Promise.succeededPromise(request).future(), delegateStub::{{methodName}});
+        }
+
+        {{/unaryRequestMethods}}
+    }
+
+    {{#javaDoc}}
+    {{{javaDoc}}}
+    {{/javaDoc}}
+    public static abstract class {{serviceName}}ImplBase implements io.grpc.BindableService {
+
+        {{#methods}}
+            {{#javaDoc}}
+        {{{javaDoc}}}
+            {{/javaDoc}}
+            {{#deprecated}}
+        @java.lang.Deprecated
+            {{/deprecated}}
+        public {{#isManyOutput}}io.vertx.core.streams.ReadStream{{/isManyOutput}}{{^isManyOutput}}io.vertx.core.Future{{/isManyOutput}}<{{outputType}}> {{methodName}}({{#isManyInput}}io.vertx.core.streams.ReadStream{{/isManyInput}}{{^isManyInput}}io.vertx.core.Future{{/isManyInput}}<{{inputType}}> request) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/methods}}
+        @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
+            return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
+                    {{#methods}}
+                    .addMethod(
+                            {{packageName}}.{{serviceName}}Grpc.get{{methodNamePascalCase}}Method(),
+                            {{grpcCallsMethodName}}(
+                                    new MethodHandlers<
+                                            {{inputType}},
+                                            {{outputType}}>(
+                                            this, METHODID_{{methodNameUpperUnderscore}})))
+                    {{/methods}}
+                    .build();
+        }
+    }
+
+    {{#methods}}
+    private static final int METHODID_{{methodNameUpperUnderscore}} = {{methodNumber}};
+    {{/methods}}
+
+    private static final class MethodHandlers<Req, Resp> implements
+            io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
+            io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
+            io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
+            io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
+        private final {{serviceName}}ImplBase serviceImpl;
+        private final int methodId;
+
+        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId) {
+            this.serviceImpl = serviceImpl;
+            this.methodId = methodId;
+        }
+
+        @java.lang.Override
+        @java.lang.SuppressWarnings("unchecked")
+        public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
+            switch (methodId) {
+                {{#methods}}
+                {{^isManyInput}}
+                case METHODID_{{methodNameUpperUnderscore}}:
+                    io.vertx.grpc.stub.ServerCalls.{{vertxCallsMethodName}}(({{inputType}}) request,
+                            (io.grpc.stub.StreamObserver<{{outputType}}>) responseObserver,
+                            serviceImpl::{{methodName}});
+                    break;
+                {{/isManyInput}}
+                {{/methods}}
+                default:
+                    throw new java.lang.AssertionError();
+            }
+        }
+
+        @java.lang.Override
+        @java.lang.SuppressWarnings("unchecked")
+        public io.grpc.stub.StreamObserver<Req> invoke(io.grpc.stub.StreamObserver<Resp> responseObserver) {
+            switch (methodId) {
+                {{#methods}}
+                {{#isManyInput}}
+                case METHODID_{{methodNameUpperUnderscore}}:
+                    return (io.grpc.stub.StreamObserver<Req>) io.vertx.grpc.stub.ServerCalls.{{vertxCallsMethodName}}(
+                            (io.grpc.stub.StreamObserver<{{outputType}}>) responseObserver,
+                            serviceImpl::{{methodName}});
+                {{/isManyInput}}
+                {{/methods}}
+                default:
+                    throw new java.lang.AssertionError();
+            }
+        }
+    }
+
+}
