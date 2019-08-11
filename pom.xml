@@ -63,8 +63,8 @@
   </dependencies>
 
   <modules>
-    <module>vertx-grpc</module>
     <module>vertx-grpc-protoc-plugin</module>
+    <module>vertx-grpc</module>
   </modules>
 
   <profiles>
