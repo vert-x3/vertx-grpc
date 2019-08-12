@@ -131,6 +131,11 @@
             <argLine> -javaagent:${jetty.alpnAgent.path}</argLine>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>io.vertx</groupId>
+          <artifactId>vertx-grpc-protoc-plugin</artifactId>
+          <version>${stack.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
