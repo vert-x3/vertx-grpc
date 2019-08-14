@@ -14,11 +14,13 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServerBuilder;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
+@Ignore
 public class SslTest extends GrpcTestBase {
 
   @Test
