@@ -20,7 +20,6 @@ import org.junit.Test;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-@Ignore
 public class SslTest extends GrpcTestBase {
 
   @Test
