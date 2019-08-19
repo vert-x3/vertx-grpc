@@ -30,8 +30,8 @@
 
   <properties>
     <stack.version>3.8.1-SNAPSHOT</stack.version>
-    <vertx.grpc.version>1.20.0</vertx.grpc.version>
-    <jetty.alpnAgent.version>2.0.7</jetty.alpnAgent.version>
+    <vertx.grpc.version>1.23.0</vertx.grpc.version>
+    <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
   </properties>
 
@@ -69,10 +69,6 @@
       <artifactId>grpc-netty</artifactId>
       <version>${vertx.grpc.version}</version>
       <exclusions>
-        <exclusion>
-          <groupId>com.google.guava</groupId>
-          <artifactId>guava</artifactId>
-        </exclusion>
         <exclusion>
           <groupId>io.netty</groupId>
           <artifactId>netty-codec-http2</artifactId>
@@ -174,7 +170,7 @@
           -->
           <protocArtifact>com.google.protobuf:protoc:3.5.1:exe:${os.detected.classifier}</protocArtifact>
           <pluginId>grpc-java</pluginId>
-          <pluginArtifact>io.vertx:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+          <pluginArtifact>io.vertx:protoc-gen-grpc-java:1.16.1:exe:${os.detected.classifier}</pluginArtifact>
         </configuration>
         <executions>
           <execution>
