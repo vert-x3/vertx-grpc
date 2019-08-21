@@ -14,7 +14,6 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServerBuilder;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -101,11 +100,11 @@ public class SslTest extends GrpcTestBase {
     serverCtx.runOnContext(v -> {
       VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
         @Override
-        public Future<HelloReply> sayHello(Future<HelloRequest> futureRequest) {
+        public void sayHello(HelloRequest request, Promise<HelloReply> response) {
           ctx.assertEquals(serverCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
 
-          return futureRequest.map(req -> HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
+          response.complete(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
         }
       };
       startServer(service, VertxServerBuilder.forPort(vertx, port)
