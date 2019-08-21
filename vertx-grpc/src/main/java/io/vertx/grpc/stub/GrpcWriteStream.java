@@ -28,7 +28,7 @@ import io.vertx.core.streams.WriteStream;
 public class GrpcWriteStream<T> implements WriteStream<T> {
 
   private final StreamObserver<T> observer;
-  private final Handler<Throwable> errHandler;
+  private Handler<Throwable> errHandler;
 
   public GrpcWriteStream(StreamObserver<T> observer) {
     this.observer = observer;
@@ -37,7 +37,14 @@ public class GrpcWriteStream<T> implements WriteStream<T> {
 
   @Override
   public WriteStream<T> exceptionHandler(Handler<Throwable> hndlr) {
-    hndlr.handle(new RuntimeException("Unsupported Operation"));
+    if (hndlr == null) {
+      this.errHandler = observer::onError;
+    } else {
+      this.errHandler = (Throwable t) -> {
+        observer.onError(t);
+        hndlr.handle(t);
+      };
+    }
     return this;
   }
 
