@@ -45,17 +45,8 @@ public final class VertxGreeterGrpc {
          *  Sends a greeting
          * </pre>
          */
-        public io.vertx.core.Future<examples.HelloReply> sayHello(io.vertx.core.Future<examples.HelloRequest> request) {
-            return io.vertx.grpc.stub.ClientCalls.oneToOne(request, delegateStub::sayHello);
-        }
-
-        /**
-         * <pre>
-         *  Sends a greeting
-         * </pre>
-         */
         public io.vertx.core.Future<examples.HelloReply> sayHello(examples.HelloRequest request) {
-           return io.vertx.grpc.stub.ClientCalls.oneToOne(io.vertx.core.Promise.succeededPromise(request).future(), delegateStub::sayHello);
+            return io.vertx.grpc.stub.ClientCalls.oneToOne(request, delegateStub::sayHello);
         }
 
     }
@@ -67,12 +58,13 @@ public final class VertxGreeterGrpc {
      */
     public static abstract class GreeterImplBase implements io.grpc.BindableService {
 
+
         /**
          * <pre>
          *  Sends a greeting
          * </pre>
          */
-        public io.vertx.core.Future<examples.HelloReply> sayHello(io.vertx.core.Future<examples.HelloRequest> request) {
+        public void sayHello(examples.HelloRequest request, io.vertx.core.Promise<examples.HelloReply> response) {
             throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
         }
 
