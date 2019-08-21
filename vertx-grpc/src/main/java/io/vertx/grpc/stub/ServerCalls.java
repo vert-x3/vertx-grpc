@@ -1,84 +1,74 @@
 package io.vertx.grpc.stub;
 
-import com.google.common.base.Preconditions;
 import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+
 
 /**
  * @author Rogelio Orts
+ * @author Eduard Català
  */
 public final class ServerCalls {
 
   private ServerCalls() {
   }
 
-  public static <TRequest, TResponse> void oneToOne(
-      TRequest request, StreamObserver<TResponse> responseObserver,
-      Function<Future<TRequest>, Future<TResponse>> delegate) {
+  public static <I, O> void oneToOne(I request, StreamObserver<O> response, BiConsumer<I, Promise<O>> delegate) {
     try {
-      Future<TRequest> futureRequest = Promise.succeededPromise(request).future();
+      Promise<O> promise = Promise.promise();
+      delegate.accept(request, promise);
 
-      Future<TResponse> futureResponse = Preconditions.checkNotNull(delegate.apply(futureRequest));
-      sendOne(responseObserver, futureResponse);
+      promise.future().setHandler(res -> {
+        if (res.succeeded()) {
+          response.onNext(res.result());
+          response.onCompleted();
+        } else {
+          response.onError(prepareError(res.cause()));
+        }
+      });
+
     } catch (Throwable throwable) {
-      responseObserver.onError(prepareError(throwable));
+      response.onError(prepareError(throwable));
     }
   }
 
-  public static <TRequest, TResponse> void oneToMany(
-      TRequest request, StreamObserver<TResponse> responseObserver,
-      Function<Future<TRequest>, ReadStream<TResponse>> delegate) {
+  public static <I, O> void oneToMany(I request, StreamObserver<O> response, BiConsumer<I, WriteStream<O>> delegate) {
     try {
-      Future<TRequest> futureRequest = Promise.succeededPromise(request).future();
-
-      ReadStream<TResponse> readStreamResponse = Preconditions.checkNotNull(delegate.apply(futureRequest));
-      sendMany(responseObserver, readStreamResponse);
+      GrpcWriteStream<O> responseWriteStream = new GrpcWriteStream<>(response);
+      delegate.accept(request, responseWriteStream);
     } catch (Throwable throwable) {
-      responseObserver.onError(prepareError(throwable));
+      response.onError(prepareError(throwable));
     }
   }
 
-  public static <TRequest, TResponse> StreamObserver<TRequest> manyToOne(
-      StreamObserver<TResponse> responseObserver, Function<ReadStream<TRequest>, Future<TResponse>> delegate) {
-      StreamObserverReadStream<TRequest> requestStreamReader = new StreamObserverReadStream<>();
-    Future<TResponse> readStreamResponse = Preconditions.checkNotNull(delegate.apply(requestStreamReader));
-    sendOne(responseObserver, readStreamResponse);
-
-    return requestStreamReader;
-  }
-
-  public static <TRequest, TResponse> StreamObserver<TRequest> manyToMany(
-      StreamObserver<TResponse> responseObserver, Function<ReadStream<TRequest>, ReadStream<TResponse>> delegate) {
-      StreamObserverReadStream<TRequest> requestStreamReader = new StreamObserverReadStream<>();
-    ReadStream<TResponse> readStreamResponse = Preconditions.checkNotNull(delegate.apply(requestStreamReader));
-    sendMany(responseObserver, readStreamResponse);
-
-    return requestStreamReader;
-  }
-
-  private static <TResponse> void sendOne(StreamObserver<TResponse> responseObserver, Future<TResponse> futureResponse) {
-    futureResponse.setHandler(res -> {
+  public static <I, O> StreamObserver<I> manyToOne(StreamObserver<O> response, BiConsumer<ReadStream<I>, Promise<O>> delegate) {
+    Promise<O> promise = Promise.promise();
+    StreamObserverReadStream<I> request = new StreamObserverReadStream<>();
+    delegate.accept(request, promise);
+    promise.future().setHandler(res -> {
       if (res.succeeded()) {
-        responseObserver.onNext(res.result());
-        responseObserver.onCompleted();
+        response.onNext(res.result());
+        response.onCompleted();
       } else {
-        responseObserver.onError(prepareError(res.cause()));
+        response.onError(prepareError(res.cause()));
       }
     });
+
+    return request;
   }
 
-  private static <TResponse> void sendMany(StreamObserver<TResponse> responseObserver, ReadStream<TResponse> readStreamResponse) {
-    readStreamResponse.endHandler(v -> responseObserver.onCompleted());
-    readStreamResponse.exceptionHandler(e -> responseObserver.onError(prepareError(e)));
-    readStreamResponse.handler(responseObserver::onNext);
-    readStreamResponse.resume();
+  public static <I, O> StreamObserver<I> manyToMany(StreamObserver<O> response, BiConsumer<ReadStream<I>, WriteStream<O>> delegate) {
+    StreamObserverReadStream<I> request = new StreamObserverReadStream<>();
+    GrpcWriteStream<O> responseStream = new GrpcWriteStream<>(response);
+    delegate.accept(request, responseStream);
+    return request;
   }
 
   private static Throwable prepareError(Throwable throwable) {
