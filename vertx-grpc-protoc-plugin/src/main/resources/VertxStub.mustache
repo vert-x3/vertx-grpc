@@ -22,9 +22,7 @@ public final class {{className}} {
         return new Vertx{{serviceName}}Stub(channel);
     }
 
-    {{#javaDoc}}
-    {{{javaDoc}}}
-    {{/javaDoc}}
+    {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
     public static final class Vertx{{serviceName}}Stub extends io.grpc.stub.AbstractStub<Vertx{{serviceName}}Stub> {
         private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
 
@@ -43,49 +41,67 @@ public final class {{className}} {
             return new Vertx{{serviceName}}Stub(channel, callOptions);
         }
 
-        {{#methods}}
-            {{#javaDoc}}
-        {{{javaDoc}}}
-            {{/javaDoc}}
-            {{#deprecated}}
-        @java.lang.Deprecated
-            {{/deprecated}}
-        public {{#isManyOutput}}io.vertx.core.streams.ReadStream{{/isManyOutput}}{{^isManyOutput}}io.vertx.core.Future{{/isManyOutput}}<{{outputType}}> {{methodName}}({{#isManyInput}}io.vertx.core.streams.ReadStream{{/isManyInput}}{{^isManyInput}}io.vertx.core.Future{{/isManyInput}}<{{inputType}}> request) {
+        {{#unaryUnaryMethods}}
+        {{{methodHeader}}}
+        public io.vertx.core.Future<{{outputType}}> {{methodName}}({{inputType}} request) {
             return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(request, delegateStub::{{methodName}});
         }
 
-        {{/methods}}
-        {{#unaryRequestMethods}}
-            {{#javaDoc}}
-        {{{javaDoc}}}
-           {{/javaDoc}}
-           {{#deprecated}}
-        @java.lang.Deprecated
-           {{/deprecated}}
-        public {{#isManyOutput}}io.vertx.core.streams.ReadStream{{/isManyOutput}}{{^isManyOutput}}io.vertx.core.Future{{/isManyOutput}}<{{outputType}}> {{methodName}}({{inputType}} request) {
-           return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(io.vertx.core.Promise.succeededPromise(request).future(), delegateStub::{{methodName}});
+        {{/unaryUnaryMethods}}
+        {{#unaryManyMethods}}
+        {{{methodHeader}}}
+        public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}({{inputType}} request) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(request, delegateStub::{{methodName}});
         }
 
-        {{/unaryRequestMethods}}
+        {{/unaryManyMethods}}
+        {{#manyUnaryMethods}}
+        {{{methodHeader}}}
+        public io.vertx.core.Future<{{outputType}}> {{methodName}}(io.vertx.core.Handler<io.vertx.core.streams.WriteStream<{{inputType}}>> hdlr) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        }
+
+        {{/manyUnaryMethods}}
+        {{#manyManyMethods}}
+        {{{methodHeader}}}
+        public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}(io.vertx.core.Handler<io.vertx.core.streams.WriteStream<{{inputType}}>> hdlr) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(hdlr, delegateStub::{{methodName}});
+        }
+        {{/manyManyMethods}}
     }
 
-    {{#javaDoc}}
-    {{{javaDoc}}}
-    {{/javaDoc}}
+    {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
     public static abstract class {{serviceName}}ImplBase implements io.grpc.BindableService {
 
-        {{#methods}}
-            {{#javaDoc}}
-        {{{javaDoc}}}
-            {{/javaDoc}}
-            {{#deprecated}}
-        @java.lang.Deprecated
-            {{/deprecated}}
-        public {{#isManyOutput}}io.vertx.core.streams.ReadStream{{/isManyOutput}}{{^isManyOutput}}io.vertx.core.Future{{/isManyOutput}}<{{outputType}}> {{methodName}}({{#isManyInput}}io.vertx.core.streams.ReadStream{{/isManyInput}}{{^isManyInput}}io.vertx.core.Future{{/isManyInput}}<{{inputType}}> request) {
+
+        {{#unaryUnaryMethods}}
+        {{{methodHeader}}}
+        public void {{methodName}}({{inputType}} request, io.vertx.core.Promise<{{outputType}}> response) {
             throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
         }
 
-        {{/methods}}
+        {{/unaryUnaryMethods}}
+        {{#unaryManyMethods}}
+        {{{methodHeader}}}
+        public void {{methodName}}({{inputType}} request, io.vertx.core.streams.WriteStream<{{outputType}}> response) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/unaryManyMethods}}
+        {{#manyUnaryMethods}}
+        {{{methodHeader}}}
+        public void {{methodName}}(io.vertx.core.streams.ReadStream<{{inputType}}> request, io.vertx.core.Promise<{{outputType}}> response) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/manyUnaryMethods}}
+        {{#manyManyMethods}}
+        {{{methodHeader}}}
+        public void {{methodName}}(io.vertx.core.streams.ReadStream<{{inputType}}> request, io.vertx.core.streams.WriteStream<{{outputType}}> response) {
+            throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
+        }
+
+        {{/manyManyMethods}}
         @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
             return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
                     {{#methods}}

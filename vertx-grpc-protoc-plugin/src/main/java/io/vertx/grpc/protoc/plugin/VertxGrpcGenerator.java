@@ -158,7 +158,7 @@ public class VertxGrpcGenerator extends Generator {
   }
 
   private PluginProtos.CodeGeneratorResponse.File buildFile(ServiceContext context) {
-    String content = applyTemplate(CLASS_PREFIX + "Stub.mustache", context);
+    String content = applyTemplate("VertxStub.mustache", context);
     return PluginProtos.CodeGeneratorResponse.File
       .newBuilder()
       .setName(absoluteFileName(context))
@@ -208,8 +208,20 @@ public class VertxGrpcGenerator extends Generator {
     public String javaDoc;
     public List<MethodContext> methods = new ArrayList<>();
 
-    public List<MethodContext> unaryRequestMethods() {
-      return methods.stream().filter(m -> !m.isManyInput).collect(Collectors.toList());
+    public List<MethodContext> unaryUnaryMethods() {
+      return methods.stream().filter(m -> !m.isManyInput && !m.isManyOutput).collect(Collectors.toList());
+    }
+
+    public List<MethodContext> unaryManyMethods() {
+      return methods.stream().filter(m -> !m.isManyInput && m.isManyOutput).collect(Collectors.toList());
+    }
+
+    public List<MethodContext> manyUnaryMethods() {
+      return methods.stream().filter(m -> m.isManyInput && !m.isManyOutput).collect(Collectors.toList());
+    }
+
+    public List<MethodContext> manyManyMethods() {
+      return methods.stream().filter(m -> m.isManyInput && m.isManyOutput).collect(Collectors.toList());
     }
   }
 
@@ -251,6 +263,19 @@ public class VertxGrpcGenerator extends Generator {
     public String methodNameCamelCase() {
       String mn = methodName.replace("_", "");
       return String.valueOf(Character.toLowerCase(mn.charAt(0))) + mn.substring(1);
+    }
+
+    public String methodHeader() {
+      String mh = "";
+      if (!Strings.isNullOrEmpty(javaDoc)) {
+        mh = javaDoc;
+      }
+
+      if (deprecated) {
+        mh += "\n        @Deprecated";
+      }
+
+      return mh;
     }
   }
 
