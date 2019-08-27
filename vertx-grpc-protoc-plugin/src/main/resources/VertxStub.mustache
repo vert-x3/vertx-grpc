@@ -76,7 +76,7 @@ public final class {{className}} {
 
         {{#unaryUnaryMethods}}
         {{{methodHeader}}}
-        public void {{methodName}}({{inputType}} request, io.vertx.core.Promise<{{outputType}}> response) {
+        public io.vertx.core.Future<{{outputType}}> {{methodName}}({{inputType}} request) {
             throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
         }
 
@@ -90,7 +90,7 @@ public final class {{className}} {
         {{/unaryManyMethods}}
         {{#manyUnaryMethods}}
         {{{methodHeader}}}
-        public void {{methodName}}(io.vertx.core.streams.ReadStream<{{inputType}}> request, io.vertx.core.Promise<{{outputType}}> response) {
+        public io.vertx.core.Future<{{outputType}}> {{methodName}}(io.vertx.core.streams.ReadStream<{{inputType}}> request) {
             throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
         }
 

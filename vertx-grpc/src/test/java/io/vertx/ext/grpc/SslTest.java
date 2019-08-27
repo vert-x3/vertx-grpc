@@ -100,11 +100,11 @@ public class SslTest extends GrpcTestBase {
     serverCtx.runOnContext(v -> {
       VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
         @Override
-        public void sayHello(HelloRequest request, Promise<HelloReply> response) {
+        public Future<HelloReply> sayHello(HelloRequest request) {
           ctx.assertEquals(serverCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
 
-          response.complete(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+          return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
         }
       };
       startServer(service, VertxServerBuilder.forPort(vertx, port)

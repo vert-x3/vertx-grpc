@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.protobuf.EmptyProtos.*;
 import static io.grpc.testing.integration.Messages.*;
+import io.vertx.core.Future;
 import io.vertx.core.streams.WriteStream;
 
 /**
@@ -41,10 +42,10 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public void emptyCall(Empty request, Promise<Empty> response) {
+      public Future<Empty> emptyCall(Empty request) {
         will.assertNotNull(request);
 
-        response.complete(Empty.newBuilder().build());
+        return Future.succeededFuture(Empty.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
@@ -72,10 +73,10 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public void unaryCall(SimpleRequest request, Promise<SimpleResponse> response) {
+      public Future<SimpleResponse> unaryCall(SimpleRequest request) {
         will.assertNotNull(request);
 
-        response.complete(SimpleResponse.newBuilder().build());
+        return Future.succeededFuture(SimpleResponse.newBuilder().build());
       }
     }, startServer -> {
       if (startServer.succeeded()) {
@@ -139,18 +140,20 @@ public class GoogleTest extends GrpcTestBase {
 
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
-      public void streamingInputCall(ReadStream<StreamingInputCallRequest> request, Promise<StreamingInputCallResponse> response) {
+      public Future<StreamingInputCallResponse> streamingInputCall(ReadStream<StreamingInputCallRequest> request) {
         will.assertNotNull(request);
 
+        Promise<StreamingInputCallResponse> promise = Promise.promise();
         request.endHandler(v -> {
           will.assertEquals(10, cnt.get());
-          response.complete(StreamingInputCallResponse.newBuilder().build());
+          promise.complete(StreamingInputCallResponse.newBuilder().build());
         });
         request.exceptionHandler(will::fail);
         request.handler(streamingInputCallRequest -> {
           will.assertNotNull(streamingInputCallRequest);
           cnt.incrementAndGet();
         });
+        return promise.future();
       }
     }, startServer -> {
       if (startServer.succeeded()) {
