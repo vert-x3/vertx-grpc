@@ -64,7 +64,7 @@ public final class VertxGreeterGrpc {
          *  Sends a greeting
          * </pre>
          */
-        public void sayHello(examples.HelloRequest request, io.vertx.core.Promise<examples.HelloReply> response) {
+        public io.vertx.core.Future<examples.HelloReply> sayHello(examples.HelloRequest request) {
             throw new io.grpc.StatusRuntimeException(io.grpc.Status.UNIMPLEMENTED);
         }
 

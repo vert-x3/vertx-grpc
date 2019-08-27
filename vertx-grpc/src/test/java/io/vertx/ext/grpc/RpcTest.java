@@ -35,11 +35,11 @@ public class RpcTest extends GrpcTestBase {
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> startServer(new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Promise<HelloReply> response) {
+      public Future<HelloReply> sayHello(HelloRequest request) {
         ctx.assertEquals(serverCtx, Vertx.currentContext());
         ctx.assertTrue(Context.isOnEventLoopThread());
 
-        response.complete(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     }, ar -> {
       if (ar.succeeded()) {
@@ -90,10 +90,10 @@ public class RpcTest extends GrpcTestBase {
     };
     BindableService service = new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Promise<HelloReply> response) {
+      public Future<HelloReply> sayHello(HelloRequest request) {
 
         ctx.assertTrue(Context.isOnEventLoopThread());
-        response.complete(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     };
     Async started = ctx.async();
@@ -140,8 +140,8 @@ public class RpcTest extends GrpcTestBase {
     };
     BindableService service = new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Promise<HelloReply> response) {
-        response.complete(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+      public Future<HelloReply> sayHello(HelloRequest request) {
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     };
     Async started = ctx.async();
@@ -209,18 +209,20 @@ public class RpcTest extends GrpcTestBase {
     Async done = ctx.async();
     startServer(new VertxStreamingGrpc.StreamingImplBase() {
       @Override
-      public void sink(ReadStream<Item> request, Promise<Empty> response) {
+      public Future<Empty> sink(ReadStream<Item> request) {
         List<String> items = new ArrayList<>();
+        Promise<Empty> promise = Promise.promise();
 
         request
          .endHandler(v -> {
            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
            ctx.assertEquals(expected, items);
            done.complete();
-           response.complete(Empty.getDefaultInstance());
+           promise.complete(Empty.getDefaultInstance());
          })
          .exceptionHandler(ctx::fail)
          .handler(item -> items.add(item.getValue()));
+        return promise.future();
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
@@ -298,8 +300,8 @@ public class RpcTest extends GrpcTestBase {
     port = 0;
     startServer(new VertxGreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Promise<HelloReply> response) {
-        response.complete(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+      public Future<HelloReply> sayHello(HelloRequest request) {
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
 
     }, ar -> {
