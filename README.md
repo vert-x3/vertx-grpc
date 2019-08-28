@@ -21,7 +21,7 @@ Todo:
 
 ## Plugin installation
 
-To use Reactor-gRPC with the protobuf-maven-plugin, add a [custom protoc plugin configuration section](https://www.xolstice.org/protobuf-maven-plugin/examples/protoc-plugin.html).
+To use vertx-grpc-protoc-plugin with the protobuf-maven-plugin, add a [custom protoc plugin configuration section](https://www.xolstice.org/protobuf-maven-plugin/examples/protoc-plugin.html).
 
 ```
 <protocPlugins>
