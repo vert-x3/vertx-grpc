@@ -19,7 +19,7 @@ public class Examples {
     // The rcp service
     GreeterGrpc.GreeterVertxImplBase service = new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest request, Future<HelloReply> future) {
+      public void sayHello(HelloRequest request, Promise<HelloReply> future) {
         future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
       }
     };
@@ -81,7 +81,7 @@ public class Examples {
 
         BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
           @Override
-          public void sayHello(HelloRequest request, Future<HelloReply> future) {
+          public void sayHello(HelloRequest request, Promise<HelloReply> future) {
             future.complete(HelloReply.newBuilder().setMessage(request.getName()).build());
           }
         };

@@ -31,7 +31,7 @@ public class RpcTest extends GrpcTestBase {
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> startServer(new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+      public void sayHello(HelloRequest req, Promise<HelloReply> future) {
         ctx.assertEquals(serverCtx, Vertx.currentContext());
         ctx.assertTrue(Context.isOnEventLoopThread());
         future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
@@ -84,7 +84,7 @@ public class RpcTest extends GrpcTestBase {
     };
     BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+      public void sayHello(HelloRequest req, Promise<HelloReply> future) {
         ctx.assertTrue(Context.isOnEventLoopThread());
         future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
@@ -139,7 +139,7 @@ public class RpcTest extends GrpcTestBase {
     };
     BindableService service = new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+      public void sayHello(HelloRequest req, Promise<HelloReply> future) {
         future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
     };
@@ -300,7 +300,7 @@ public class RpcTest extends GrpcTestBase {
     port = 0;
     startServer(new GreeterGrpc.GreeterVertxImplBase() {
       @Override
-      public void sayHello(HelloRequest req, Future<HelloReply> future) {
+      public void sayHello(HelloRequest req, Promise<HelloReply> future) {
         future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
       }
     }, ar -> {
