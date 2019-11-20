@@ -62,7 +62,7 @@ public class VerticleTest {
     public void start(Promise<Void> startFuture) throws Exception {
       service = new GreeterGrpc.GreeterVertxImplBase() {
         @Override
-        public void sayHello(HelloRequest req, Future<HelloReply> future) {
+        public void sayHello(HelloRequest req, Promise<HelloReply> future) {
           threads.add(Thread.currentThread());
           future.complete(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
         }

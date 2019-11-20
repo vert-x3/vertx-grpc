@@ -2,6 +2,7 @@ package io.vertx.ext.grpc;
 
 import io.grpc.ManagedChannel;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.GrpcBidiExchange;
@@ -41,7 +42,7 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new TestServiceVertxImplBase() {
       @Override
-      public void emptyCall(Empty request, Future<Empty> response) {
+      public void emptyCall(Empty request, Promise<Empty> response) {
         will.assertNotNull(request);
         response.complete(Empty.newBuilder().build());
       }
@@ -69,7 +70,7 @@ public class GoogleTest extends GrpcTestBase {
     Async test = will.async();
     startServer(new TestServiceVertxImplBase() {
       @Override
-      public void unaryCall(SimpleRequest request, Future<SimpleResponse> response) {
+      public void unaryCall(SimpleRequest request, Promise<SimpleResponse> response) {
         will.assertNotNull(request);
         response.complete(SimpleResponse.newBuilder().build());
       }

@@ -21,7 +21,7 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.15.0)",
+    value = "by gRPC proto compiler (version 1.20.0)",
     comments = "Source: helloworld.proto")
 public final class GreeterGrpc {
 
@@ -257,8 +257,8 @@ public final class GreeterGrpc {
      * </pre>
      */
     public void sayHello(examples.HelloRequest request,
-        io.vertx.core.Future<examples.HelloReply> response) {
-      asyncUnimplementedUnaryCall(getSayHelloMethod(), GreeterGrpc.toObserver(response.completer()));
+        io.vertx.core.Promise<examples.HelloReply> response) {
+      asyncUnimplementedUnaryCall(getSayHelloMethod(), GreeterGrpc.toObserver(response));
     }
 
     @java.lang.Override public final io.grpc.ServerServiceDefinition bindService() {
@@ -365,7 +365,7 @@ public final class GreeterGrpc {
       switch (methodId) {
         case METHODID_SAY_HELLO:
           serviceImpl.sayHello((examples.HelloRequest) request,
-              (io.vertx.core.Future<examples.HelloReply>) io.vertx.core.Future.<examples.HelloReply>future().setHandler(ar -> {
+              (io.vertx.core.Promise<examples.HelloReply>) io.vertx.core.Promise.<examples.HelloReply>promise().future().setHandler(ar -> {
                 if (ar.succeeded()) {
                   ((io.grpc.stub.StreamObserver<examples.HelloReply>) responseObserver).onNext(ar.result());
                   responseObserver.onCompleted();
