@@ -30,7 +30,7 @@
 
   <properties>
     <stack.version>3.8.5-SNAPSHOT</stack.version>
-    <vertx.grpc.version>1.23.0</vertx.grpc.version>
+    <vertx.grpc.version>1.25.0</vertx.grpc.version>
     <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
   </properties>
@@ -170,7 +170,7 @@
           -->
           <protocArtifact>com.google.protobuf:protoc:3.5.1:exe:${os.detected.classifier}</protocArtifact>
           <pluginId>grpc-java</pluginId>
-          <pluginArtifact>io.vertx:protoc-gen-grpc-java:1.20.0:exe:${os.detected.classifier}</pluginArtifact>
+          <pluginArtifact>io.vertx:protoc-gen-grpc-java:1.25.0:exe:${os.detected.classifier}</pluginArtifact>
         </configuration>
         <executions>
           <execution>
