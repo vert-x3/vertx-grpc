@@ -30,10 +30,10 @@
   <name>Vert.x gRPC</name>
 
   <properties>
-    <jetty.alpnAgent.version>2.0.7</jetty.alpnAgent.version>
+    <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
 
-    <vertx.grpc.version>1.22.1</vertx.grpc.version>
+    <vertx.grpc.version>1.25.0</vertx.grpc.version>
     <protoc.version>3.5.1</protoc.version>
   </properties>
 

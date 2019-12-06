@@ -138,6 +138,12 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return this;
   }
 
+  @Override
+  public VertxServerBuilder maxInboundMetadataSize(int bytes) {
+    builder.maxInboundMetadataSize(bytes);
+    return this;
+  }
+
   public VertxServerBuilder useSsl(Handler<HttpServerOptions> handler) {
     handler.handle(options);
     return this;

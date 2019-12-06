@@ -21,7 +21,7 @@ import static io.grpc.stub.ServerCalls.asyncUnimplementedUnaryCall;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.22.1)",
+    value = "by gRPC proto compiler (version 1.25.0)",
     comments = "Source: helloworld.proto")
 public final class GreeterGrpc {
 
@@ -44,22 +44,21 @@ public final class GreeterGrpc {
     if ((getSayHelloMethod = GreeterGrpc.getSayHelloMethod) == null) {
       synchronized (GreeterGrpc.class) {
         if ((getSayHelloMethod = GreeterGrpc.getSayHelloMethod) == null) {
-          GreeterGrpc.getSayHelloMethod = getSayHelloMethod = 
+          GreeterGrpc.getSayHelloMethod = getSayHelloMethod =
               io.grpc.MethodDescriptor.<examples.HelloRequest, examples.HelloReply>newBuilder()
               .setType(io.grpc.MethodDescriptor.MethodType.UNARY)
-              .setFullMethodName(generateFullMethodName(
-                  "helloworld.Greeter", "SayHello"))
+              .setFullMethodName(generateFullMethodName(SERVICE_NAME, "SayHello"))
               .setSampledToLocalTracing(true)
               .setRequestMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
                   examples.HelloRequest.getDefaultInstance()))
               .setResponseMarshaller(io.grpc.protobuf.ProtoUtils.marshaller(
                   examples.HelloReply.getDefaultInstance()))
-                  .setSchemaDescriptor(new GreeterMethodDescriptorSupplier("SayHello"))
-                  .build();
-          }
+              .setSchemaDescriptor(new GreeterMethodDescriptorSupplier("SayHello"))
+              .build();
         }
-     }
-     return getSayHelloMethod;
+      }
+    }
+    return getSayHelloMethod;
   }
 
   /**
