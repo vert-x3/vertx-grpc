@@ -88,6 +88,15 @@ If you're using Apache Maven you need to add the plugin:
     <protocArtifact>com.google.protobuf:protoc:3.2.0:exe:${os.detected.classifier}</protocArtifact>
     <pluginId>grpc-java</pluginId>
     <pluginArtifact>io.grpc:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+    <protocPlugins>
+      <protocPlugin>
+        <id>vertx-grpc-protoc-plugin</id>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-grpc-protoc-plugin</artifactId>
+        <version>${stack.version}</version>
+        <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
+      </protocPlugin>
+    </protocPlugins>
   </configuration>
   <executions>
     <execution>
@@ -153,10 +162,10 @@ protobuf {
     artifact = 'com.google.protobuf:protoc:3.2.0'
   }
   plugins {
-  grpc {
-    artifact = "io.grpc:protoc-gen-grpc-java:${vertx.grpc.version}"
+    grpc {
+      artifact = "io.grpc:protoc-gen-grpc-java:${vertx.grpc.version}"
+    }
   }
-}
   generateProtoTasks {
     all()*.plugins {
       grpc
