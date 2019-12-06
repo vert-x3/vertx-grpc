@@ -13,7 +13,7 @@
 
   <artifactId>vertx-grpc-protoc-plugin</artifactId>
   <properties>
-    <jprotoc.version>0.9.1</jprotoc.version>
+    <jprotoc.version>1.0.0</jprotoc.version>
   </properties>
 
   <dependencies>
