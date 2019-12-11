@@ -291,7 +291,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       .channelType(transport.channelFactory(false).newChannel().getClass()) // Ugly work around / perhaps contribute change to grpc
       .executor(command -> {
       if (Context.isOnEventLoopThread()) {
-        context.dispatchFromIO(event -> command.run());
+        context.dispatch(event -> command.run());
       } else {
         command.run();
       }
