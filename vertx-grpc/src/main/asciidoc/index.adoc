@@ -163,12 +163,16 @@ protobuf {
   }
   plugins {
     grpc {
-      artifact = "io.grpc:protoc-gen-grpc-java:${vertx.grpc.version}"
+      artifact = "io.grpc:protoc-gen-grpc-java:1.25.0"
+    }
+    vertx {
+      artifact = "io.vertx:vertx-grpc-protoc-plugin:${vertx.grpc.version}"
     }
   }
   generateProtoTasks {
     all()*.plugins {
       grpc
+      vertx
     }
   }
 }
