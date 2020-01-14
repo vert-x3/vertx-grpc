@@ -244,7 +244,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     Transport transport = ((VertxInternal) vertx).transport();
     return builder
       .eventLoopGroup(context.nettyEventLoop())
-      .channelType(transport.channelFactory(false).newChannel().getClass()) // Ugly work around / perhaps contribute change to grpc
+      .channelFactory(transport.channelFactory(false))
       .executor(command -> {
       if (Context.isOnEventLoopThread()) {
         context.executeFromIO(event -> command.run());
