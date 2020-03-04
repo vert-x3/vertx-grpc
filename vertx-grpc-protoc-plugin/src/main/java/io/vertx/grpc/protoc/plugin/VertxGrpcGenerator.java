@@ -22,8 +22,8 @@ public class VertxGrpcGenerator extends Generator {
   private static final int SERVICE_NUMBER_OF_PATHS = 2;
   private static final int METHOD_NUMBER_OF_PATHS = 4;
 
-  private static final String CLASS_PREFIX = System.getProperty("io.vertx.grpc.class.prefix", "Vertx");
-  private static final String GRPC_TEMPLATE_PATH = System.getProperty("io.vertx.grpc.template.path", "VertxStub.mustache");
+  private static final String CLASS_PREFIX = System.getProperty("vertx.grpc.class.prefix", "Vertx");
+  private static final String GRPC_TEMPLATE_PATH = System.getProperty("vertx.grpc.template.path", "VertxStub.mustache");
 
   private String getServiceJavaDocPrefix() {
     return "    ";
