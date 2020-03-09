@@ -127,7 +127,7 @@ public class SslTest extends GrpcTestBase {
           .build();
       VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).setHandler(res -> {
+      stub.sayHello(request).onComplete(res -> {
         if (res.succeeded()) {
           if (pass) {
             ctx.assertEquals(clientCtx, Vertx.currentContext());

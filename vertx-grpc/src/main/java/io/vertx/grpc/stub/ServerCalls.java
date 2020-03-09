@@ -25,7 +25,7 @@ public final class ServerCalls {
     try {
       Future<O> future = delegate.apply(request);
 
-      future.setHandler(res -> {
+      future.onComplete(res -> {
         if (res.succeeded()) {
           response.onNext(res.result());
           response.onCompleted();
@@ -52,7 +52,7 @@ public final class ServerCalls {
 
     StreamObserverReadStream<I> request = new StreamObserverReadStream<>();
     Future<O> future = delegate.apply(request);
-    future.setHandler(res -> {
+    future.onComplete(res -> {
       if (res.succeeded()) {
         response.onNext(res.result());
         response.onCompleted();

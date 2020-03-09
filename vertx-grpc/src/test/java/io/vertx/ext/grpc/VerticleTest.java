@@ -97,7 +97,7 @@ public class VerticleTest {
           .build();
       VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).setHandler(res -> {
+      stub.sayHello(request).onComplete(res -> {
         if (res.succeeded()) {
           ctx.assertEquals("Hello Julien", res.result().getMessage());
           async.countDown();
@@ -134,7 +134,7 @@ public class VerticleTest {
         .build();
     VertxGreeterGrpc.VertxGreeterStub blockingStub = VertxGreeterGrpc.newVertxStub(channel);
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    blockingStub.sayHello(request).setHandler(res -> {
+    blockingStub.sayHello(request).onComplete(res -> {
       if (res.succeeded()) {
         ctx.fail();
       } else {

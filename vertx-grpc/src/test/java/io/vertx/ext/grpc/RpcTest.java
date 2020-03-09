@@ -57,7 +57,7 @@ public class RpcTest extends GrpcTestBase {
        .build();
       VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).setHandler(res -> {
+      stub.sayHello(request).onComplete(res -> {
         if (res.succeeded()) {
           ctx.assertEquals(clientCtx, Vertx.currentContext());
           ctx.assertTrue(Context.isOnEventLoopThread());
@@ -114,7 +114,7 @@ public class RpcTest extends GrpcTestBase {
      .build();
     VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
     Arrays.asList("Julien", "Paulo").forEach(name -> {
-      stub.sayHello(HelloRequest.newBuilder().setName(name).build()).setHandler(res -> {
+      stub.sayHello(HelloRequest.newBuilder().setName(name).build()).onComplete(res -> {
         if (res.succeeded()) {
           ctx.assertEquals("Hello " + name, res.result().getMessage());
           async.countDown();
@@ -161,7 +161,7 @@ public class RpcTest extends GrpcTestBase {
      .usePlaintext(true)
      .build();
     VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
-    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).setHandler(res -> {
+    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(res -> {
       if (res.succeeded()) {
         ctx.fail("StatusRuntimeException expected");
       } else {
@@ -246,7 +246,7 @@ public class RpcTest extends GrpcTestBase {
     };
 
     stub.sink(h)
-     .setHandler(res -> {
+     .onComplete(res -> {
        if (res.failed()) {
          ctx.fail();
        }
