@@ -49,7 +49,7 @@ public class GoogleTest extends GrpcTestBase {
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().emptyCall(Empty.newBuilder().build()).setHandler(res -> {
+        buildStub().emptyCall(Empty.newBuilder().build()).onComplete(res -> {
           if (res.succeeded()) {
             will.assertNotNull(res.result());
             test.complete();
@@ -80,7 +80,7 @@ public class GoogleTest extends GrpcTestBase {
       }
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().unaryCall(SimpleRequest.newBuilder().build()).setHandler(res -> {
+        buildStub().unaryCall(SimpleRequest.newBuilder().build()).onComplete(res -> {
           if (res.succeeded()) {
             will.assertNotNull(res.result());
             test.complete();
@@ -158,7 +158,7 @@ public class GoogleTest extends GrpcTestBase {
     }, startServer -> {
       if (startServer.succeeded()) {
         buildStub().streamingInputCall(ws -> new IterableReadStream<>(v -> StreamingInputCallRequest.newBuilder().build(), 10).pipeTo(ws))
-         .setHandler(res -> {
+         .onComplete(res -> {
            if (res.succeeded()) {
              will.assertNotNull(res.result());
              test.complete();
@@ -285,7 +285,7 @@ public class GoogleTest extends GrpcTestBase {
       // to test the behavior when clients call unimplemented methods.
     }, startServer -> {
       if (startServer.succeeded()) {
-        buildStub().unimplementedCall(Empty.newBuilder().build()).setHandler(res -> {
+        buildStub().unimplementedCall(Empty.newBuilder().build()).onComplete(res -> {
           if (res.succeeded()) {
             will.fail("Should not succeed, there is no implementation");
           } else {
