@@ -35,6 +35,7 @@
 
     <vertx.grpc.version>1.22.1</vertx.grpc.version>
     <protoc.version>3.5.1</protoc.version>
+    <doc.skip>false</doc.skip>
   </properties>
 
   <dependencies>
