@@ -29,11 +29,21 @@ import java.util.stream.IntStream;
  */
 public class RpcTest extends GrpcTestBase {
 
+  private volatile ManagedChannel channel;
+
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    if (channel != null) {
+      channel.shutdown();
+    }
+  }
+
   @Test
-  public void testSimple(TestContext ctx) throws Exception {
+  public void testSimple(TestContext ctx) {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
-    serverCtx.runOnContext(v -> startServer(new VertxGreeterGrpc.GreeterImplBase() {
+    serverCtx.runOnContext(v1 -> startServer(new VertxGreeterGrpc.GreeterImplBase() {
       @Override
       public Future<HelloReply> sayHello(HelloRequest request) {
         ctx.assertEquals(serverCtx, Vertx.currentContext());
@@ -41,34 +51,22 @@ public class RpcTest extends GrpcTestBase {
 
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
-    }, ar -> {
-      if (ar.succeeded()) {
-        started.complete();
-      } else {
-        ctx.fail(ar.cause());
-      }
-    }));
+    }, ctx.asyncAssertSuccess(v2 -> started.complete())));
     started.awaitSuccess(10000);
     Async async = ctx.async();
     Context clientCtx = vertx.getOrCreateContext();
     clientCtx.runOnContext(v -> {
-      ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
        .usePlaintext(true)
        .build();
       VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).onComplete(res -> {
-        if (res.succeeded()) {
-          ctx.assertEquals(clientCtx, Vertx.currentContext());
-          ctx.assertTrue(Context.isOnEventLoopThread());
-          ctx.assertEquals("Hello Julien", res.result().getMessage());
-          async.complete();
-          channel.shutdown();
-        } else {
-          ctx.fail(res.cause());
-          channel.shutdown();
-        }
-      });
+      stub.sayHello(request).onComplete(ctx.asyncAssertSuccess(res -> {
+        ctx.assertEquals(clientCtx, Vertx.currentContext());
+        ctx.assertTrue(Context.isOnEventLoopThread());
+        ctx.assertEquals("Hello Julien", res.getMessage());
+        async.complete();
+      }));
     });
   }
 
@@ -109,22 +107,19 @@ public class RpcTest extends GrpcTestBase {
      });
     started.awaitSuccess(10000);
     Async async = ctx.async(2);
-    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
      .usePlaintext(true)
      .build();
     VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
     Arrays.asList("Julien", "Paulo").forEach(name -> {
-      stub.sayHello(HelloRequest.newBuilder().setName(name).build()).onComplete(res -> {
-        if (res.succeeded()) {
-          ctx.assertEquals("Hello " + name, res.result().getMessage());
-          async.countDown();
-        } else {
-          ctx.fail(res.cause());
-        }
-      });
+      stub
+        .sayHello(HelloRequest.newBuilder().setName(name).build())
+        .onComplete(ctx.asyncAssertSuccess(res -> {
+        ctx.assertEquals("Hello " + name, res.getMessage());
+        async.countDown();
+      }));
     });
     async.awaitSuccess(10000);
-    channel.shutdown();
   }
 
   @Test
@@ -157,24 +152,18 @@ public class RpcTest extends GrpcTestBase {
      });
     started.awaitSuccess(10000);
     Async async = ctx.async();
-    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
      .usePlaintext(true)
      .build();
     VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
-    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(res -> {
-      if (res.succeeded()) {
-        ctx.fail("StatusRuntimeException expected");
-      } else {
-        Throwable throwable = res.cause();
-        ctx.assertTrue(throwable instanceof StatusRuntimeException);
-        StatusRuntimeException sre = (StatusRuntimeException) throwable;
-        ctx.assertEquals(Status.ABORTED, sre.getStatus());
-        ctx.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
-        async.countDown();
-      }
-    });
+    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(ctx.asyncAssertFailure(err -> {
+      ctx.assertTrue(err instanceof StatusRuntimeException);
+      StatusRuntimeException sre = (StatusRuntimeException) err;
+      ctx.assertEquals(Status.ABORTED, sre.getStatus());
+      ctx.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
+      async.countDown();
+    }));
     async.awaitSuccess(10000);
-    channel.shutdown();
   }
 
   @Test
@@ -187,7 +176,7 @@ public class RpcTest extends GrpcTestBase {
         new IterableReadStream<>(cnt -> Item.newBuilder().setValue("the-value-" + cnt).build(), numItems).pipeTo(response);
       }
     });
-    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
      .usePlaintext(true)
      .build();
     VertxStreamingGrpc.VertxStreamingStub stub = VertxStreamingGrpc.newVertxStub(channel);
@@ -197,7 +186,6 @@ public class RpcTest extends GrpcTestBase {
        List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
        ctx.assertEquals(expected, items);
        done.complete();
-       channel.shutdown();
      })
      .exceptionHandler(ctx::fail)
      .handler(item -> items.add(item.getValue()));
@@ -225,7 +213,7 @@ public class RpcTest extends GrpcTestBase {
         return promise.future();
       }
     });
-    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
      .usePlaintext(true)
      .build();
     VertxStreamingGrpc.VertxStreamingStub stub = VertxStreamingGrpc.newVertxStub(channel);
@@ -239,18 +227,13 @@ public class RpcTest extends GrpcTestBase {
         } else {
           vertx.cancelTimer(id);
           ws.end();
-          channel.shutdown();
         }
       });
 
     };
 
     stub.sink(h)
-     .onComplete(res -> {
-       if (res.failed()) {
-         ctx.fail();
-       }
-     });
+     .onComplete(ctx.asyncAssertSuccess());
   }
 
   @Test
@@ -263,7 +246,7 @@ public class RpcTest extends GrpcTestBase {
         request.pipeTo(response);
       }
     });
-    ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
      .usePlaintext(true)
      .build();
     VertxStreamingGrpc.VertxStreamingStub stub = VertxStreamingGrpc.newVertxStub(channel);
@@ -278,7 +261,6 @@ public class RpcTest extends GrpcTestBase {
         } else {
           vertx.cancelTimer(id);
           ws.end();
-          channel.shutdown();
         }
       });
     };

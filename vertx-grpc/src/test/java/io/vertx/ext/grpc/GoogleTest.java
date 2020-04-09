@@ -34,11 +34,16 @@ public class GoogleTest extends GrpcTestBase {
     return VertxTestServiceGrpc.newVertxStub(channel);
   }
 
+  public void tearDown() throws Exception {
+    channel.shutdown();
+    super.tearDown();
+  }
+
   /**
    * One empty request followed by one empty response.
    */
   @Test
-  public void emptyCallTest(TestContext will) throws Exception {
+  public void emptyCallTest(TestContext will) {
     Async test = will.async();
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
@@ -47,29 +52,21 @@ public class GoogleTest extends GrpcTestBase {
 
         return Future.succeededFuture(Empty.newBuilder().build());
       }
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        buildStub().emptyCall(Empty.newBuilder().build()).onComplete(res -> {
-          if (res.succeeded()) {
-            will.assertNotNull(res.result());
-            test.complete();
-            channel.shutdown();
-          } else {
-            will.fail(res.cause());
-          }
-        });
-      } else {
-        will.fail(startServer.cause());
+    }, will.asyncAssertSuccess(v -> {
+      buildStub()
+        .emptyCall(Empty.newBuilder().build())
+        .onComplete(will.asyncAssertSuccess(res -> {
+        will.assertNotNull(res);
         test.complete();
-      }
-    });
+      }));
+    }));
   }
 
   /**
    * One request followed by one response.
    */
   @Test
-  public void emptyUnaryTest(TestContext will) throws Exception {
+  public void emptyUnaryTest(TestContext will) {
     Async test = will.async();
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
@@ -78,29 +75,21 @@ public class GoogleTest extends GrpcTestBase {
 
         return Future.succeededFuture(SimpleResponse.newBuilder().build());
       }
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        buildStub().unaryCall(SimpleRequest.newBuilder().build()).onComplete(res -> {
-          if (res.succeeded()) {
-            will.assertNotNull(res.result());
-            test.complete();
-            channel.shutdown();
-          } else {
-            will.fail(res.cause());
-          }
-        });
-      } else {
-        will.fail(startServer.cause());
+    }, will.asyncAssertSuccess(v -> {
+      buildStub()
+        .unaryCall(SimpleRequest.newBuilder().build())
+        .onComplete(will.asyncAssertSuccess(res -> {
+        will.assertNotNull(res);
         test.complete();
-      }
-    });
+      }));
+    }));
   }
 
   /**
    * One request followed by a sequence of responses (streamed download). The server returns the payload with client desired type and sizes.
    */
   @Test
-  public void streamingOutputCallTest(TestContext will) throws Exception {
+  public void streamingOutputCallTest(TestContext will) {
     Async test = will.async();
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       @Override
@@ -109,32 +98,26 @@ public class GoogleTest extends GrpcTestBase {
         IterableReadStream rs = new IterableReadStream(v -> StreamingOutputCallResponse.newBuilder().build(), 10);
         rs.pipeTo(response);
       }
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        final AtomicInteger cnt = new AtomicInteger();
-        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build())
-         .handler(resp -> {
-           will.assertNotNull(resp);
-           cnt.incrementAndGet();
-         })
-         .exceptionHandler(will::fail)
-         .endHandler(v -> {
-           will.assertEquals(10, cnt.get());
-           test.complete();
-           channel.shutdown();
-         });
-      } else {
-        will.fail(startServer.cause());
-        test.complete();
-      }
-    });
+    }, will.asyncAssertSuccess(v1 -> {
+      final AtomicInteger cnt = new AtomicInteger();
+      buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build())
+        .handler(resp -> {
+          will.assertNotNull(resp);
+          cnt.incrementAndGet();
+        })
+        .exceptionHandler(will::fail)
+        .endHandler(v2 -> {
+          will.assertEquals(10, cnt.get());
+          test.complete();
+        });
+    }));
   }
 
   /**
    * A sequence of requests followed by one response (streamed upload). The server returns the aggregated size of client payload as the result.
    */
   @Test
-  public void streamingInputCallTest(TestContext will) throws Exception {
+  public void streamingInputCallTest(TestContext will) {
     final Async test = will.async();
     final AtomicInteger cnt = new AtomicInteger();
 
@@ -155,23 +138,14 @@ public class GoogleTest extends GrpcTestBase {
         });
         return promise.future();
       }
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        buildStub().streamingInputCall(ws -> new IterableReadStream<>(v -> StreamingInputCallRequest.newBuilder().build(), 10).pipeTo(ws))
-         .onComplete(res -> {
-           if (res.succeeded()) {
-             will.assertNotNull(res.result());
-             test.complete();
-             channel.shutdown();
-           } else {
-             will.fail(res.cause());
-           }
-         });
-      } else {
-        will.fail(startServer.cause());
-        test.complete();
-      }
-    });
+    }, will.asyncAssertSuccess(v1 -> {
+      buildStub()
+        .streamingInputCall(ws -> new IterableReadStream<>(v2 -> StreamingInputCallRequest.newBuilder().build(), 10).pipeTo(ws))
+        .onComplete(will.asyncAssertSuccess(res -> {
+          will.assertNotNull(res);
+          test.complete();
+        }));
+    }));
   }
 
   /**
@@ -179,7 +153,7 @@ public class GoogleTest extends GrpcTestBase {
    * idea of full duplexing.
    */
   @Test
-  public void fullDuplexCallTest(TestContext will) throws Exception {
+  public void fullDuplexCallTest(TestContext will) {
     final Async test = will.async();
 
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
@@ -200,25 +174,19 @@ public class GoogleTest extends GrpcTestBase {
         });
 
       }
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        final AtomicInteger cnt = new AtomicInteger();
-        buildStub().fullDuplexCall(ws -> new IterableReadStream<>(v -> StreamingOutputCallRequest.newBuilder().build(), 10).pipeTo(ws))
-         .endHandler(v -> {
-           will.assertEquals(10, cnt.get());
-           test.complete();
-           channel.shutdown();
-         })
-         .exceptionHandler(will::fail)
-         .handler(item -> {
-           will.assertNotNull(item);
-           cnt.incrementAndGet();
-         });
-      } else {
-        will.fail(startServer.cause());
-        test.complete();
-      }
-    });
+    }, will.asyncAssertSuccess(v1 -> {
+      final AtomicInteger cnt = new AtomicInteger();
+      buildStub().fullDuplexCall(ws -> new IterableReadStream<>(v -> StreamingOutputCallRequest.newBuilder().build(), 10).pipeTo(ws))
+        .endHandler(v2 -> {
+          will.assertEquals(10, cnt.get());
+          test.complete();
+        })
+        .exceptionHandler(will::fail)
+        .handler(item -> {
+          will.assertNotNull(item);
+          cnt.incrementAndGet();
+        });
+    }));
   }
 
   /**
@@ -249,56 +217,41 @@ public class GoogleTest extends GrpcTestBase {
           buffer.add(item);
         });
       }
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        final AtomicInteger cnt = new AtomicInteger();
-        final AtomicBoolean down = new AtomicBoolean();
-        buildStub().halfDuplexCall(ws -> new IterableReadStream<>(v -> StreamingOutputCallRequest.newBuilder().build(), 10).pipeTo(ws))
-         .endHandler(v -> {
-           will.assertEquals(10, cnt.get());
-           test.complete();
-           channel.shutdown();
-         })
-         .exceptionHandler(will::fail)
-         .handler(item -> {
-           will.assertTrue(down.get());
-           will.assertNotNull(item);
-           cnt.incrementAndGet();
-         });
-        // down stream is now expected
-        down.set(true);
-      } else {
-        will.fail(startServer.cause());
-        test.complete();
-      }
-    });
+    }, will.asyncAssertSuccess(v1 -> {
+      final AtomicInteger cnt = new AtomicInteger();
+      final AtomicBoolean down = new AtomicBoolean();
+      buildStub().halfDuplexCall(ws -> new IterableReadStream<>(v2 -> StreamingOutputCallRequest.newBuilder().build(), 10).pipeTo(ws))
+        .endHandler(v -> {
+          will.assertEquals(10, cnt.get());
+          test.complete();
+        })
+        .exceptionHandler(will::fail)
+        .handler(item -> {
+          will.assertTrue(down.get());
+          will.assertNotNull(item);
+          cnt.incrementAndGet();
+        });
+      // down stream is now expected
+      down.set(true);
+    }));
   }
 
   /**
    * The test server will not implement this method. It will be used to test the behavior when clients call unimplemented methods.
    */
   @Test
-  public void unimplementedCallTest(TestContext will) throws Exception {
+  public void unimplementedCallTest(TestContext will) {
     Async test = will.async();
     startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
       // The test server will not implement this method. It will be used
       // to test the behavior when clients call unimplemented methods.
-    }, startServer -> {
-      if (startServer.succeeded()) {
-        buildStub().unimplementedCall(Empty.newBuilder().build()).onComplete(res -> {
-          if (res.succeeded()) {
-            will.fail("Should not succeed, there is no implementation");
-          } else {
-            will.assertNotNull(res.cause());
-            test.complete();
-            channel.shutdown();
-          }
-        });
-      } else {
-        will.fail(startServer.cause());
+    }, will.asyncAssertSuccess(v -> {
+      buildStub()
+        .unimplementedCall(Empty.newBuilder().build())
+        .onComplete(will.asyncAssertFailure(err -> {
+        will.assertNotNull(err);
         test.complete();
-      }
-    });
+      }));
+    }));
   }
-
 }
