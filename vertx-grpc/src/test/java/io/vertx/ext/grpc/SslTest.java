@@ -16,6 +16,8 @@ import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServerBuilder;
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
@@ -93,7 +95,7 @@ public class SslTest extends GrpcTestBase {
   private void testSimple(Handler<ClientOptionsBase> clientSslBuilder,
                           Handler<HttpServerOptions> serverSslBuilder,
                           TestContext ctx,
-                          boolean pass) throws Exception {
+                          boolean pass) {
 
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
@@ -109,44 +111,36 @@ public class SslTest extends GrpcTestBase {
       };
       startServer(service, VertxServerBuilder.forPort(vertx, port)
           .useSsl(serverSslBuilder)
-        , ar -> {
-          if (ar.succeeded()) {
-            started.complete();
-          } else {
-            ctx.fail(ar.cause());
-          }
-        });
+        , ctx.asyncAssertSuccess(v2 -> started.complete()));
     });
     started.awaitSuccess(10000);
     Async async = ctx.async();
     Context clientCtx = vertx.getOrCreateContext();
-    clientCtx.runOnContext(v -> {
-      ManagedChannel channel = VertxChannelBuilder.
-          forAddress(vertx, "localhost", port)
-          .useSsl(clientSslBuilder)
-          .build();
-      VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
-      HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).onComplete(res -> {
-        if (res.succeeded()) {
-          if (pass) {
+    AtomicReference<ManagedChannel> channelRef = new AtomicReference<>();
+    try {
+      clientCtx.runOnContext(v -> {
+        ManagedChannel channel = VertxChannelBuilder.
+            forAddress(vertx, "localhost", port)
+            .useSsl(clientSslBuilder)
+            .build();
+        channelRef.set(channel);
+        VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+        Future<HelloReply> fut = stub.sayHello(request);
+        if (pass) {
+          fut.onComplete(ctx.asyncAssertSuccess(res -> {
             ctx.assertEquals(clientCtx, Vertx.currentContext());
             ctx.assertTrue(Context.isOnEventLoopThread());
-            ctx.assertEquals("Hello Julien", res.result().getMessage());
+            ctx.assertEquals("Hello Julien", res.getMessage());
             async.complete();
-          } else {
-            ctx.fail("Expected failure");
-          }
-          channel.shutdown();
+          }));
         } else {
-          if (pass) {
-            ctx.fail(res.cause());
-          } else {
-            async.complete();
-          }
-          channel.shutdown();
+          fut.onComplete(ctx.asyncAssertFailure(err -> async.complete()));
         }
       });
-    });
+      async.awaitSuccess(20000);
+    } finally {
+      channelRef.get().shutdown();
+    }
   }
 }
