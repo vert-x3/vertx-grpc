@@ -58,6 +58,17 @@ public final class VertxGreeterGrpc {
      */
     public static abstract class GreeterImplBase implements io.grpc.BindableService {
 
+        private String compression;
+
+        /**
+         * Set whether the server will try to use a compressed response.
+         *
+         * @param compression the compression, e.g {@code gzip}
+         */
+        public GreeterImplBase withCompression(String compression) {
+            this.compression = compression;
+            return this;
+        }
 
         /**
          * <pre>
@@ -76,7 +87,7 @@ public final class VertxGreeterGrpc {
                                     new MethodHandlers<
                                             examples.HelloRequest,
                                             examples.HelloReply>(
-                                            this, METHODID_SAY_HELLO)))
+                                            this, METHODID_SAY_HELLO, compression)))
                     .build();
         }
     }
@@ -88,12 +99,15 @@ public final class VertxGreeterGrpc {
             io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,
             io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
             io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
+
         private final GreeterImplBase serviceImpl;
         private final int methodId;
+        private final String compression;
 
-        MethodHandlers(GreeterImplBase serviceImpl, int methodId) {
+        MethodHandlers(GreeterImplBase serviceImpl, int methodId, String compression) {
             this.serviceImpl = serviceImpl;
             this.methodId = methodId;
+            this.compression = compression;
         }
 
         @java.lang.Override
@@ -103,6 +117,7 @@ public final class VertxGreeterGrpc {
                 case METHODID_SAY_HELLO:
                     io.vertx.grpc.stub.ServerCalls.oneToOne((examples.HelloRequest) request,
                             (io.grpc.stub.StreamObserver<examples.HelloReply>) responseObserver,
+                            compression,
                             serviceImpl::sayHello);
                     break;
                 default:

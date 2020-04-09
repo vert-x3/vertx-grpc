@@ -1,6 +1,7 @@
 package examples;
 
 import io.grpc.*;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.*;
 import io.vertx.core.net.JksOptions;
@@ -46,6 +47,29 @@ public class Examples {
         return Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build());
       }
     };
+  }
+
+  public void serverWithCompression(Vertx vertx) {
+    // The rcp service
+    GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        ((ServerCallStreamObserver) responseObserver).setCompression("gzip");
+        responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
+        responseObserver.onCompleted();
+      }
+    };
+  }
+
+  public void vertxServerWithCompression() {
+    // The rcp service
+    VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
+      @Override
+      public Future<HelloReply> sayHello(HelloRequest request) {
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build());
+      }
+    }
+    .withCompression("gzip");
   }
 
   public void connectClient(Vertx vertx) {
@@ -95,6 +119,13 @@ public class Examples {
     }).onFailure(err -> {
       System.out.println("Coult not reach server " + err);
     });
+  }
+
+  public void clientWithCompression(ManagedChannel channel) {
+    // Get a stub to use for interacting with the remote service with message compression
+    GreeterGrpc.GreeterStub stub = GreeterGrpc
+      .newStub(channel)
+      .withCompression("gzip");
   }
 
   public void sslServer(Vertx vertx) {
