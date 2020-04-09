@@ -19,9 +19,13 @@ import io.vertx.core.streams.WriteStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -71,7 +75,7 @@ public class RpcTest extends GrpcTestBase {
   }
 
   @Test
-  public void testBlocking(TestContext ctx) {
+  public void testBlocking(TestContext ctx) throws Exception {
     ServerInterceptor blockingInterceptor = new ServerInterceptor() {
       @Override
       public <Q, A> ServerCall.Listener<Q> interceptCall(ServerCall<Q, A> call, Metadata m, ServerCallHandler<Q, A> h) {
@@ -94,18 +98,7 @@ public class RpcTest extends GrpcTestBase {
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     };
-    Async started = ctx.async();
-    server = VertxServerBuilder.forPort(vertx, port)
-     .addService(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
-     .build()
-     .start(ar -> {
-       if (ar.succeeded()) {
-         started.complete();
-       } else {
-         ctx.fail(ar.cause());
-       }
-     });
-    started.awaitSuccess(10000);
+    startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)));
     Async async = ctx.async(2);
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
      .usePlaintext(true)
@@ -298,5 +291,76 @@ public class RpcTest extends GrpcTestBase {
 
     ctx.assertTrue(server.getPort() > 0);
     ctx.assertTrue(server.getPort() < 65536);
+  }
+
+  @Test
+  public void testClientCompression(TestContext ctx) throws Exception {
+    Metadata.Key<String> encodingKey = Metadata.Key.of("grpc-encoding", Metadata.ASCII_STRING_MARSHALLER);
+    Metadata.Key<String> acceptEncodingKey = Metadata.Key.of("grpc-accept-encoding", Metadata.ASCII_STRING_MARSHALLER);
+    AtomicReference<String> clientEncoding = new AtomicReference<>();
+    AtomicReference<String> clientAcceptEncoding = new AtomicReference<>();
+    AtomicReference<String> serverEncoding = new AtomicReference<>();
+
+    ServerInterceptor blockingInterceptor = new ServerInterceptor() {
+      @Override
+      public <Q, A> ServerCall.Listener<Q> interceptCall(ServerCall<Q, A> call, Metadata m, ServerCallHandler<Q, A> h) {
+        clientEncoding.set(m.get(encodingKey));
+        clientAcceptEncoding.set(m.get(acceptEncodingKey));
+        return h.startCall(call, m);
+      }
+    };
+
+    VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
+      @Override
+      public Future<HelloReply> sayHello(HelloRequest request) {
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+      }
+    }.withCompression("gzip");
+    startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)));
+
+    Async async = ctx.async();
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .usePlaintext(true)
+      .build();
+    VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    stub
+      .withInterceptors(new ClientInterceptor() {
+        @Override
+        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
+          ClientCall<ReqT, RespT> call = next.newCall(method, callOptions);
+          return new ForwardingClientCall<ReqT, RespT>() {
+            @Override
+            public void start(Listener<RespT> responseListener, Metadata headers) {
+              super.start(new ForwardingClientCallListener<RespT>() {
+                @Override
+                public void onHeaders(Metadata headers) {
+                  serverEncoding.set(headers.get(encodingKey));
+                  super.onHeaders(headers);
+                }
+                @Override
+                protected Listener<RespT> delegate() {
+                  return responseListener;
+                }
+              }, headers);
+            }
+            @Override
+            protected ClientCall<ReqT, RespT> delegate() {
+              return call;
+            }
+          };
+        }
+      })
+      .withCompression("gzip")
+      .sayHello(request)
+      .onComplete(ctx.asyncAssertSuccess(res -> {
+      ctx.assertEquals("Hello Julien", res.getMessage());
+      async.complete();
+    }));
+
+    async.awaitSuccess(20000);
+    assertEquals("gzip", clientEncoding.get());
+    assertEquals("gzip", clientAcceptEncoding.get());
+    assertEquals("gzip", serverEncoding.get());
   }
 }
