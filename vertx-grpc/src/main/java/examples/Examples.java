@@ -38,6 +38,15 @@ public class Examples {
     rpcServer.start();
   }
 
+  public void vertxSimpleServer(Vertx vertx) throws Exception {
+    // The rcp service
+    VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
+      @Override
+      public Future<HelloReply> sayHello(HelloRequest request) {
+        return Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build());
+      }
+    };
+  }
 
   public void connectClient(Vertx vertx) {
     // Create the channel
@@ -69,6 +78,22 @@ public class Examples {
       public void onCompleted() {
         System.out.println("Got the server response: " +helloReply.getMessage());
       }
+    });
+  }
+
+  public void vertxSimpleClient(VertxGreeterGrpc.VertxGreeterStub stub) {
+    // Make a request
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+
+    // Call the remote service
+    Future<HelloReply> future = stub.sayHello(request);
+
+    // Listen to completion events
+    future
+      .onSuccess(helloReply -> {
+      System.out.println("Got the server response: " + helloReply.getMessage());
+    }).onFailure(err -> {
+      System.out.println("Coult not reach server " + err);
     });
   }
 
