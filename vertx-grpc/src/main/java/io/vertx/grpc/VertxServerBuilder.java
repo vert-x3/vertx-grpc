@@ -16,6 +16,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -38,6 +39,7 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   private VertxInternal vertx;
   private NettyServerBuilder builder;
   private HttpServerOptions options = new HttpServerOptions();
+  private Consumer<Runnable> commandDecorator;
 
   private VertxServerBuilder(Vertx vertx, int port) {
     this.id = new ServerID(port, "0.0.0.0");
@@ -149,8 +151,20 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
     return this;
   }
 
+  /**
+   * Add a command decorator for the grpc calls.
+   * The decorator provides a way to invoke arbitrary code before handling of the grpc request starts
+   *
+   * @param commandDecorator the decorator
+   * @return this
+   */
+  public VertxServerBuilder commandDecorator(Consumer<Runnable> commandDecorator) {
+    this.commandDecorator = commandDecorator;
+    return this;
+  }
+
   public VertxServer build() {
     ContextInternal context = vertx.getOrCreateContext();
-    return new VertxServer(id, options, builder, context);
+    return new VertxServer(id, options, builder, context, commandDecorator);
   }
 }
