@@ -25,8 +25,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -44,7 +46,11 @@ public class VertxServer extends Server {
     final Server server;
     final ThreadLocal<List<ContextInternal>> contextLocal = new ThreadLocal<>();
 
-    private ActualServer(Vertx vertx, ServerID id, HttpServerOptions options, NettyServerBuilder builder) {
+    private ActualServer(Vertx vertx,
+                         ServerID id,
+                         HttpServerOptions options,
+                         NettyServerBuilder builder,
+                         Consumer<Runnable> commandDecorator) {
 
       // SSL
       if (options.isSsl()) {
@@ -63,10 +69,16 @@ public class VertxServer extends Server {
 
       this.id = id;
       this.options = options;
+      Executor executor = command -> {
+        contextLocal.get().get(0).dispatch(event -> command.run());
+      };
+      if (commandDecorator != null) {
+        executor = command -> {
+          contextLocal.get().get(0).dispatch(event -> commandDecorator.accept(command));
+        };
+      }
       this.server = builder
-          .executor(command -> {
-            contextLocal.get().get(0).dispatch(event -> command.run());
-          })
+          .executor(executor)
           .channelFactory(transport.serverChannelFactory(false))
           .bossEventLoopGroup(group)
           .workerEventLoopGroup(group)
@@ -116,13 +128,19 @@ public class VertxServer extends Server {
   private final HttpServerOptions options;
   private ActualServer actual;
   private final ContextInternal context;
+  private final Consumer<Runnable> commandDecorator;
   private Closeable hook;
 
-  VertxServer(ServerID id, HttpServerOptions options, NettyServerBuilder builder, ContextInternal context) {
+  VertxServer(ServerID id,
+              HttpServerOptions options,
+              NettyServerBuilder builder,
+              ContextInternal context,
+              Consumer<Runnable> commandDecorator) {
     this.id = id;
     this.options = options;
     this.builder = builder;
     this.context = context;
+    this.commandDecorator = commandDecorator;
   }
 
   @Override
@@ -132,9 +150,9 @@ public class VertxServer extends Server {
 
   public VertxServer start(Handler<AsyncResult<Void>> completionHandler) {
     if (id.port > 0) {
-      actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder));
+      actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder, commandDecorator));
     } else {
-      actual = new ActualServer(context.owner(), id, options, builder);
+      actual = new ActualServer(context.owner(), id, options, builder, commandDecorator);
     }
     actual.start(context, ar1 -> {
       if (ar1.succeeded()) {
@@ -187,5 +205,9 @@ public class VertxServer extends Server {
   @Override
   public void awaitTermination() throws InterruptedException {
     actual.server.awaitTermination();
+  }
+
+  public Server getRawServer() {
+    return actual.server;
   }
 }
