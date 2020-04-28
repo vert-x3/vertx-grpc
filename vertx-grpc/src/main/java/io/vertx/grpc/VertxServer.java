@@ -13,7 +13,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.net.impl.HandlerManager;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
@@ -42,7 +41,6 @@ public class VertxServer extends Server {
     final HttpServerOptions options;
     final AtomicInteger count = new AtomicInteger();
     final VertxEventLoopGroup group = new VertxEventLoopGroup();
-    final HandlerManager<String> manager = new HandlerManager<>(group);
     final Server server;
     final ThreadLocal<List<ContextInternal>> contextLocal = new ThreadLocal<>();
 
@@ -81,7 +79,7 @@ public class VertxServer extends Server {
         if (contextLocal.get() == null) {
           contextLocal.set(new ArrayList<>());
         }
-        manager.addHandler("foo", context);
+        group.addWorker(context.nettyEventLoop());
         contextLocal.get().add(context);
         if (start) {
           context.executeBlocking(v2 -> {
@@ -101,7 +99,7 @@ public class VertxServer extends Server {
     void stop(ContextInternal context, Handler<AsyncResult<Void>> completionHandler) {
       boolean shutdown = count.decrementAndGet() == 0;
       context.runOnContext(v -> {
-        manager.removeHandler("foo", context);
+        group.removeWorker(context.nettyEventLoop());
         contextLocal.get().remove(context);
         if (shutdown) {
           map.remove(id);
