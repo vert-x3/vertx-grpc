@@ -117,9 +117,14 @@ public class VertxServer extends Server {
         contextLocal.get().remove(context);
         if (shutdown) {
           map.remove(id);
+          context.executeBlocking(p -> {
+            server.shutdown();
+            p.complete();
+          }, completionHandler);
           server.shutdown();
+        } else {
+          completionHandler.handle(Future.succeededFuture());
         }
-        completionHandler.handle(Future.succeededFuture());
       });
     }
 
