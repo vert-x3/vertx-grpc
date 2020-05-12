@@ -8,10 +8,12 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Closeable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.PromiseInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
@@ -108,16 +110,20 @@ public class VertxServer extends Server {
       });
     }
 
-    void stop(ContextInternal context, Handler<AsyncResult<Void>> completionHandler) {
+    void stop(ContextInternal context, Promise<Void> promise) {
       boolean shutdown = count.decrementAndGet() == 0;
       context.runOnContext(v -> {
         group.removeWorker(context.nettyEventLoop());
         contextLocal.get().remove(context);
         if (shutdown) {
           map.remove(id);
-          server.shutdown();
+          context.executeBlocking(p -> {
+            server.shutdown();
+            p.complete();
+          }, promise);
+        } else {
+          promise.complete();
         }
-        completionHandler.handle(Future.succeededFuture());
       });
     }
 
@@ -173,7 +179,8 @@ public class VertxServer extends Server {
     if (hook != null) {
       context.removeCloseHook(hook);
     }
-    actual.stop(context, completionHandler);
+    PromiseInternal<Void> promise = context.promise(completionHandler);
+    actual.stop(context, promise);
     return this;
   }
 
