@@ -36,6 +36,7 @@
     <vertx.grpc.version>1.25.0</vertx.grpc.version>
     <protoc.version>3.5.1</protoc.version>
     <doc.skip>false</doc.skip>
+    <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
   </properties>
 
   <dependencies>
