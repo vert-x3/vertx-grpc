@@ -114,6 +114,13 @@
       <classifier>osx-x86_64</classifier>
       <scope>test</scope>
     </dependency>
+    <!-- Required for forcing build order -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-grpc-protoc-plugin</artifactId>
+      <version>${project.version}</version>
+      <optional>true</optional>
+    </dependency>
   </dependencies>
 
   <build>
