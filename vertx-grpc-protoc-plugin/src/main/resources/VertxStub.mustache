@@ -18,27 +18,27 @@ comments = "Source: {{protoName}}")
 public final class {{className}} {
     private {{className}}() {}
 
-    public static Vertx{{serviceName}}Stub newVertxStub(io.grpc.Channel channel) {
-        return new Vertx{{serviceName}}Stub(channel);
+    public static {{serviceName}}VertxStub newVertxStub(io.grpc.Channel channel) {
+        return new {{serviceName}}VertxStub(channel);
     }
 
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
-    public static final class Vertx{{serviceName}}Stub extends io.grpc.stub.AbstractStub<Vertx{{serviceName}}Stub> {
+    public static final class {{serviceName}}VertxStub extends io.grpc.stub.AbstractStub<{{serviceName}}VertxStub> {
         private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
 
-        private Vertx{{serviceName}}Stub(io.grpc.Channel channel) {
+        private {{serviceName}}VertxStub(io.grpc.Channel channel) {
             super(channel);
             delegateStub = {{serviceName}}Grpc.newStub(channel);
         }
 
-        private Vertx{{serviceName}}Stub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+        private {{serviceName}}VertxStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
             super(channel, callOptions);
             delegateStub = {{serviceName}}Grpc.newStub(channel).build(channel, callOptions);
         }
 
         @Override
-        protected Vertx{{serviceName}}Stub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            return new Vertx{{serviceName}}Stub(channel, callOptions);
+        protected {{serviceName}}VertxStub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+            return new {{serviceName}}VertxStub(channel, callOptions);
         }
 
         {{#unaryUnaryMethods}}
@@ -71,7 +71,7 @@ public final class {{className}} {
     }
 
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
-    public static abstract class {{serviceName}}ImplBase implements io.grpc.BindableService {
+    public static abstract class {{serviceName}}VertxImplBase implements io.grpc.BindableService {
 
         private String compression;
 
@@ -80,7 +80,7 @@ public final class {{className}} {
          *
          * @param compression the compression, e.g {@code gzip}
          */
-        public {{serviceName}}ImplBase withCompression(String compression) {
+        public {{serviceName}}VertxImplBase withCompression(String compression) {
             this.compression = compression;
             return this;
         }
@@ -117,7 +117,7 @@ public final class {{className}} {
             return io.grpc.ServerServiceDefinition.builder(getServiceDescriptor())
                     {{#methods}}
                     .addMethod(
-                            {{packageName}}.{{serviceName}}Grpc.get{{methodNamePascalCase}}Method(),
+                            {{packageName}}.{{serviceName}}Grpc.{{methodNameGetter}}(),
                             {{grpcCallsMethodName}}(
                                     new MethodHandlers<
                                             {{inputType}},
@@ -138,11 +138,11 @@ public final class {{className}} {
             io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
             io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
 
-        private final {{serviceName}}ImplBase serviceImpl;
+        private final {{serviceName}}VertxImplBase serviceImpl;
         private final int methodId;
         private final String compression;
 
-        MethodHandlers({{serviceName}}ImplBase serviceImpl, int methodId, String compression) {
+        MethodHandlers({{serviceName}}VertxImplBase serviceImpl, int methodId, String compression) {
             this.serviceImpl = serviceImpl;
             this.methodId = methodId;
             this.compression = compression;

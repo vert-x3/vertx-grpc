@@ -29,7 +29,7 @@ public class GoogleTest extends GrpcTestBase {
 
   private ManagedChannel channel;
 
-  private VertxTestServiceGrpc.VertxTestServiceStub buildStub() {
+  private VertxTestServiceGrpc.TestServiceVertxStub buildStub() {
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext(true).build();
     return VertxTestServiceGrpc.newVertxStub(channel);
   }
@@ -45,7 +45,7 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void emptyCallTest(TestContext will) {
     Async test = will.async();
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       @Override
       public Future<Empty> emptyCall(Empty request) {
         will.assertNotNull(request);
@@ -68,7 +68,7 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void emptyUnaryTest(TestContext will) {
     Async test = will.async();
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       @Override
       public Future<SimpleResponse> unaryCall(SimpleRequest request) {
         will.assertNotNull(request);
@@ -91,7 +91,7 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void streamingOutputCallTest(TestContext will) {
     Async test = will.async();
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       @Override
       public void streamingOutputCall(StreamingOutputCallRequest request, WriteStream<StreamingOutputCallResponse> response) {
         will.assertNotNull(request);
@@ -121,7 +121,7 @@ public class GoogleTest extends GrpcTestBase {
     final Async test = will.async();
     final AtomicInteger cnt = new AtomicInteger();
 
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       @Override
       public Future<StreamingInputCallResponse> streamingInputCall(ReadStream<StreamingInputCallRequest> request) {
         will.assertNotNull(request);
@@ -156,7 +156,7 @@ public class GoogleTest extends GrpcTestBase {
   public void fullDuplexCallTest(TestContext will) {
     final Async test = will.async();
 
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
@@ -196,7 +196,7 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void halfDuplexCallTest(TestContext will) throws Exception {
     Async test = will.async();
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       final AtomicInteger cnt = new AtomicInteger();
 
       @Override
@@ -242,7 +242,7 @@ public class GoogleTest extends GrpcTestBase {
   @Test
   public void unimplementedCallTest(TestContext will) {
     Async test = will.async();
-    startServer(new VertxTestServiceGrpc.TestServiceImplBase() {
+    startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       // The test server will not implement this method. It will be used
       // to test the behavior when clients call unimplemented methods.
     }, will.asyncAssertSuccess(v -> {

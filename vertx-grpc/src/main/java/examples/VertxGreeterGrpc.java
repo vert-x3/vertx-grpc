@@ -13,8 +13,8 @@ comments = "Source: helloworld.proto")
 public final class VertxGreeterGrpc {
     private VertxGreeterGrpc() {}
 
-    public static VertxGreeterStub newVertxStub(io.grpc.Channel channel) {
-        return new VertxGreeterStub(channel);
+    public static GreeterVertxStub newVertxStub(io.grpc.Channel channel) {
+        return new GreeterVertxStub(channel);
     }
 
     /**
@@ -22,22 +22,22 @@ public final class VertxGreeterGrpc {
      *  The greeting service definition.
      * </pre>
      */
-    public static final class VertxGreeterStub extends io.grpc.stub.AbstractStub<VertxGreeterStub> {
+    public static final class GreeterVertxStub extends io.grpc.stub.AbstractStub<GreeterVertxStub> {
         private GreeterGrpc.GreeterStub delegateStub;
 
-        private VertxGreeterStub(io.grpc.Channel channel) {
+        private GreeterVertxStub(io.grpc.Channel channel) {
             super(channel);
             delegateStub = GreeterGrpc.newStub(channel);
         }
 
-        private VertxGreeterStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+        private GreeterVertxStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
             super(channel, callOptions);
             delegateStub = GreeterGrpc.newStub(channel).build(channel, callOptions);
         }
 
         @Override
-        protected VertxGreeterStub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
-            return new VertxGreeterStub(channel, callOptions);
+        protected GreeterVertxStub build(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
+            return new GreeterVertxStub(channel, callOptions);
         }
 
         /**
@@ -56,7 +56,7 @@ public final class VertxGreeterGrpc {
      *  The greeting service definition.
      * </pre>
      */
-    public static abstract class GreeterImplBase implements io.grpc.BindableService {
+    public static abstract class GreeterVertxImplBase implements io.grpc.BindableService {
 
         private String compression;
 
@@ -65,7 +65,7 @@ public final class VertxGreeterGrpc {
          *
          * @param compression the compression, e.g {@code gzip}
          */
-        public GreeterImplBase withCompression(String compression) {
+        public GreeterVertxImplBase withCompression(String compression) {
             this.compression = compression;
             return this;
         }
@@ -100,11 +100,11 @@ public final class VertxGreeterGrpc {
             io.grpc.stub.ServerCalls.ClientStreamingMethod<Req, Resp>,
             io.grpc.stub.ServerCalls.BidiStreamingMethod<Req, Resp> {
 
-        private final GreeterImplBase serviceImpl;
+        private final GreeterVertxImplBase serviceImpl;
         private final int methodId;
         private final String compression;
 
-        MethodHandlers(GreeterImplBase serviceImpl, int methodId, String compression) {
+        MethodHandlers(GreeterVertxImplBase serviceImpl, int methodId, String compression) {
             this.serviceImpl = serviceImpl;
             this.methodId = methodId;
             this.compression = compression;

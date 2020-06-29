@@ -48,7 +48,7 @@ public class VerticleTest {
 
     private final int port;
     private volatile VertxServer server;
-    private VertxGreeterGrpc.GreeterImplBase service;
+    private VertxGreeterGrpc.GreeterVertxImplBase service;
 
     public GrpcVerticle(int port) {
       this.port = port;
@@ -60,7 +60,7 @@ public class VerticleTest {
 
     @Override
     public void start(Promise<Void> startFuture) throws Exception {
-      service = new VertxGreeterGrpc.GreeterImplBase() {
+      service = new VertxGreeterGrpc.GreeterVertxImplBase() {
         @Override
         public Future<HelloReply> sayHello(HelloRequest request) {
           threads.add(Thread.currentThread());
@@ -98,7 +98,7 @@ public class VerticleTest {
             .usePlaintext(true)
             .build();
         toClose.add(channel);
-        VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
         HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
         stub.sayHello(request).onComplete(ctx.asyncAssertSuccess(res -> {
           ctx.assertEquals("Hello Julien", res.getMessage());
@@ -126,7 +126,7 @@ public class VerticleTest {
         .usePlaintext(true)
         .build();
     try {
-      VertxGreeterGrpc.VertxGreeterStub blockingStub = VertxGreeterGrpc.newVertxStub(channel);
+      VertxGreeterGrpc.GreeterVertxStub blockingStub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
       blockingStub.sayHello(request).onComplete(ctx.asyncAssertFailure(err -> async.complete()));
       async.awaitSuccess(20000);

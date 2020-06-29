@@ -47,8 +47,8 @@ public class Examples {
 
   public void vertxSimpleServer(Vertx vertx) throws Exception {
     // The rcp service
-    VertxGreeterGrpc.GreeterImplBase service =
-      new VertxGreeterGrpc.GreeterImplBase() {
+    VertxGreeterGrpc.GreeterVertxImplBase service =
+      new VertxGreeterGrpc.GreeterVertxImplBase() {
         @Override
         public Future<HelloReply> sayHello(HelloRequest request) {
           return Future.succeededFuture(
@@ -82,8 +82,8 @@ public class Examples {
 
   public void vertxServerWithCompression() {
     // The rcp service
-    VertxGreeterGrpc.GreeterImplBase service =
-      new VertxGreeterGrpc.GreeterImplBase() {
+    VertxGreeterGrpc.GreeterVertxImplBase service =
+      new VertxGreeterGrpc.GreeterVertxImplBase() {
         @Override
         public Future<HelloReply> sayHello(HelloRequest request) {
           return Future.succeededFuture(
@@ -131,7 +131,7 @@ public class Examples {
     });
   }
 
-  public void vertxSimpleClient(VertxGreeterGrpc.VertxGreeterStub stub) {
+  public void vertxSimpleClient(VertxGreeterGrpc.GreeterVertxStub stub) {
     // Make a request
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
 
