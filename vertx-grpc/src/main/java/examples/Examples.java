@@ -21,8 +21,14 @@ public class Examples {
     // The rcp service
     GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
-        responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
+      public void sayHello(
+        HelloRequest request,
+        StreamObserver<HelloReply> responseObserver) {
+
+        responseObserver.onNext(
+          HelloReply.newBuilder()
+            .setMessage(request.getName())
+            .build());
         responseObserver.onCompleted();
       }
     };
@@ -41,21 +47,34 @@ public class Examples {
 
   public void vertxSimpleServer(Vertx vertx) throws Exception {
     // The rcp service
-    VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
-      @Override
-      public Future<HelloReply> sayHello(HelloRequest request) {
-        return Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build());
-      }
-    };
+    VertxGreeterGrpc.GreeterImplBase service =
+      new VertxGreeterGrpc.GreeterImplBase() {
+        @Override
+        public Future<HelloReply> sayHello(HelloRequest request) {
+          return Future.succeededFuture(
+            HelloReply.newBuilder()
+              .setMessage(request.getName())
+              .build());
+        }
+      };
   }
 
   public void serverWithCompression(Vertx vertx) {
     // The rcp service
     GreeterGrpc.GreeterImplBase service = new GreeterGrpc.GreeterImplBase() {
       @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
-        ((ServerCallStreamObserver) responseObserver).setCompression("gzip");
-        responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
+      public void sayHello(
+        HelloRequest request,
+        StreamObserver<HelloReply> responseObserver) {
+
+        ((ServerCallStreamObserver) responseObserver)
+          .setCompression("gzip");
+
+        responseObserver.onNext(
+          HelloReply.newBuilder()
+            .setMessage(request.getName())
+            .build());
+
         responseObserver.onCompleted();
       }
     };
@@ -63,13 +82,17 @@ public class Examples {
 
   public void vertxServerWithCompression() {
     // The rcp service
-    VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
-      @Override
-      public Future<HelloReply> sayHello(HelloRequest request) {
-        return Future.succeededFuture(HelloReply.newBuilder().setMessage(request.getName()).build());
+    VertxGreeterGrpc.GreeterImplBase service =
+      new VertxGreeterGrpc.GreeterImplBase() {
+        @Override
+        public Future<HelloReply> sayHello(HelloRequest request) {
+          return Future.succeededFuture(
+            HelloReply.newBuilder()
+              .setMessage(request.getName())
+              .build());
+        }
       }
-    }
-    .withCompression("gzip");
+        .withCompression("gzip");
   }
 
   public void connectClient(Vertx vertx) {
@@ -90,17 +113,20 @@ public class Examples {
     // Call the remote service
     stub.sayHello(request, new StreamObserver<HelloReply>() {
       private HelloReply helloReply;
+
       @Override
       public void onNext(HelloReply helloReply) {
         this.helloReply = helloReply;
       }
+
       @Override
       public void onError(Throwable throwable) {
         System.out.println("Coult not reach server " + throwable.getMessage());
       }
+
       @Override
       public void onCompleted() {
-        System.out.println("Got the server response: " +helloReply.getMessage());
+        System.out.println("Got the server response: " + helloReply.getMessage());
       }
     });
   }
@@ -115,14 +141,15 @@ public class Examples {
     // Listen to completion events
     future
       .onSuccess(helloReply -> {
-      System.out.println("Got the server response: " + helloReply.getMessage());
-    }).onFailure(err -> {
+        System.out.println("Got the server response: " + helloReply.getMessage());
+      }).onFailure(err -> {
       System.out.println("Coult not reach server " + err);
     });
   }
 
   public void clientWithCompression(ManagedChannel channel) {
-    // Get a stub to use for interacting with the remote service with message compression
+    // Get a stub to use for interacting with the
+    // remote service with message compression
     GreeterGrpc.GreeterStub stub = GreeterGrpc
       .newStub(channel)
       .withCompression("gzip");
@@ -130,12 +157,12 @@ public class Examples {
 
   public void sslServer(Vertx vertx) {
     VertxServerBuilder builder = VertxServerBuilder.forPort(vertx, 8080)
-        .useSsl(options -> options
-            .setSsl(true)
-            .setUseAlpn(true)
-            .setKeyStoreOptions(new JksOptions()
-                .setPath("server-keystore.jks")
-                .setPassword("secret")));
+      .useSsl(options -> options
+        .setSsl(true)
+        .setUseAlpn(true)
+        .setKeyStoreOptions(new JksOptions()
+          .setPath("server-keystore.jks")
+          .setPassword("secret")));
   }
 
   public void serverScaling(Vertx vertx) {
@@ -147,8 +174,15 @@ public class Examples {
 
         BindableService service = new GreeterGrpc.GreeterImplBase() {
           @Override
-          public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
-            responseObserver.onNext(HelloReply.newBuilder().setMessage(request.getName()).build());
+          public void sayHello(
+            HelloRequest request,
+            StreamObserver<HelloReply> responseObserver) {
+
+            responseObserver.onNext(
+              HelloReply.newBuilder()
+                .setMessage(request.getName())
+                .build());
+
             responseObserver.onCompleted();
           }
         };
@@ -170,14 +204,14 @@ public class Examples {
 
   public void sslClient(Vertx vertx) {
     ManagedChannel channel = VertxChannelBuilder.
-        forAddress(vertx, "localhost", 8080)
-        .useSsl(options -> options
-            .setSsl(true)
-            .setUseAlpn(true)
-            .setTrustStoreOptions(new JksOptions()
-                .setPath("client-truststore.jks")
-                .setPassword("secret")))
-        .build();
+      forAddress(vertx, "localhost", 8080)
+      .useSsl(options -> options
+        .setSsl(true)
+        .setUseAlpn(true)
+        .setTrustStoreOptions(new JksOptions()
+          .setPath("client-truststore.jks")
+          .setPassword("secret")))
+      .build();
   }
 
   public void blockingInterceptor() {
@@ -193,7 +227,7 @@ public class Examples {
   }
 
   public <MyInterceptor extends ServerInterceptor> void nonblockingInterceptorUsage(
-    MyInterceptor myInterceptor, Vertx vertx, BindableService service)  throws Exception {
+    MyInterceptor myInterceptor, Vertx vertx, BindableService service) {
     VertxServer rpcServer = VertxServerBuilder
       .forAddress(vertx, "my.host", 8080)
       .addService(ServerInterceptors.intercept(service, myInterceptor))
@@ -201,9 +235,13 @@ public class Examples {
   }
 
   public <MyInterceptor extends ServerInterceptor> void blockingInterceptorUsage(
-    MyInterceptor myInterceptor, Vertx vertx, BindableService service)  throws Exception {
+    MyInterceptor myInterceptor,
+    Vertx vertx,
+    BindableService service) throws Exception {
+
     // wrap interceptor to execute on worker thread instead of event loop
-    ServerInterceptor wrapped = BlockingServerInterceptor.wrap(vertx, myInterceptor);
+    ServerInterceptor wrapped =
+      BlockingServerInterceptor.wrap(vertx, myInterceptor);
 
     // Create the server
     VertxServer rpcServer = VertxServerBuilder

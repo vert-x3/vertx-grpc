@@ -6,7 +6,6 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 
