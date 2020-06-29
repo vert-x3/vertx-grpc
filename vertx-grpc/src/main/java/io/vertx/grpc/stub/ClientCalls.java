@@ -34,14 +34,14 @@ public final class ClientCalls {
   public static <I, O> Future<O> manyToOne(Handler<WriteStream<I>> requestHandler, Function<StreamObserver<O>, StreamObserver<I>> delegate) {
     Promise<O> promise = Promise.promise();
     StreamObserver<I> request = delegate.apply(toStreamObserver(promise));
-    requestHandler.handle(new GrpcWriteStream(request));
+    requestHandler.handle(new GrpcWriteStream<>(request));
     return promise.future();
   }
 
   public static <I, O> ReadStream<O> manyToMany(Handler<WriteStream<I>> requestHandler, Function<StreamObserver<O>, StreamObserver<I>> delegate) {
     StreamObserverReadStream<O> response = new StreamObserverReadStream<>();
     StreamObserver<I> request = delegate.apply(response);
-    requestHandler.handle(new GrpcWriteStream(request));
+    requestHandler.handle(new GrpcWriteStream<>(request));
     return response;
   }
 

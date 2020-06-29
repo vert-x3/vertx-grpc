@@ -228,7 +228,7 @@ public class VertxGrpcGenerator extends Generator {
   /**
    * Template class for proto RPC objects.
    */
-  private class MethodContext {
+  private static class MethodContext {
     // CHECKSTYLE DISABLE VisibilityModifier FOR 10 LINES
     public String methodName;
     public String inputType;

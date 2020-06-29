@@ -4,6 +4,7 @@ import examples.HelloReply;
 import examples.HelloRequest;
 import examples.VertxGreeterGrpc;
 import io.grpc.ManagedChannel;
+import io.grpc.netty.NegotiationType;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
