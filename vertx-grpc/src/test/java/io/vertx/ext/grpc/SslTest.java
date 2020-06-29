@@ -100,7 +100,7 @@ public class SslTest extends GrpcTestBase {
     Async started = ctx.async();
     Context serverCtx = vertx.getOrCreateContext();
     serverCtx.runOnContext(v -> {
-      VertxGreeterGrpc.GreeterImplBase service = new VertxGreeterGrpc.GreeterImplBase() {
+      VertxGreeterGrpc.GreeterVertxImplBase service = new VertxGreeterGrpc.GreeterVertxImplBase() {
         @Override
         public Future<HelloReply> sayHello(HelloRequest request) {
           ctx.assertEquals(serverCtx, Vertx.currentContext());
@@ -124,7 +124,7 @@ public class SslTest extends GrpcTestBase {
             .useSsl(clientSslBuilder)
             .build();
         channelRef.set(channel);
-        VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
         HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
         Future<HelloReply> fut = stub.sayHello(request);
         if (pass) {

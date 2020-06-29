@@ -37,7 +37,7 @@ public class CommandDecoratorTest extends GrpcTestBase {
         .start(completionHandler);*/
         server = VertxServerBuilder.forPort(vertx, port)
           .commandDecorator(decorator)
-          .addService(new VertxGreeterGrpc.GreeterImplBase() {
+          .addService(new VertxGreeterGrpc.GreeterVertxImplBase() {
             @Override
             public Future<HelloReply> sayHello(HelloRequest request) {
               ctx.assertEquals(serverCtx, Vertx.currentContext());
@@ -69,7 +69,7 @@ public class CommandDecoratorTest extends GrpcTestBase {
       ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
         .usePlaintext(true)
         .build();
-      VertxGreeterGrpc.VertxGreeterStub stub = VertxGreeterGrpc.newVertxStub(channel);
+      VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
       stub.sayHello(request).onComplete(ar -> {
         if (ar.succeeded()) {

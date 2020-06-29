@@ -111,7 +111,7 @@ public class VertxGrpcGenerator extends Generator {
 
   private MethodContext buildMethodContext(DescriptorProtos.MethodDescriptorProto methodProto, ProtoTypeMap typeMap, List<DescriptorProtos.SourceCodeInfo.Location> locations, int methodNumber) {
     MethodContext methodContext = new MethodContext();
-    methodContext.methodName = lowerCaseFirst(methodProto.getName());
+    methodContext.methodName = mixedLower(methodProto.getName());
     methodContext.inputType = typeMap.toJavaTypeName(methodProto.getInputType());
     methodContext.outputType = typeMap.toJavaTypeName(methodProto.getOutputType());
     methodContext.deprecated = methodProto.getOptions() != null && methodProto.getOptions().getDeprecated();
@@ -147,8 +147,99 @@ public class VertxGrpcGenerator extends Generator {
     return methodContext;
   }
 
-  private String lowerCaseFirst(String s) {
-    return Character.toLowerCase(s.charAt(0)) + s.substring(1);
+  // java keywords from: https://docs.oracle.com/javase/specs/jls/se8/html/jls-3.html#jls-3.9
+  private static final List<CharSequence> JAVA_KEYWORDS = Arrays.asList(
+    "abstract",
+    "assert",
+    "boolean",
+    "break",
+    "byte",
+    "case",
+    "catch",
+    "char",
+    "class",
+    "const",
+    "continue",
+    "default",
+    "do",
+    "double",
+    "else",
+    "enum",
+    "extends",
+    "final",
+    "finally",
+    "float",
+    "for",
+    "goto",
+    "if",
+    "implements",
+    "import",
+    "instanceof",
+    "int",
+    "interface",
+    "long",
+    "native",
+    "new",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "short",
+    "static",
+    "strictfp",
+    "super",
+    "switch",
+    "synchronized",
+    "this",
+    "throw",
+    "throws",
+    "transient",
+    "try",
+    "void",
+    "volatile",
+    "while",
+    // additional ones added by us
+    "true",
+    "false"
+  );
+
+  /**
+   * Adjust a method name prefix identifier to follow the JavaBean spec:
+   * - decapitalize the first letter
+   * - remove embedded underscores & capitalize the following letter
+   * <p>
+   * Finally, if the result is a reserved java keyword, append an underscore.
+   *
+   * @param word method name
+   * @return lower name
+   */
+  private static String mixedLower(String word) {
+    StringBuffer w = new StringBuffer();
+    w.append(Character.toLowerCase(word.charAt(0)));
+
+    boolean afterUnderscore = false;
+
+    for (int i = 1; i < word.length(); ++i) {
+      char c = word.charAt(i);
+
+      if (c == '_') {
+        afterUnderscore = true;
+      } else {
+        if (afterUnderscore) {
+          w.append(Character.toUpperCase(c));
+        } else {
+          w.append(c);
+        }
+        afterUnderscore = false;
+      }
+    }
+
+    if (JAVA_KEYWORDS.contains(w)) {
+      w.append('_');
+    }
+
+    return w.toString();
   }
 
   private List<PluginProtos.CodeGeneratorResponse.File> generateFiles(List<ServiceContext> services) {
@@ -255,14 +346,8 @@ public class VertxGrpcGenerator extends Generator {
       return s.toString();
     }
 
-    public String methodNamePascalCase() {
-      String mn = methodName.replace("_", "");
-      return String.valueOf(Character.toUpperCase(mn.charAt(0))) + mn.substring(1);
-    }
-
-    public String methodNameCamelCase() {
-      String mn = methodName.replace("_", "");
-      return String.valueOf(Character.toLowerCase(mn.charAt(0))) + mn.substring(1);
+    public String methodNameGetter() {
+      return VertxGrpcGenerator.mixedLower("get_" + methodName + "_method");
     }
 
     public String methodHeader() {
