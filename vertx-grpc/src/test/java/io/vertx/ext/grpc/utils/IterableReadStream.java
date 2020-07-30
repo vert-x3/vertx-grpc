@@ -4,7 +4,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class IterableReadStream<T> extends BaseReadStream<T> {
 
