@@ -13,7 +13,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.PromiseInternal;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
