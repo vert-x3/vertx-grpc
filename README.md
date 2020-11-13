@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/vert-x3/vertx-grpc.svg?branch=master)](https://travis-ci.org/vert-x3/vertx-grpc)
+![CI](https://github.com/vert-x3/vertx-grpc/workflows/CI/badge.svg?branch=master)
 
 # Vert.x gRPC
 
@@ -33,7 +33,7 @@ To use vertx-grpc-protoc-plugin with the protobuf-maven-plugin, add a [custom pr
         <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
     </protocPlugin>
 </protocPlugins>
-``` 
+```
 
 And add the [vertx-grpc](https://github.com/vert-x3/vertx-grpc) dependency:
 
