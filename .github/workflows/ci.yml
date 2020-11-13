@@ -38,7 +38,7 @@ jobs:
           report_individual_runs: true
   Deploy:
     name: Deploy to OSSRH
-    if: ${{ github.repository_owner == 'vietj' && github.event_name == 'push' }}
+    if: ${{ github.repository_owner == 'vert-x3' && github.event_name == 'push' }}
     needs: Test
     runs-on: ubuntu-latest
     env:
