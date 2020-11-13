@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/vert-x3/vertx-grpc.svg?branch=master?branch=master)](https://travis-ci.org/vert-x3/vertx-grpc)
+![CI](https://github.com/vert-x3/vertx-grpc/workflows/CI/badge.svg?branch=3.9)
 
 # Vert.x gRPC
 
