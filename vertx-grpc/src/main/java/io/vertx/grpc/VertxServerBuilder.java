@@ -36,9 +36,9 @@ public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
   }
 
   private final ServerID id;
-  private VertxInternal vertx;
-  private NettyServerBuilder builder;
-  private HttpServerOptions options = new HttpServerOptions();
+  private final VertxInternal vertx;
+  private final NettyServerBuilder builder;
+  private final HttpServerOptions options = new HttpServerOptions();
   private Consumer<Runnable> commandDecorator;
 
   private VertxServerBuilder(Vertx vertx, int port) {

@@ -4,10 +4,8 @@ import examples.HelloReply;
 import examples.HelloRequest;
 import examples.VertxGreeterGrpc;
 import io.grpc.ManagedChannel;
-import io.grpc.netty.NegotiationType;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
@@ -22,70 +20,52 @@ import java.util.function.Consumer;
  * Date: 4/28/20
  */
 public class CommandDecoratorTest extends GrpcTestBase {
-  @Test
-  public void testCommandDecoration(TestContext ctx) {
-    Async started = ctx.async();
-    Context serverCtx = vertx.getOrCreateContext();
+
+  @Test(timeout = 10_000L)
+  public void testCommandDecoration(TestContext should) {
+    final Async test = should.async();
 
     TestDecorator decorator = new TestDecorator();
 
-    serverCtx.runOnContext(
-      v -> {
-        /*    server = builder
-        .addService(service)
-        .build()
-        .start(completionHandler);*/
-        server = VertxServerBuilder.forPort(vertx, port)
-          .commandDecorator(decorator)
-          .addService(new VertxGreeterGrpc.GreeterVertxImplBase() {
-            @Override
-            public Future<HelloReply> sayHello(HelloRequest request) {
-              ctx.assertEquals(serverCtx, Vertx.currentContext());
-              ctx.assertTrue(Context.isOnEventLoopThread());
+    server = VertxServerBuilder.forPort(vertx, port)
+      .commandDecorator(decorator)
+      .addService(new VertxGreeterGrpc.GreeterVertxImplBase() {
+        @Override
+        public Future<HelloReply> sayHello(HelloRequest request) {
+          should.assertTrue(Context.isOnEventLoopThread());
 
-              return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-            }
-          }).build();
-
-        server.start(ar -> {
-          if (ar.succeeded()) {
-            started.complete();
-          } else {
-            ctx.fail(ar.cause());
-          }
-        });
-      }
-    );
-
-    started.awaitSuccess(10000);
-
-    if (server.getRawServer() == null) {
-      ctx.fail("The underlying server not exposed (server.getRawServer())");
-    }
-
-    Async async = ctx.async();
-    Context clientCtx = vertx.getOrCreateContext();
-    clientCtx.runOnContext(v -> {
-      ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-        .usePlaintext()
-        .build();
-      VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-      HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).onComplete(ar -> {
-        if (ar.succeeded()) {
-          ctx.assertEquals(clientCtx, Vertx.currentContext());
-          ctx.assertTrue(Context.isOnEventLoopThread());
-          ctx.assertEquals("Hello Julien", ar.result().getMessage());
-
-          if (!decorator.invoked) {
-            ctx.fail("Command Decorator was not invoked");
-          }
-          async.complete();
-        } else {
-          ctx.fail(ar.cause());
+          return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
         }
-        channel.shutdown();
-      });
+      }).build();
+
+    server.start(ar -> {
+      if (ar.succeeded()) {
+        if (server.getRawServer() == null) {
+          should.fail("The underlying server not exposed (server.getRawServer())");
+        }
+
+        ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+
+        stub.sayHello(request)
+          .onFailure(should::fail)
+          .onSuccess(helloReply -> {
+            should.assertTrue(Context.isOnEventLoopThread());
+            should.assertEquals("Hello Julien", helloReply.getMessage());
+
+            if (!decorator.invoked) {
+              should.fail("Command Decorator was not invoked");
+            }
+            channel.shutdown();
+            test.complete();
+          });
+      } else {
+        should.fail(ar.cause());
+      }
     });
   }
 

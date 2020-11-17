@@ -48,7 +48,6 @@ public class VerticleTest {
 
     private final int port;
     private volatile VertxServer server;
-    private VertxGreeterGrpc.GreeterVertxImplBase service;
 
     public GrpcVerticle(int port) {
       this.port = port;
@@ -60,7 +59,7 @@ public class VerticleTest {
 
     @Override
     public void start(Promise<Void> startFuture) throws Exception {
-      service = new VertxGreeterGrpc.GreeterVertxImplBase() {
+      VertxGreeterGrpc.GreeterVertxImplBase service = new VertxGreeterGrpc.GreeterVertxImplBase() {
         @Override
         public Future<HelloReply> sayHello(HelloRequest request) {
           threads.add(Thread.currentThread());
@@ -117,9 +116,7 @@ public class VerticleTest {
   @Test
   public void testCloseInVerticle(TestContext ctx) throws Exception {
     Async started = ctx.async();
-    vertx.deployVerticle(GrpcVerticle.class.getName(), ctx.asyncAssertSuccess(id -> {
-      vertx.undeploy(id, ctx.asyncAssertSuccess(v -> started.complete()));
-    }));
+    vertx.deployVerticle(GrpcVerticle.class.getName(), ctx.asyncAssertSuccess(id -> vertx.undeploy(id, ctx.asyncAssertSuccess(v -> started.complete()))));
     started.awaitSuccess(10000);
     Async async = ctx.async();
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)

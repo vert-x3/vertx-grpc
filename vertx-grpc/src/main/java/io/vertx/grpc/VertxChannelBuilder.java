@@ -44,8 +44,8 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
 
   private final Vertx vertx;
   private final NettyChannelBuilder builder;
-  private ContextInternal context;
-  private HttpClientOptions options = new HttpClientOptions();
+  private final ContextInternal context;
+  private final HttpClientOptions options = new HttpClientOptions();
 
   private VertxChannelBuilder(Vertx vertx, String host, int port) {
     this(vertx, GrpcUtil.authorityFromHostAndPort(host, port));

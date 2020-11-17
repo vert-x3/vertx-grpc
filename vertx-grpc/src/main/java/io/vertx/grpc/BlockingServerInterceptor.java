@@ -54,7 +54,7 @@ public class BlockingServerInterceptor implements ServerInterceptor {
    */
   private static class AsyncListener<ReqT> extends ServerCall.Listener<ReqT> {
     private ServerCall.Listener<ReqT> delegate;
-    private List<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
+    private final List<Consumer<ServerCall.Listener<ReqT>>> incomingEvents = new LinkedList<>();
 
     void setDelegate(ServerCall.Listener<ReqT> delegate) {
       this.delegate = delegate;

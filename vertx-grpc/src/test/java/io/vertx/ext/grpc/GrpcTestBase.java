@@ -2,25 +2,27 @@ package io.vertx.ext.grpc;
 
 import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
+import io.vertx.core.impl.VertxInternal;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 @RunWith(VertxUnitRunner.class)
 public abstract class GrpcTestBase {
+
+  @Rule
+  public RunTestOnContext rule = new RunTestOnContext();
 
   /* The port on which the server should run */
   Vertx vertx;
@@ -30,56 +32,52 @@ public abstract class GrpcTestBase {
   @Before
   public void setUp() {
     port = 50051;
-    vertx = Vertx.vertx();
+    vertx = rule.vertx();
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown(TestContext should) {
+    final Async test = should.async();
+
     if (server != null) {
       VertxServer s = server;
       server = null;
-      CountDownLatch fut = new CountDownLatch(1);
-      s.shutdown(ar -> fut.countDown());
-      fut.await(10, TimeUnit.SECONDS);
+      final long timerId = rule.vertx().setTimer(10_000L, t -> should.fail("Timeout shutting down"));
+      s.shutdown(shutdown -> {
+        rule.vertx().cancelTimer(timerId);
+        if (shutdown.failed()) {
+          should.fail(shutdown.cause());
+        } else {
+          test.complete();
+        }
+      });
     }
-    CountDownLatch latch = new CountDownLatch(1);
-    vertx.close(ar -> latch.countDown());
-    latch.await(10, TimeUnit.SECONDS);
   }
 
-  void startServer(BindableService service) throws Exception {
-    CompletableFuture<Void> fut = new CompletableFuture<>();
-    startServer(service, ar -> {
-      if (ar.succeeded()) {
-        fut.complete(null);
-      } else {
-        fut.completeExceptionally(ar.cause());
-      }
-    });
-    fut.get(10, TimeUnit.SECONDS);
+  Future<Void> startServer(BindableService service) {
+    return startServer(service, VertxServerBuilder.forPort(vertx, port));
   }
 
-  void startServer(BindableService service, Handler<AsyncResult<Void>> completionHandler) {
-    startServer(service, VertxServerBuilder.forPort(vertx, port), completionHandler);
-  }
-
-  void startServer(BindableService service, VertxServerBuilder builder, Handler<AsyncResult<Void>> completionHandler) {
+  Future<Void> startServer(BindableService service, VertxServerBuilder builder) {
+    Promise<Void> promise = ((VertxInternal) rule.vertx()).promise();
     server = builder
         .addService(service)
         .build()
-        .start(completionHandler);
+        .start(promise);
+
+    return promise.future();
   }
 
-  void startServer(ServerServiceDefinition service) throws Exception {
-    CompletableFuture<Void> fut = new CompletableFuture<>();
+  Future<Void> startServer(ServerServiceDefinition service) {
+    Promise<Void> promise = ((VertxInternal) rule.vertx()).promise();
     startServer(service, ar -> {
       if (ar.succeeded()) {
-        fut.complete(null);
+        promise.complete();
       } else {
-        fut.completeExceptionally(ar.cause());
+        promise.fail(ar.cause());
       }
     });
-    fut.get(10, TimeUnit.SECONDS);
+    return promise.future();
   }
 
   void startServer(ServerServiceDefinition service, Handler<AsyncResult<Void>> completionHandler) {

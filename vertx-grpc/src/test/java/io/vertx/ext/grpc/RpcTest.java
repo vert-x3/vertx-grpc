@@ -1,20 +1,25 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.*;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
+import io.grpc.examples.helloworld.VertxGreeterGrpc;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.VertxStreamingGrpc;
-import io.vertx.core.*;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.ext.grpc.utils.IterableReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.*;
+import io.vertx.grpc.BlockingServerInterceptor;
+import io.vertx.grpc.VertxChannelBuilder;
+import io.vertx.grpc.VertxServerBuilder;
 import org.junit.Test;
-
-import io.grpc.examples.helloworld.*;
-import io.vertx.core.streams.WriteStream;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,51 +40,48 @@ public class RpcTest extends GrpcTestBase {
   private volatile ManagedChannel channel;
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  public void tearDown(TestContext should) {
     if (channel != null) {
       channel.shutdown();
     }
+    super.tearDown(should);
   }
 
-  @Test
-  public void testSimple(TestContext ctx) {
-    Async started = ctx.async();
-    Context serverCtx = vertx.getOrCreateContext();
-    serverCtx.runOnContext(v1 -> startServer(new VertxGreeterGrpc.GreeterVertxImplBase() {
+  @Test(timeout = 10_000L)
+  public void testSimple(TestContext should) {
+    Async test = should.async();
+
+    startServer(new VertxGreeterGrpc.GreeterVertxImplBase() {
       @Override
       public Future<HelloReply> sayHello(HelloRequest request) {
-        ctx.assertEquals(serverCtx, Vertx.currentContext());
-        ctx.assertTrue(Context.isOnEventLoopThread());
-
+        should.assertTrue(Context.isOnEventLoopThread());
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
-    }, ctx.asyncAssertSuccess(v2 -> started.complete())));
-    started.awaitSuccess(10000);
-    Async async = ctx.async();
-    Context clientCtx = vertx.getOrCreateContext();
-    clientCtx.runOnContext(v -> {
-      channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-       .usePlaintext()
-       .build();
-      VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-      HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      stub.sayHello(request).onComplete(ctx.asyncAssertSuccess(res -> {
-        ctx.assertEquals(clientCtx, Vertx.currentContext());
-        ctx.assertTrue(Context.isOnEventLoopThread());
-        ctx.assertEquals("Hello Julien", res.getMessage());
-        async.complete();
-      }));
-    });
+    })
+      .onFailure(should::fail)
+      .onSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+
+        stub.sayHello(request).onComplete(should.asyncAssertSuccess(res -> {
+          should.assertTrue(Context.isOnEventLoopThread());
+          should.assertEquals("Hello Julien", res.getMessage());
+          test.complete();
+        }));
+      });
   }
 
-  @Test
-  public void testBlocking(TestContext ctx) throws Exception {
+  @Test(timeout = 10_000L)
+  public void testBlocking(TestContext should) {
     ServerInterceptor blockingInterceptor = new ServerInterceptor() {
       @Override
       public <Q, A> ServerCall.Listener<Q> interceptCall(ServerCall<Q, A> call, Metadata m, ServerCallHandler<Q, A> h) {
         // run on worker
-        ctx.assertTrue(Context.isOnWorkerThread());
+        should.assertTrue(Context.isOnWorkerThread());
         System.out.println("sleep on " + Thread.currentThread());
         try {
           Thread.sleep(3000);
@@ -92,30 +94,34 @@ public class RpcTest extends GrpcTestBase {
     BindableService service = new VertxGreeterGrpc.GreeterVertxImplBase() {
       @Override
       public Future<HelloReply> sayHello(HelloRequest request) {
-
-        ctx.assertTrue(Context.isOnEventLoopThread());
+        should.assertTrue(Context.isOnEventLoopThread());
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     };
-    startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)));
-    Async async = ctx.async(2);
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext()
-     .build();
-    VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-    Arrays.asList("Julien", "Paulo").forEach(name -> {
-      stub
-        .sayHello(HelloRequest.newBuilder().setName(name).build())
-        .onComplete(ctx.asyncAssertSuccess(res -> {
-        ctx.assertEquals("Hello " + name, res.getMessage());
-        async.countDown();
-      }));
-    });
-    async.awaitSuccess(10000);
+
+    final Async tests = should.async(2);
+
+    startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
+      .onFailure(should::fail)
+      .onSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        Arrays.asList("Julien", "Paulo").forEach(name -> stub
+          .sayHello(HelloRequest.newBuilder().setName(name).build())
+          .onComplete(should.asyncAssertSuccess(res -> {
+            should.assertEquals("Hello " + name, res.getMessage());
+            tests.countDown();
+          })));
+      });
   }
 
-  @Test
-  public void testBlockingException(TestContext ctx) {
+  @Test(timeout = 10_000L)
+  public void testBlockingException(TestContext should) {
+    final Async test = should.async();
+
     Metadata.Key<String> mdKey = Metadata.Key.of("mdkey", Metadata.ASCII_STRING_MARSHALLER);
     ServerInterceptor blockingInterceptor = new ServerInterceptor() {
       @Override
@@ -131,146 +137,148 @@ public class RpcTest extends GrpcTestBase {
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     };
-    Async started = ctx.async();
     server = VertxServerBuilder.forPort(vertx, port)
-     .addService(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
-     .build()
-     .start(ar -> {
-       if (ar.succeeded()) {
-         started.complete();
-       } else {
-         ctx.fail(ar.cause());
-       }
-     });
-    started.awaitSuccess(10000);
-    Async async = ctx.async();
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext()
-     .build();
-    VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-    stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(ctx.asyncAssertFailure(err -> {
-      ctx.assertTrue(err instanceof StatusRuntimeException);
-      StatusRuntimeException sre = (StatusRuntimeException) err;
-      ctx.assertEquals(Status.ABORTED, sre.getStatus());
-      ctx.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
-      async.countDown();
-    }));
-    async.awaitSuccess(10000);
+      .addService(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
+      .build()
+      .start(ar -> {
+        if (ar.failed()) {
+          should.fail(ar.cause());
+          return;
+        }
+
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(should.asyncAssertFailure(err -> {
+          should.assertTrue(err instanceof StatusRuntimeException);
+          StatusRuntimeException sre = (StatusRuntimeException) err;
+          should.assertEquals(Status.ABORTED, sre.getStatus());
+          should.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
+          test.complete();
+        }));
+      });
   }
 
-  @Test
-  public void testStreamSource(TestContext ctx) throws Exception {
+  @Test(timeout = 10_000L)
+  public void testStreamSource(TestContext should) {
     int numItems = 128;
-    Async done = ctx.async();
+    final Async test = should.async();
+
     startServer(new VertxStreamingGrpc.StreamingVertxImplBase() {
       @Override
       public void source(Empty request, WriteStream<Item> response) {
         new IterableReadStream<>(cnt -> Item.newBuilder().setValue("the-value-" + cnt).build(), numItems).pipeTo(response);
       }
-    });
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext()
-     .build();
-    VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
-    final List<String> items = new ArrayList<>();
-    stub.source(Empty.newBuilder().build())
-     .endHandler(v -> {
-       List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-       ctx.assertEquals(expected, items);
-       done.complete();
-     })
-     .exceptionHandler(ctx::fail)
-     .handler(item -> items.add(item.getValue()));
+    })
+      .onFailure(should::fail)
+      .onSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+
+        VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
+        final List<String> items = new ArrayList<>();
+        stub.source(Empty.newBuilder().build())
+          .endHandler(v1 -> {
+            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+            should.assertEquals(expected, items);
+            test.complete();
+          })
+          .exceptionHandler(should::fail)
+          .handler(item -> items.add(item.getValue()));
+      });
   }
 
-  @Test
-  public void testStreamSink(TestContext ctx) throws Exception {
+  @Test(timeout = 10_000L)
+  public void testStreamSink(TestContext should) {
     int numItems = 128;
-    Async done = ctx.async();
+    Async done = should.async();
     startServer(new VertxStreamingGrpc.StreamingVertxImplBase() {
       @Override
       public Future<Empty> sink(ReadStream<Item> request) {
         List<String> items = new ArrayList<>();
         Promise<Empty> promise = Promise.promise();
-
         request
-         .endHandler(v -> {
-           List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-           ctx.assertEquals(expected, items);
-           done.complete();
-           promise.complete(Empty.getDefaultInstance());
-         })
-         .exceptionHandler(ctx::fail)
-         .handler(item -> items.add(item.getValue()));
+          .endHandler(v -> {
+            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+            should.assertEquals(expected, items);
+            done.complete();
+            promise.complete(Empty.getDefaultInstance());
+          })
+          .exceptionHandler(should::fail)
+          .handler(item -> items.add(item.getValue()));
         return promise.future();
       }
-    });
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext()
-     .build();
-    VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
-    AtomicInteger count = new AtomicInteger(numItems);
+    })
+      .onFailure(should::fail)
+      .onSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
 
-    Handler<WriteStream<Item>> h = ws -> {
-      vertx.setPeriodic(10, id -> {
-        int val = count.decrementAndGet();
-        if (val >= 0) {
-          ws.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
-        } else {
-          vertx.cancelTimer(id);
-          ws.end();
-        }
+        VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
+        AtomicInteger count = new AtomicInteger(numItems);
+
+        Handler<WriteStream<Item>> h = ws -> vertx.setPeriodic(10, id -> {
+          int val = count.decrementAndGet();
+          if (val >= 0) {
+            ws.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+          } else {
+            vertx.cancelTimer(id);
+            ws.end();
+          }
+        });
+
+        stub.sink(h)
+          .onComplete(should.asyncAssertSuccess());
       });
-
-    };
-
-    stub.sink(h)
-     .onComplete(ctx.asyncAssertSuccess());
   }
 
-  @Test
-  public void testStreamPipe(TestContext ctx) throws Exception {
+  @Test(timeout = 10_000L)
+  public void testStreamPipe(TestContext should) {
     int numItems = 128;
-    Async done = ctx.async();
+    Async done = should.async();
     startServer(new VertxStreamingGrpc.StreamingVertxImplBase() {
       @Override
       public void pipe(ReadStream<Item> request, WriteStream<Item> response) {
         request.pipeTo(response);
       }
-    });
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext()
-     .build();
-    VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
-    final List<String> items = new ArrayList<>();
-    AtomicInteger count = new AtomicInteger(numItems);
+    })
+      .onFailure(should::fail)
+      .onSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+        VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
+        final List<String> items = new ArrayList<>();
+        AtomicInteger count = new AtomicInteger(numItems);
 
-    Handler<WriteStream<Item>> h = ws -> {
-      vertx.setPeriodic(10, id -> {
-        int val = count.decrementAndGet();
-        if (val >= 0) {
-          ws.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
-        } else {
-          vertx.cancelTimer(id);
-          ws.end();
-        }
+        Handler<WriteStream<Item>> h = ws -> vertx.setPeriodic(10, id -> {
+          int val = count.decrementAndGet();
+          if (val >= 0) {
+            ws.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+          } else {
+            vertx.cancelTimer(id);
+            ws.end();
+          }
+        });
+
+        stub.pipe(h)
+          .endHandler(v1 -> {
+            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+            should.assertEquals(expected, items);
+            done.complete();
+          })
+          .exceptionHandler(should::fail)
+          .handler(item -> items.add(item.getValue()));
       });
-    };
-
-    stub.pipe(h)
-     .endHandler(v -> {
-       List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-       ctx.assertEquals(expected, items);
-       done.complete();
-     })
-     .exceptionHandler(ctx::fail)
-     .handler(item -> items.add(item.getValue()));
-
   }
 
-  @Test
-  public void testRandomPort(TestContext ctx) throws Exception {
-    Async started = ctx.async();
+  @Test(timeout = 10_000L)
+  public void testRandomPort(TestContext should) {
+    Async test = should.async();
     port = 0;
     startServer(new VertxGreeterGrpc.GreeterVertxImplBase() {
       @Override
@@ -278,22 +286,18 @@ public class RpcTest extends GrpcTestBase {
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
 
-    }, ar -> {
-      if (ar.succeeded()) {
-        started.complete();
-      } else {
-        ctx.fail(ar.cause());
-      }
-    });
-
-    started.awaitSuccess(10000);
-
-    ctx.assertTrue(server.getPort() > 0);
-    ctx.assertTrue(server.getPort() < 65536);
+    }).onFailure(should::fail)
+      .onSuccess(v -> {
+        should.assertTrue(server.getPort() > 0);
+        should.assertTrue(server.getPort() < 65536);
+        test.complete();
+      });
   }
 
-  @Test
-  public void testClientCompression(TestContext ctx) throws Exception {
+  @Test(timeout = 10_000L)
+  public void testClientCompression(TestContext should) {
+    final Async test = should.async();
+
     Metadata.Key<String> encodingKey = Metadata.Key.of("grpc-encoding", Metadata.ASCII_STRING_MARSHALLER);
     Metadata.Key<String> acceptEncodingKey = Metadata.Key.of("grpc-accept-encoding", Metadata.ASCII_STRING_MARSHALLER);
     AtomicReference<String> clientEncoding = new AtomicReference<>();
@@ -315,51 +319,53 @@ public class RpcTest extends GrpcTestBase {
         return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
       }
     }.withCompression("gzip");
-    startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)));
 
-    Async async = ctx.async();
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext()
-      .build();
-    VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    stub
-      .withInterceptors(new ClientInterceptor() {
-        @Override
-        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
-          ClientCall<ReqT, RespT> call = next.newCall(method, callOptions);
-          return new ForwardingClientCall<ReqT, RespT>() {
+    startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
+      .onFailure(should::fail)
+      .onSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+        stub
+          .withInterceptors(new ClientInterceptor() {
             @Override
-            public void start(Listener<RespT> responseListener, Metadata headers) {
-              super.start(new ForwardingClientCallListener<RespT>() {
+            public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
+              ClientCall<ReqT, RespT> call = next.newCall(method, callOptions);
+              return new ForwardingClientCall<ReqT, RespT>() {
                 @Override
-                public void onHeaders(Metadata headers) {
-                  serverEncoding.set(headers.get(encodingKey));
-                  super.onHeaders(headers);
-                }
-                @Override
-                protected Listener<RespT> delegate() {
-                  return responseListener;
-                }
-              }, headers);
-            }
-            @Override
-            protected ClientCall<ReqT, RespT> delegate() {
-              return call;
-            }
-          };
-        }
-      })
-      .withCompression("gzip")
-      .sayHello(request)
-      .onComplete(ctx.asyncAssertSuccess(res -> {
-      ctx.assertEquals("Hello Julien", res.getMessage());
-      async.complete();
-    }));
+                public void start(Listener<RespT> responseListener, Metadata headers) {
+                  super.start(new ForwardingClientCallListener<RespT>() {
+                    @Override
+                    public void onHeaders(Metadata headers) {
+                      serverEncoding.set(headers.get(encodingKey));
+                      super.onHeaders(headers);
+                    }
 
-    async.awaitSuccess(20000);
-    assertEquals("gzip", clientEncoding.get());
-    assertEquals("gzip", clientAcceptEncoding.get());
-    assertEquals("gzip", serverEncoding.get());
+                    @Override
+                    protected Listener<RespT> delegate() {
+                      return responseListener;
+                    }
+                  }, headers);
+                }
+
+                @Override
+                protected ClientCall<ReqT, RespT> delegate() {
+                  return call;
+                }
+              };
+            }
+          })
+          .withCompression("gzip")
+          .sayHello(request)
+          .onComplete(should.asyncAssertSuccess(res -> {
+            should.assertEquals("Hello Julien", res.getMessage());
+            assertEquals("gzip", clientEncoding.get());
+            assertEquals("gzip", clientAcceptEncoding.get());
+            assertEquals("gzip", serverEncoding.get());
+            test.complete();
+          }));
+      });
   }
 }
