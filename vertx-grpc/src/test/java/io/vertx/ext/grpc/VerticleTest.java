@@ -7,18 +7,15 @@ import io.grpc.examples.helloworld.VertxGreeterGrpc;
 import io.vertx.core.*;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServer;
 import io.vertx.grpc.VertxServerBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -28,20 +25,20 @@ public class VerticleTest {
 
   private static final Set<Thread> threads = Collections.synchronizedSet(new HashSet<>());
 
+  @Rule
+  public RunTestOnContext rule = new RunTestOnContext();
+
   /* The port on which the server should run */
   private Vertx vertx;
 
   @Before
   public void setUp() {
-    vertx = Vertx.vertx();
+    vertx = rule.vertx();
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     threads.clear();
-    CountDownLatch latch = new CountDownLatch(1);
-    vertx.close(ar -> latch.countDown());
-    latch.await(10, TimeUnit.SECONDS);
   }
 
   public static class GrpcVerticle extends AbstractVerticle {
@@ -63,7 +60,6 @@ public class VerticleTest {
         @Override
         public Future<HelloReply> sayHello(HelloRequest request) {
           threads.add(Thread.currentThread());
-
           return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
         }
       };
@@ -72,77 +68,83 @@ public class VerticleTest {
     }
 
     @Override
-    public void stop(Promise<Void> stopFuture) throws Exception {
+    public void stop(Promise<Void> stopFuture) {
       server.shutdown(stopFuture);
     }
   }
 
-  @Test
-  public void testScaleVerticle(TestContext ctx) throws Exception {
-    Async started = ctx.async();
-    vertx.deployVerticle(GrpcVerticle.class.getName(), new DeploymentOptions().setInstances(2), ar -> {
-      if (ar.succeeded()) {
-        started.complete();
-      } else {
-        ctx.fail(ar.cause());
-      }
-    });
-    started.awaitSuccess(10000);
+  @Test(timeout = 10_000L)
+  public void testScaleVerticle(TestContext should) {
     final int num = 10;
-    Async async = ctx.async(num);
-    List<ManagedChannel> toClose = new ArrayList<>();
-    try {
-      for (int i = 0;i < num;i++) {
-        ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
-            .usePlaintext()
-            .build();
-        toClose.add(channel);
-        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-        HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-        stub.sayHello(request).onComplete(ctx.asyncAssertSuccess(res -> {
-          ctx.assertEquals("Hello Julien", res.getMessage());
-          async.countDown();
-          if (async.count() == 0) {
-            ctx.assertEquals(2, threads.size());
+    final Async test = should.async(num);
+    vertx.deployVerticle(GrpcVerticle.class.getName(), new DeploymentOptions().setInstances(2))
+      .onFailure(should::fail)
+      .onSuccess(id -> {
+        List<ManagedChannel> toClose = new ArrayList<>();
+        try {
+          for (int i = 0; i < num; i++) {
+            ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
+              .usePlaintext()
+              .build();
+            toClose.add(channel);
+            VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+            HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+            stub.sayHello(request).onComplete(should.asyncAssertSuccess(res -> {
+              should.assertEquals("Hello Julien", res.getMessage());
+              test.countDown();
+              if (test.count() == 0) {
+                should.assertEquals(2, threads.size());
+              }
+            }));
           }
-        }));
-      }
-      async.awaitSuccess(20000);
-    } finally {
-      toClose.forEach(ManagedChannel::shutdown);
-    }
+        } finally {
+          toClose.forEach(ManagedChannel::shutdown);
+        }
+      });
   }
 
-  @Test
-  public void testCloseInVerticle(TestContext ctx) throws Exception {
-    Async started = ctx.async();
-    vertx.deployVerticle(GrpcVerticle.class.getName(), ctx.asyncAssertSuccess(id -> vertx.undeploy(id, ctx.asyncAssertSuccess(v -> started.complete()))));
-    started.awaitSuccess(10000);
-    Async async = ctx.async();
-    ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
-        .usePlaintext()
-        .build();
-    try {
-      VertxGreeterGrpc.GreeterVertxStub blockingStub = VertxGreeterGrpc.newVertxStub(channel);
-      HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-      blockingStub.sayHello(request).onComplete(ctx.asyncAssertFailure(err -> async.complete()));
-      async.awaitSuccess(20000);
-    } finally {
-      channel.shutdown();
-    }
+  @Test(timeout = 10_000L)
+  public void testCloseInVerticle(TestContext should) {
+    Async test = should.async();
+    vertx.deployVerticle(GrpcVerticle.class.getName())
+      .onFailure(should::fail)
+      .onSuccess(id -> {
+        vertx.undeploy(id)
+          .onFailure(should::fail)
+          .onSuccess(v -> {
+            ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
+              .usePlaintext()
+              .build();
+
+            try {
+              VertxGreeterGrpc.GreeterVertxStub blockingStub = VertxGreeterGrpc.newVertxStub(channel);
+              HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+              blockingStub.sayHello(request)
+                .onSuccess(res -> should.fail("Verticle is undeployed, should not reach here"))
+                .onFailure(err -> test.complete());
+            } finally {
+              channel.shutdown();
+            }
+          });
+      });
   }
 
-  @Test
-  public void testBilto(TestContext ctx) {
-    Async started = ctx.async();
+  @Test(timeout = 10_000L)
+  public void testBilto(TestContext should) {
+    final Async test = should.async();
     List<GrpcVerticle> verticles = Collections.synchronizedList(new ArrayList<>());
+
     vertx.deployVerticle(() -> {
       GrpcVerticle verticle = new GrpcVerticle(0);
       verticles.add(verticle);
       return verticle;
-    }, new DeploymentOptions().setInstances(2), ctx.asyncAssertSuccess(v -> started.complete()));
-    started.awaitSuccess(10000);
-    ctx.assertEquals(2, verticles.size());
-    ctx.assertNotEquals(verticles.get(0).server.getPort(), verticles.get(1).server.getPort());
+    }, new DeploymentOptions().setInstances(2))
+      .onFailure(should::fail)
+      .onSuccess(id -> {
+        should.assertEquals(2, verticles.size());
+        should.assertNotEquals(verticles.get(0).server.getPort(), verticles.get(1).server.getPort());
+        test.complete();
+      });
+
   }
 }
