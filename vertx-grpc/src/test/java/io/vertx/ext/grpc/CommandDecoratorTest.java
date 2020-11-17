@@ -60,7 +60,7 @@ public class CommandDecoratorTest extends GrpcTestBase {
             if (!decorator.invoked) {
               should.fail("Command Decorator was not invoked");
             }
-            channel.shutdown();
+            channel.shutdownNow();
             test.complete();
           });
       } else {
