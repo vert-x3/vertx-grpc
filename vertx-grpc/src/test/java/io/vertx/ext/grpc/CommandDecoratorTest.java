@@ -67,7 +67,7 @@ public class CommandDecoratorTest extends GrpcTestBase {
     Context clientCtx = vertx.getOrCreateContext();
     clientCtx.runOnContext(v -> {
       ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
       VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
