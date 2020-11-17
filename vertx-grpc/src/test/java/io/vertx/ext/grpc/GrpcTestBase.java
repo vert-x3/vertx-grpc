@@ -31,7 +31,7 @@ public abstract class GrpcTestBase {
 
   @Before
   public void setUp() {
-    port = 50051;
+    port = 8080;
     vertx = rule.vertx();
   }
 
