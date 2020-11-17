@@ -30,7 +30,7 @@ public class GoogleTest extends GrpcTestBase {
   private ManagedChannel channel;
 
   private VertxTestServiceGrpc.TestServiceVertxStub buildStub() {
-    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext(true).build();
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port).usePlaintext().build();
     return VertxTestServiceGrpc.newVertxStub(channel);
   }
 

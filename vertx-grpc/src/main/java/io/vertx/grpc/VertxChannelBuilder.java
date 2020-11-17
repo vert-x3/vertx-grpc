@@ -43,7 +43,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   }
 
   private final Vertx vertx;
-  private NettyChannelBuilder builder;
+  private final NettyChannelBuilder builder;
   private ContextInternal context;
   private HttpClientOptions options = new HttpClientOptions();
 
@@ -105,12 +105,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   }
 
   @Override
-  public VertxChannelBuilder usePlaintext(boolean skipNegotiation) {
-    builder.usePlaintext(skipNegotiation);
-    return this;
-  }
-
-  @Override
+  @Deprecated
   public VertxChannelBuilder nameResolverFactory(NameResolver.Factory resolverFactory) {
     builder.nameResolverFactory(resolverFactory);
     return this;
@@ -119,12 +114,6 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   @Override
   public VertxChannelBuilder offloadExecutor(Executor executor) {
     builder.offloadExecutor(executor);
-    return this;
-  }
-
-  @Override
-  public VertxChannelBuilder blockingExecutor(Executor executor) {
-    builder.blockingExecutor(executor);
     return this;
   }
 

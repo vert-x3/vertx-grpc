@@ -33,8 +33,8 @@
     <jetty.alpnAgent.version>2.0.7</jetty.alpnAgent.version>
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
 
-    <vertx.grpc.version>1.22.1</vertx.grpc.version>
-    <protoc.version>3.5.1</protoc.version>
+    <grpc.version>1.33.1</grpc.version>
+    <protoc.version>3.14.0</protoc.version>
     <doc.skip>false</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
   </properties>
@@ -47,7 +47,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-netty</artifactId>
-      <version>${vertx.grpc.version}</version>
+      <version>${grpc.version}</version>
       <exclusions>
         <exclusion>
           <groupId>com.google.guava</groupId>
@@ -70,7 +70,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-protobuf</artifactId>
-      <version>${vertx.grpc.version}</version>
+      <version>${grpc.version}</version>
       <exclusions>
         <exclusion>
           <groupId>com.google.guava</groupId>
@@ -81,7 +81,7 @@
     <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-stub</artifactId>
-      <version>${vertx.grpc.version}</version>
+      <version>${grpc.version}</version>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -158,7 +158,7 @@
           -->
           <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
           <pluginId>grpc-java</pluginId>
-          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${vertx.grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
           <protocPlugins>
             <protocPlugin>
               <id>vertx-grpc-protoc-plugin</id>

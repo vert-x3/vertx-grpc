@@ -60,7 +60,7 @@ public class RpcTest extends GrpcTestBase {
     Context clientCtx = vertx.getOrCreateContext();
     clientCtx.runOnContext(v -> {
       channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-       .usePlaintext(true)
+       .usePlaintext()
        .build();
       VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
@@ -100,7 +100,7 @@ public class RpcTest extends GrpcTestBase {
     startServer(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)));
     Async async = ctx.async(2);
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext(true)
+     .usePlaintext()
      .build();
     VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
     Arrays.asList("Julien", "Paulo").forEach(name -> {
@@ -145,7 +145,7 @@ public class RpcTest extends GrpcTestBase {
     started.awaitSuccess(10000);
     Async async = ctx.async();
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext(true)
+     .usePlaintext()
      .build();
     VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
     stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(ctx.asyncAssertFailure(err -> {
@@ -169,7 +169,7 @@ public class RpcTest extends GrpcTestBase {
       }
     });
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext(true)
+     .usePlaintext()
      .build();
     VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
@@ -206,7 +206,7 @@ public class RpcTest extends GrpcTestBase {
       }
     });
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext(true)
+     .usePlaintext()
      .build();
     VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
     AtomicInteger count = new AtomicInteger(numItems);
@@ -239,7 +239,7 @@ public class RpcTest extends GrpcTestBase {
       }
     });
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-     .usePlaintext(true)
+     .usePlaintext()
      .build();
     VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
@@ -319,7 +319,7 @@ public class RpcTest extends GrpcTestBase {
 
     Async async = ctx.async();
     channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext(true)
+      .usePlaintext()
       .build();
     VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
