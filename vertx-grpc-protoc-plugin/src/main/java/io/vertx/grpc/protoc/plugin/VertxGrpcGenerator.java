@@ -288,7 +288,7 @@ public class VertxGrpcGenerator extends Generator {
   /**
    * Template class for proto Service objects.
    */
-  private class ServiceContext {
+  private static class ServiceContext {
     // CHECKSTYLE DISABLE VisibilityModifier FOR 8 LINES
     public String fileName;
     public String protoName;
@@ -297,7 +297,7 @@ public class VertxGrpcGenerator extends Generator {
     public String serviceName;
     public boolean deprecated;
     public String javaDoc;
-    public List<MethodContext> methods = new ArrayList<>();
+    public final List<MethodContext> methods = new ArrayList<>();
 
     public List<MethodContext> unaryUnaryMethods() {
       return methods.stream().filter(m -> !m.isManyInput && !m.isManyOutput).collect(Collectors.toList());
