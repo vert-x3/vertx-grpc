@@ -71,13 +71,9 @@ public class VertxServer extends Server {
 
       this.id = id;
       this.options = options;
-      Executor executor = command -> {
-        contextLocal.get().get(0).dispatch(event -> command.run());
-      };
+      Executor executor = command -> contextLocal.get().get(0).dispatch(event -> command.run());
       if (commandDecorator != null) {
-        executor = command -> {
-          contextLocal.get().get(0).dispatch(event -> commandDecorator.accept(command));
-        };
+        executor = command -> contextLocal.get().get(0).dispatch(event -> commandDecorator.accept(command));
       }
       this.server = builder
           .executor(executor)
@@ -162,7 +158,7 @@ public class VertxServer extends Server {
     }
     actual.start(context, ar1 -> {
       if (ar1.succeeded()) {
-        hook = ar2 -> shutdown(ar2);
+        hook = this::shutdown;
         context.addCloseHook(hook);
       }
       completionHandler.handle(ar1);

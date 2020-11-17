@@ -140,11 +140,7 @@ public class Examples {
 
     // Listen to completion events
     future
-      .onSuccess(helloReply -> {
-        System.out.println("Got the server response: " + helloReply.getMessage());
-      }).onFailure(err -> {
-      System.out.println("Coult not reach server " + err);
-    });
+      .onSuccess(helloReply -> System.out.println("Got the server response: " + helloReply.getMessage())).onFailure(err -> System.out.println("Coult not reach server " + err));
   }
 
   public void clientWithCompression(ManagedChannel channel) {

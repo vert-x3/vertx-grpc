@@ -2,8 +2,10 @@ package io.vertx.ext.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.testing.integration.VertxTestServiceGrpc;
+import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
 import io.vertx.ext.grpc.utils.IterableReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -15,10 +17,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.google.protobuf.EmptyProtos.*;
+import static com.google.protobuf.EmptyProtos.Empty;
 import static io.grpc.testing.integration.Messages.*;
-import io.vertx.core.Future;
-import io.vertx.core.streams.WriteStream;
 
 /**
  * A simple test to showcase the various types of RPCs.
@@ -34,9 +34,10 @@ public class GoogleTest extends GrpcTestBase {
     return VertxTestServiceGrpc.newVertxStub(channel);
   }
 
-  public void tearDown() throws Exception {
+  @Override
+  public void tearDown(TestContext should) {
     channel.shutdown();
-    super.tearDown();
+    super.tearDown(should);
   }
 
   /**
@@ -52,14 +53,14 @@ public class GoogleTest extends GrpcTestBase {
 
         return Future.succeededFuture(Empty.newBuilder().build());
       }
-    }, will.asyncAssertSuccess(v -> {
-      buildStub()
+    })
+      .onFailure(will::fail)
+      .onSuccess(v -> buildStub()
         .emptyCall(Empty.newBuilder().build())
         .onComplete(will.asyncAssertSuccess(res -> {
-        will.assertNotNull(res);
-        test.complete();
-      }));
-    }));
+          will.assertNotNull(res);
+          test.complete();
+        })));
   }
 
   /**
@@ -75,14 +76,14 @@ public class GoogleTest extends GrpcTestBase {
 
         return Future.succeededFuture(SimpleResponse.newBuilder().build());
       }
-    }, will.asyncAssertSuccess(v -> {
-      buildStub()
+    })
+      .onFailure(will::fail)
+      .onSuccess(v -> buildStub()
         .unaryCall(SimpleRequest.newBuilder().build())
         .onComplete(will.asyncAssertSuccess(res -> {
-        will.assertNotNull(res);
-        test.complete();
-      }));
-    }));
+          will.assertNotNull(res);
+          test.complete();
+        })));
   }
 
   /**
@@ -98,19 +99,21 @@ public class GoogleTest extends GrpcTestBase {
         IterableReadStream rs = new IterableReadStream(v -> StreamingOutputCallResponse.newBuilder().build(), 10);
         rs.pipeTo(response);
       }
-    }, will.asyncAssertSuccess(v1 -> {
-      final AtomicInteger cnt = new AtomicInteger();
-      buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build())
-        .handler(resp -> {
-          will.assertNotNull(resp);
-          cnt.incrementAndGet();
-        })
-        .exceptionHandler(will::fail)
-        .endHandler(v2 -> {
-          will.assertEquals(10, cnt.get());
-          test.complete();
-        });
-    }));
+    })
+      .onFailure(will::fail)
+      .onSuccess(v1 -> {
+        final AtomicInteger cnt = new AtomicInteger();
+        buildStub().streamingOutputCall(StreamingOutputCallRequest.newBuilder().build())
+          .handler(resp -> {
+            will.assertNotNull(resp);
+            cnt.incrementAndGet();
+          })
+          .exceptionHandler(will::fail)
+          .endHandler(v2 -> {
+            will.assertEquals(10, cnt.get());
+            test.complete();
+          });
+      });
   }
 
   /**
@@ -138,14 +141,14 @@ public class GoogleTest extends GrpcTestBase {
         });
         return promise.future();
       }
-    }, will.asyncAssertSuccess(v1 -> {
-      buildStub()
+    })
+      .onFailure(will::fail)
+      .onSuccess(v1 -> buildStub()
         .streamingInputCall(ws -> new IterableReadStream<>(v2 -> StreamingInputCallRequest.newBuilder().build(), 10).pipeTo(ws))
         .onComplete(will.asyncAssertSuccess(res -> {
           will.assertNotNull(res);
           test.complete();
-        }));
-    }));
+        })));
   }
 
   /**
@@ -174,7 +177,9 @@ public class GoogleTest extends GrpcTestBase {
         });
 
       }
-    }, will.asyncAssertSuccess(v1 -> {
+    })
+      .onFailure(will::fail)
+      .onSuccess(v1 -> {
       final AtomicInteger cnt = new AtomicInteger();
       buildStub().fullDuplexCall(ws -> new IterableReadStream<>(v -> StreamingOutputCallRequest.newBuilder().build(), 10).pipeTo(ws))
         .endHandler(v2 -> {
@@ -186,7 +191,7 @@ public class GoogleTest extends GrpcTestBase {
           will.assertNotNull(item);
           cnt.incrementAndGet();
         });
-    }));
+    });
   }
 
   /**
@@ -217,7 +222,9 @@ public class GoogleTest extends GrpcTestBase {
           buffer.add(item);
         });
       }
-    }, will.asyncAssertSuccess(v1 -> {
+    })
+      .onFailure(will::fail)
+      .onSuccess(v1 -> {
       final AtomicInteger cnt = new AtomicInteger();
       final AtomicBoolean down = new AtomicBoolean();
       buildStub().halfDuplexCall(ws -> new IterableReadStream<>(v2 -> StreamingOutputCallRequest.newBuilder().build(), 10).pipeTo(ws))
@@ -233,7 +240,7 @@ public class GoogleTest extends GrpcTestBase {
         });
       // down stream is now expected
       down.set(true);
-    }));
+    });
   }
 
   /**
@@ -245,13 +252,13 @@ public class GoogleTest extends GrpcTestBase {
     startServer(new VertxTestServiceGrpc.TestServiceVertxImplBase() {
       // The test server will not implement this method. It will be used
       // to test the behavior when clients call unimplemented methods.
-    }, will.asyncAssertSuccess(v -> {
-      buildStub()
+    })
+      .onFailure(will::fail)
+      .onSuccess(v -> buildStub()
         .unimplementedCall(Empty.newBuilder().build())
         .onComplete(will.asyncAssertFailure(err -> {
-        will.assertNotNull(err);
-        test.complete();
-      }));
-    }));
+          will.assertNotNull(err);
+          test.complete();
+        })));
   }
 }
