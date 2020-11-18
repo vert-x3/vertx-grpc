@@ -23,16 +23,19 @@ public final class VertxGreeterGrpc {
      * </pre>
      */
     public static final class GreeterVertxStub extends io.grpc.stub.AbstractStub<GreeterVertxStub> {
+        private final io.vertx.core.impl.ContextInternal ctx;
         private GreeterGrpc.GreeterStub delegateStub;
 
         private GreeterVertxStub(io.grpc.Channel channel) {
             super(channel);
             delegateStub = GreeterGrpc.newStub(channel);
+            this.ctx = (io.vertx.core.impl.ContextInternal) io.vertx.core.Vertx.currentContext();
         }
 
         private GreeterVertxStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
             super(channel, callOptions);
             delegateStub = GreeterGrpc.newStub(channel).build(channel, callOptions);
+            this.ctx = (io.vertx.core.impl.ContextInternal) io.vertx.core.Vertx.currentContext();
         }
 
         @Override
@@ -46,7 +49,7 @@ public final class VertxGreeterGrpc {
          * </pre>
          */
         public io.vertx.core.Future<examples.HelloReply> sayHello(examples.HelloRequest request) {
-            return io.vertx.grpc.stub.ClientCalls.oneToOne(request, delegateStub::sayHello);
+            return io.vertx.grpc.stub.ClientCalls.oneToOne(ctx, request, delegateStub::sayHello);
         }
 
     }
@@ -57,7 +60,6 @@ public final class VertxGreeterGrpc {
      * </pre>
      */
     public static abstract class GreeterVertxImplBase implements io.grpc.BindableService {
-
         private String compression;
 
         /**
@@ -115,7 +117,8 @@ public final class VertxGreeterGrpc {
         public void invoke(Req request, io.grpc.stub.StreamObserver<Resp> responseObserver) {
             switch (methodId) {
                 case METHODID_SAY_HELLO:
-                    io.vertx.grpc.stub.ServerCalls.oneToOne((examples.HelloRequest) request,
+                    io.vertx.grpc.stub.ServerCalls.oneToOne(
+                            (examples.HelloRequest) request,
                             (io.grpc.stub.StreamObserver<examples.HelloReply>) responseObserver,
                             compression,
                             serviceImpl::sayHello);
