@@ -296,6 +296,27 @@ To avoid the blocking one should wrap the interceptor. Then it will be called on
 {@link examples.Examples#blockingInterceptorUsage}
 ----
 
+==== Context Server Interceptor
+
+An abstract context server interceptor is available to allow intercepting server calls and extract metadata into the
+vert.x context. This context does not rely on thread locals so it is safe to use on vert.x APIs. This interceptor should
+be the first (or one of the firsts to be added to the interceptors list).
+
+A typical example is the use of a session id. A client can create a client interceptor that sets a session id in all
+connections as:
+
+[source,$lang]
+----
+{@link examples.Examples#clientSessionInterceptorUsage}
+----
+
+And then on the server side an interceptor can be added as:
+
+[source,$lang]
+----
+{@link examples.Examples#serverSessionInterceptorUsage}
+----
+
 === gRPC Client
 
 A server without a client is of no use, so lets create a client. In order to do this some steps overlap with the

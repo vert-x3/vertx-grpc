@@ -1,3 +1,18 @@
+/*
+ * Copyright (c) 2011-2013 The original author or authors
+ * ------------------------------------------------------
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Apache License v2.0 which accompanies this distribution.
+ *
+ *     The Eclipse Public License is available at
+ *     http://www.eclipse.org/legal/epl-v10.html
+ *
+ *     The Apache License v2.0 is available at
+ *     http://www.opensource.org/licenses/apache2.0.php
+ *
+ * You may elect to redistribute this code under either of these licenses.
+ */
 package io.vertx.grpc.stub;
 
 import io.grpc.Status;
@@ -23,10 +38,6 @@ public final class ServerCalls {
 
   public static <I, O> void oneToOne(I request, StreamObserver<O> response, String compression, Function<I, Future<O>> delegate) {
     trySetCompression(response, compression);
-    oneToOne(request, response, delegate);
-  }
-
-  public static <I, O> void oneToOne(I request, StreamObserver<O> response, Function<I, Future<O>> delegate) {
     try {
       Future<O> future = delegate.apply(request);
 
@@ -46,10 +57,6 @@ public final class ServerCalls {
 
   public static <I, O> void oneToMany(I request, StreamObserver<O> response, String compression, BiConsumer<I, WriteStream<O>> delegate) {
     trySetCompression(response, compression);
-    oneToMany(request, response, delegate);
-  }
-
-  public static <I, O> void oneToMany(I request, StreamObserver<O> response, BiConsumer<I, WriteStream<O>> delegate) {
     try {
       GrpcWriteStream<O> responseWriteStream = new GrpcWriteStream<>(response);
       delegate.accept(request, responseWriteStream);
@@ -59,12 +66,8 @@ public final class ServerCalls {
   }
 
   public static <I, O> StreamObserver<I> manyToOne(StreamObserver<O> response, String compression, Function<ReadStream<I>, Future<O>> delegate) {
+
     trySetCompression(response, compression);
-    return manyToOne(response, delegate);
-  }
-
-  public static <I, O> StreamObserver<I> manyToOne(StreamObserver<O> response, Function<ReadStream<I>, Future<O>> delegate) {
-
     StreamObserverReadStream<I> request = new StreamObserverReadStream<>();
     Future<O> future = delegate.apply(request);
     future.onComplete(res -> {
@@ -81,10 +84,6 @@ public final class ServerCalls {
 
   public static <I, O> StreamObserver<I> manyToMany(StreamObserver<O> response, String compression, BiConsumer<ReadStream<I>, WriteStream<O>> delegate) {
     trySetCompression(response, compression);
-    return manyToMany(response, delegate);
-  }
-
-  public static <I, O> StreamObserver<I> manyToMany(StreamObserver<O> response, BiConsumer<ReadStream<I>, WriteStream<O>> delegate) {
     StreamObserverReadStream<I> request = new StreamObserverReadStream<>();
     GrpcWriteStream<O> responseStream = new GrpcWriteStream<>(response);
     delegate.accept(request, responseStream);

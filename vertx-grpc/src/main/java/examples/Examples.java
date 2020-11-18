@@ -1,15 +1,17 @@
 package examples;
 
 import io.grpc.*;
+import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.*;
+import io.vertx.core.Context;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
-import io.vertx.grpc.BlockingServerInterceptor;
-import io.vertx.grpc.VertxChannelBuilder;
-import io.vertx.grpc.VertxServer;
-import io.vertx.grpc.VertxServerBuilder;
+import io.vertx.grpc.*;
+
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -250,9 +252,43 @@ public class Examples {
   }
 
   public void nativeTransport() {
-
     // Use native transports
     Vertx.vertx(new VertxOptions().setPreferNativeTransport(true));
+  }
 
+  public void clientSessionInterceptorUsage(ManagedChannel channel, Vertx vertx, String theSessionId, int port) {
+    Metadata extraHeaders = new Metadata();
+    extraHeaders.put(
+      Metadata.Key.of("sessionId", Metadata.ASCII_STRING_MARSHALLER), theSessionId);
+
+    ClientInterceptor clientInterceptor = MetadataUtils
+      .newAttachHeadersInterceptor(extraHeaders);
+
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+      .intercept(clientInterceptor)
+      .build();
+  }
+
+  public void serverSessionInterceptorUsage(Vertx vertx, Metadata.Key<String> SESSION_ID_METADATA_KEY) {
+    BindableService service = new VertxGreeterGrpc.GreeterVertxImplBase() {
+      @Override
+      public Future<HelloReply> sayHello(HelloRequest request) {
+        return Future.succeededFuture(
+          HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+      }
+    };
+
+    ServerInterceptor contextInterceptor = new ContextServerInterceptor() {
+      @Override
+      public void bind(Metadata metadata, ConcurrentMap<String, String> context) {
+        context.put("sessionId", metadata.get(SESSION_ID_METADATA_KEY));
+      }
+    };
+
+    // Create the server
+    VertxServer rpcServer = VertxServerBuilder
+      .forAddress(vertx, "my.host", 8080)
+      .addService(ServerInterceptors.intercept(service, contextInterceptor))
+      .build();
   }
 }
