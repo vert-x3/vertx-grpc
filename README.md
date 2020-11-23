@@ -1,4 +1,4 @@
-![CI](https://github.com/vert-x3/vertx-grpc/workflows/CI/badge.svg?branch=master)
+[![Build Status](https://github.com/vert-x3/vertx-grpc/workflows/CI/badge.svg?branch=master)](https://github.com/vert-x3/vertx-grpc/actions?query=workflow%3ACI)
 
 # Vert.x gRPC
 
