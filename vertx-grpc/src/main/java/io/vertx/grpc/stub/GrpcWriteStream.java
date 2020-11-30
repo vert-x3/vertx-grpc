@@ -50,25 +50,39 @@ public class GrpcWriteStream<T> implements WriteStream<T> {
 
   @Override
   public Future<Void> write(T data) {
-    observer.onNext(data);
+    try {
+      observer.onNext(data);
+    } catch (Throwable e) {
+      return Future.failedFuture(e);
+    }
     return Future.succeededFuture();
   }
 
   @Override
   public void write(T data, Handler<AsyncResult<Void>> hndlr) {
-    observer.onNext(data);
+    try {
+      observer.onNext(data);
+    } catch (Throwable e) {
+      hndlr.handle(Future.failedFuture(e));
+      return;
+    }
     hndlr.handle(Future.succeededFuture());
   }
 
   @Override
   public void end(Handler<AsyncResult<Void>> hndlr) {
-    observer.onCompleted();
+    try {
+      observer.onCompleted();
+    } catch (Throwable e) {
+      hndlr.handle(Future.failedFuture(e));
+      return;
+    }
     hndlr.handle(Future.succeededFuture());
   }
 
   @Override
   public WriteStream<T> setWriteQueueMaxSize(int i) {
-    errHandler.handle(new RuntimeException("Unsupported Operation"));
+    errHandler.handle(new UnsupportedOperationException());
     return this;
   }
 
@@ -79,7 +93,7 @@ public class GrpcWriteStream<T> implements WriteStream<T> {
 
   @Override
   public WriteStream<T> drainHandler(Handler<Void> hndlr) {
-    errHandler.handle(new RuntimeException("Unsupported Operation"));
+    errHandler.handle(new UnsupportedOperationException());
     return this;
   }
 
