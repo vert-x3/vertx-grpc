@@ -97,4 +97,10 @@ public class GrpcWriteStream<T> implements WriteStream<T> {
     return this;
   }
 
+  /**
+   * Low level control of the observer for advanced use cases.
+   */
+  public StreamObserver<T> streamObserver() {
+    return observer;
+  }
 }
