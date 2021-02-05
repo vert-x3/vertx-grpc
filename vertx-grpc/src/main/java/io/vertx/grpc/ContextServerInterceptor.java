@@ -41,9 +41,8 @@ public abstract class ContextServerInterceptor implements ServerInterceptor {
    * allows extracting data from the metadata to the vert.x context.
    *
    * @param metadata the grpc connection context
-   * @param context the vertx context map
    */
-  public abstract void bind(Metadata metadata, ConcurrentMap<String, String> context);
+  public abstract void bind(Metadata metadata);
 
   @Override
   public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata metadata, ServerCallHandler<ReqT, RespT> handler) {
@@ -51,7 +50,7 @@ public abstract class ContextServerInterceptor implements ServerInterceptor {
     if (ctx == null) {
       LOGGER.warn("Attempt to set contextual data from a non Vert.x thread");
     } else {
-      bind(metadata, contextualDataMap(ctx));
+      bind(metadata);
     }
 
     return handler.startCall(call, metadata);
@@ -82,5 +81,16 @@ public abstract class ContextServerInterceptor implements ServerInterceptor {
       ctx
         .localContextData()
         .computeIfAbsent(ContextServerInterceptor.class, k -> new ConcurrentHashMap<>());
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <R,T> R put(String key, T value) {
+    ContextInternal ctx = (ContextInternal) Vertx.currentContext();
+    if (ctx != null) {
+      return (R) contextualDataMap((ContextInternal) Vertx.currentContext())
+        .put(key, value);
+    } else {
+      throw new IllegalStateException("No Vert.x Context found");
+    }
   }
 }
