@@ -280,8 +280,8 @@ public class Examples {
 
     ServerInterceptor contextInterceptor = new ContextServerInterceptor() {
       @Override
-      public void bind(Metadata metadata, ConcurrentMap<String, String> context) {
-        context.put("sessionId", metadata.get(SESSION_ID_METADATA_KEY));
+      public void bind(Metadata metadata) {
+        put("sessionId", metadata.get(SESSION_ID_METADATA_KEY));
       }
     };
 
