@@ -280,7 +280,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     // SSL
     if (options.isSsl()) {
       SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
-      helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
+      helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
       SslContext ctx = helper.getContext((VertxInternal) vertx);
       builder.sslContext(new DelegatingSslContext(ctx) {
         @Override

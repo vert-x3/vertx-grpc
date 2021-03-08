@@ -72,7 +72,7 @@ public class VertxServer extends Server {
       // SSL
       if (options.isSsl()) {
         SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
-        helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2));
+        helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
         SslContext ctx = helper.getContext((VertxInternal) vertx);
         builder.sslContext(new DelegatingSslContext(ctx) {
           @Override
