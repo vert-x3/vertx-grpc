@@ -7,7 +7,7 @@
 
   <servers>
     <server>
-      <id>vertx-nexus-snapshots</id>
+      <id>vertx-snapshots-repository</id>
       <username>${env.VERTX_NEXUS_USERNAME}</username>
       <password>${env.VERTX_NEXUS_PASSWORD}</password>
     </server>
