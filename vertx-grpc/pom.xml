@@ -34,7 +34,7 @@
     <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
 
     <grpc.version>1.35.1</grpc.version>
-    <protoc.version>3.14.0</protoc.version>
+    <protoc.version>3.15.8</protoc.version>
     <doc.skip>false</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
   </properties>
