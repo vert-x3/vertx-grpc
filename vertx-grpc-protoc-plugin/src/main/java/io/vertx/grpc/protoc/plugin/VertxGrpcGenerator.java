@@ -11,6 +11,7 @@ import com.salesforce.jprotoc.ProtocPlugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,11 @@ public class VertxGrpcGenerator extends Generator {
 
   private String getMethodJavaDocPrefix() {
     return "        ";
+  }
+
+  @Override
+  protected List<PluginProtos.CodeGeneratorResponse.Feature> supportedFeatures() {
+    return Collections.singletonList(PluginProtos.CodeGeneratorResponse.Feature.FEATURE_PROTO3_OPTIONAL);
   }
 
   @Override
