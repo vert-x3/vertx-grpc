@@ -63,7 +63,7 @@ public class VertxServer extends Server {
     final Server server;
     final ThreadLocal<List<ContextInternal>> contextLocal = new ThreadLocal<>();
 
-    private ActualServer(Vertx vertx,
+    private ActualServer(VertxInternal vertx,
                          ServerID id,
                          HttpServerOptions options,
                          NettyServerBuilder builder,
@@ -93,7 +93,7 @@ public class VertxServer extends Server {
       this.server = builder
           .executor(executor)
           .channelFactory(transport.serverChannelFactory(false))
-          .bossEventLoopGroup(group)
+          .bossEventLoopGroup(vertx.getAcceptorEventLoopGroup())
           .workerEventLoopGroup(group)
           .build();
     }
