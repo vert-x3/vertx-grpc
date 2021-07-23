@@ -15,6 +15,7 @@
  */
 package io.vertx.grpc.stub;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -65,12 +66,16 @@ public final class ClientCalls {
     return new StreamObserver<O>() {
       @Override
       public void onNext(O tResponse) {
-        promise.complete(tResponse);
+        if (!promise.tryComplete(tResponse)) {
+          throw Status.INTERNAL
+            .withDescription("More than one responses received for unary or client-streaming call")
+            .asRuntimeException();
+        }
       }
 
       @Override
       public void onError(Throwable throwable) {
-        promise.fail(throwable);
+        promise.tryFail(throwable);
       }
 
       @Override
