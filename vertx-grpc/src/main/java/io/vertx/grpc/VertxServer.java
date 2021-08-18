@@ -86,9 +86,11 @@ public class VertxServer extends Server {
 
       this.id = id;
       this.options = options;
-      Executor executor = command -> contextLocal.get().get(0).dispatch(event -> command.run());
-      if (commandDecorator != null) {
-        executor = command -> contextLocal.get().get(0).dispatch(event -> commandDecorator.accept(command));
+      Executor executor;
+      if (commandDecorator == null) {
+        executor = command -> contextLocal.get().get(0).runOnContext(event -> command.run());
+      }else{
+        executor = command -> contextLocal.get().get(0).runOnContext(event -> commandDecorator.accept(command));
       }
       this.server = builder
           .executor(executor)
