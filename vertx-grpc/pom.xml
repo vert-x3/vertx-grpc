@@ -30,9 +30,6 @@
   <name>Vert.x gRPC</name>
 
   <properties>
-    <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
-    <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
-
     <grpc.version>1.42.1</grpc.version>
     <protoc.version>3.17.3</protoc.version>
     <doc.skip>false</doc.skip>
@@ -108,12 +105,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mortbay.jetty.alpn</groupId>
-      <artifactId>jetty-alpn-agent</artifactId>
-      <version>${jetty.alpnAgent.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-unit</artifactId>
       <scope>test</scope>
@@ -149,13 +140,6 @@
     </extensions>
     <pluginManagement>
       <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <argLine> -javaagent:${jetty.alpnAgent.path}</argLine>
-          </configuration>
-        </plugin>
         <plugin>
           <groupId>io.vertx</groupId>
           <artifactId>vertx-grpc-protoc-plugin</artifactId>
