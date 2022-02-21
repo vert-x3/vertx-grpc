@@ -37,12 +37,11 @@ public abstract class GrpcTestBase {
 
   @After
   public void tearDown(TestContext should) {
-    final Async test = should.async();
-
     if (server != null) {
       VertxServer s = server;
       server = null;
       final long timerId = rule.vertx().setTimer(10_000L, t -> should.fail("Timeout shutting down"));
+      final Async test = should.async();
       s.shutdown(shutdown -> {
         rule.vertx().cancelTimer(timerId);
         if (shutdown.failed()) {
