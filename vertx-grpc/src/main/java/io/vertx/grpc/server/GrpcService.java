@@ -25,32 +25,8 @@ public class GrpcService implements Handler<HttpServerRequest> {
       MethodDescriptor.MethodType type = desc.getType();
       switch (type) {
         case UNARY:
-          GrpcRequest grpcRequest = new GrpcRequest(new GrpcResponse() {
-            @Override
-            public void write(Object message) {
-              InputStream stream = desc.streamResponse(message);
-              byte[] tmp = new byte[256];
-              int i;
-              try {
-                Buffer b = Buffer.buffer();
-                b.appendByte((byte)0); // Compression
-                b.appendIntLE(0); // Length
-                while ((i = stream.read(tmp)) != -1) {
-                  b.appendBytes(tmp, 0, i);
-                }
-                b.setInt(1, b.length() - 5);
-                MultiMap responseHeaders = request.response().headers();
-                responseHeaders.set("content-type", "application/grpc");
-                responseHeaders.set("grpc-encoding", "identity");
-                responseHeaders.set("grpc-accept-encoding", "gzip");
-                MultiMap responseTrailers = request.response().trailers();
-                responseTrailers.set("grpc-status", "0");
-                request.response().end(b);
-              } catch (IOException e) {
-                e.printStackTrace();
-              }
-            }
-          }, method);
+        case SERVER_STREAMING:
+          GrpcRequest grpcRequest = new GrpcRequest(new GrpcResponseImpl(desc, request), method);
           request.handler(envelope -> {
             int len = envelope.getInt(1);
             Buffer data = envelope.slice(5, 5 + len);
@@ -61,7 +37,7 @@ public class GrpcService implements Handler<HttpServerRequest> {
             }
           });
           request.endHandler(v -> {
-            // Totod
+
           });
           handleUnary(grpcRequest);
           break;
@@ -89,5 +65,54 @@ public class GrpcService implements Handler<HttpServerRequest> {
   public GrpcService requestHandler(Handler<GrpcRequest> requestHandler) {
     this.requestHandler = requestHandler;
     return this;
+  }
+
+  private static class GrpcResponseImpl implements GrpcResponse {
+
+    private final MethodDescriptor desc;
+    private final HttpServerRequest request;
+
+    public GrpcResponseImpl(MethodDescriptor desc, HttpServerRequest request) {
+      this.desc = desc;
+      this.request = request;
+    }
+
+    @Override
+    public void write(Object message) {
+      write(message, false);
+    }
+
+    @Override
+    public void end(Object message) {
+      write(message, true);
+    }
+
+    private void write(Object message, boolean end) {
+      InputStream stream = desc.streamResponse(message);
+      byte[] tmp = new byte[256];
+      int i;
+      try {
+        Buffer b = Buffer.buffer();
+        b.appendByte((byte)0); // Compression
+        b.appendIntLE(0); // Length
+        while ((i = stream.read(tmp)) != -1) {
+          b.appendBytes(tmp, 0, i);
+        }
+        b.setInt(1, b.length() - 5);
+        MultiMap responseHeaders = request.response().headers();
+        responseHeaders.set("content-type", "application/grpc");
+        responseHeaders.set("grpc-encoding", "identity");
+        responseHeaders.set("grpc-accept-encoding", "gzip");
+        MultiMap responseTrailers = request.response().trailers();
+        responseTrailers.set("grpc-status", "0");
+        if (end) {
+          request.response().end(b);
+        } else {
+          request.response().write(b);
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
   }
 }

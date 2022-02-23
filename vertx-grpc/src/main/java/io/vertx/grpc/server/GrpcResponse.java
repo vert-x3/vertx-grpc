@@ -4,4 +4,6 @@ public interface GrpcResponse {
 
   void write(Object message);
 
+  void end(Object message);
+
 }
