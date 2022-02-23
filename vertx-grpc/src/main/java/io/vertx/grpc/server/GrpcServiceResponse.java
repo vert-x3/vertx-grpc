@@ -1,6 +1,6 @@
 package io.vertx.grpc.server;
 
-public interface GrpcResponse {
+public interface GrpcServiceResponse {
 
   void write(Object message);
 

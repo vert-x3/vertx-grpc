@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 public class GrpcService implements Handler<HttpServerRequest> {
 
-  private Handler<GrpcRequest> requestHandler;
+  private Handler<GrpcServiceRequest> requestHandler;
   private ServerServiceDefinition serviceDefinition;
 
   @Override
@@ -28,7 +28,7 @@ public class GrpcService implements Handler<HttpServerRequest> {
         case SERVER_STREAMING:
         case CLIENT_STREAMING:
         case BIDI_STREAMING:
-          GrpcRequest grpcRequest = new GrpcRequest(new GrpcResponseImpl(desc, request), method);
+          GrpcServiceRequest grpcRequest = new GrpcServiceRequest(new GrpcResponseImpl(desc, request), method);
           request.handler(envelope -> {
             int idx = 0;
             while (idx < envelope.length()) {
@@ -57,8 +57,8 @@ public class GrpcService implements Handler<HttpServerRequest> {
     }
   }
 
-  private void handleUnary(GrpcRequest request) {
-    Handler<GrpcRequest> handler = requestHandler;
+  private void handleUnary(GrpcServiceRequest request) {
+    Handler<GrpcServiceRequest> handler = requestHandler;
     if (handler != null) {
       if (handler != null) {
         handler.handle(request);
@@ -71,12 +71,12 @@ public class GrpcService implements Handler<HttpServerRequest> {
     return this;
   }
 
-  public GrpcService requestHandler(Handler<GrpcRequest> requestHandler) {
+  public GrpcService requestHandler(Handler<GrpcServiceRequest> requestHandler) {
     this.requestHandler = requestHandler;
     return this;
   }
 
-  private static class GrpcResponseImpl implements GrpcResponse {
+  private static class GrpcResponseImpl implements GrpcServiceResponse {
 
     private final MethodDescriptor desc;
     private final HttpServerRequest request;

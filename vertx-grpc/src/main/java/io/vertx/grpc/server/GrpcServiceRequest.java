@@ -3,14 +3,14 @@ package io.vertx.grpc.server;
 import io.grpc.ServerMethodDefinition;
 import io.vertx.core.Handler;
 
-public class GrpcRequest {
+public class GrpcServiceRequest {
 
   private ServerMethodDefinition<?, ?> methodDefinition;
-  private GrpcResponse response;
+  private GrpcServiceResponse response;
   Handler<GrpcMessage> messageHandler;
   Handler<Void> endHandler;
 
-  public GrpcRequest(GrpcResponse response, ServerMethodDefinition<?, ?> methodDefinition) {
+  public GrpcServiceRequest(GrpcServiceResponse response, ServerMethodDefinition<?, ?> methodDefinition) {
     this.response = response;
     this.methodDefinition = methodDefinition;
   }
@@ -19,17 +19,17 @@ public class GrpcRequest {
     return methodDefinition;
   }
 
-  public GrpcRequest messageHandler(Handler<GrpcMessage> messageHandler) {
+  public GrpcServiceRequest messageHandler(Handler<GrpcMessage> messageHandler) {
     this.messageHandler = messageHandler;
     return this;
   }
 
-  public GrpcRequest endHandler(Handler<Void> endHandler) {
+  public GrpcServiceRequest endHandler(Handler<Void> endHandler) {
     this.endHandler = endHandler;
     return this;
   }
 
-  public GrpcResponse response() {
+  public GrpcServiceResponse response() {
     return response;
   }
 }
