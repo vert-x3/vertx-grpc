@@ -6,4 +6,6 @@ public interface GrpcResponse {
 
   void end(Object message);
 
+  void end();
+
 }

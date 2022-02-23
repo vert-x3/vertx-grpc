@@ -26,18 +26,23 @@ public class GrpcService implements Handler<HttpServerRequest> {
       switch (type) {
         case UNARY:
         case SERVER_STREAMING:
+        case CLIENT_STREAMING:
           GrpcRequest grpcRequest = new GrpcRequest(new GrpcResponseImpl(desc, request), method);
           request.handler(envelope -> {
-            int len = envelope.getInt(1);
-            Buffer data = envelope.slice(5, 5 + len);
-            GrpcMessage msg = new GrpcMessage(data);
-            Handler<GrpcMessage> msgHandler = grpcRequest.messageHandler;
-            if (msgHandler != null) {
-              msgHandler.handle(msg);
+            if (envelope.length() > 0) {
+              int len = envelope.getInt(1);
+              Buffer data = envelope.slice(5, 5 + len);
+              GrpcMessage msg = new GrpcMessage(data);
+              Handler<GrpcMessage> msgHandler = grpcRequest.messageHandler;
+              if (msgHandler != null) {
+                msgHandler.handle(msg);
+              }
+            } else {
+              Handler<Void> handler = grpcRequest.endHandler;
+              if (handler != null) {
+                handler.handle(null);
+              }
             }
-          });
-          request.endHandler(v -> {
-
           });
           handleUnary(grpcRequest);
           break;
@@ -87,31 +92,51 @@ public class GrpcService implements Handler<HttpServerRequest> {
       write(message, true);
     }
 
+    @Override
+    public void end() {
+      write(null, true);
+    }
+
+    private boolean headerSent;
+
     private void write(Object message, boolean end) {
-      InputStream stream = desc.streamResponse(message);
-      byte[] tmp = new byte[256];
-      int i;
-      try {
-        Buffer b = Buffer.buffer();
-        b.appendByte((byte)0); // Compression
-        b.appendIntLE(0); // Length
-        while ((i = stream.read(tmp)) != -1) {
-          b.appendBytes(tmp, 0, i);
+      Buffer encoded;
+      if (message != null) {
+        InputStream stream = desc.streamResponse(message);
+        byte[] tmp = new byte[256];
+        int i;
+        try {
+          encoded = Buffer.buffer();
+          encoded.appendByte((byte)0); // Compression
+          encoded.appendIntLE(0); // Length
+          while ((i = stream.read(tmp)) != -1) {
+            encoded.appendBytes(tmp, 0, i);
+          }
+          encoded.setInt(1, encoded.length() - 5);
+        } catch (IOException e) {
+          e.printStackTrace();
+          return;
         }
-        b.setInt(1, b.length() - 5);
+      } else {
+        encoded = null;
+      }
+      if (!headerSent) {
+        headerSent = true;
         MultiMap responseHeaders = request.response().headers();
         responseHeaders.set("content-type", "application/grpc");
         responseHeaders.set("grpc-encoding", "identity");
         responseHeaders.set("grpc-accept-encoding", "gzip");
+      }
+      if (end) {
         MultiMap responseTrailers = request.response().trailers();
         responseTrailers.set("grpc-status", "0");
-        if (end) {
-          request.response().end(b);
+        if (encoded != null) {
+          request.response().end(encoded);
         } else {
-          request.response().write(b);
+          request.response().end();
         }
-      } catch (IOException e) {
-        e.printStackTrace();
+      } else {
+        request.response().write(encoded);
       }
     }
   }

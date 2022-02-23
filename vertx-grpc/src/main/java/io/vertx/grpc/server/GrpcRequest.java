@@ -8,6 +8,7 @@ public class GrpcRequest {
   private ServerMethodDefinition<?, ?> methodDefinition;
   private GrpcResponse response;
   Handler<GrpcMessage> messageHandler;
+  Handler<Void> endHandler;
 
   public GrpcRequest(GrpcResponse response, ServerMethodDefinition<?, ?> methodDefinition) {
     this.response = response;
@@ -23,7 +24,8 @@ public class GrpcRequest {
     return this;
   }
 
-  public GrpcRequest endHandler() {
+  public GrpcRequest endHandler(Handler<Void> endHandler) {
+    this.endHandler = endHandler;
     return this;
   }
 
