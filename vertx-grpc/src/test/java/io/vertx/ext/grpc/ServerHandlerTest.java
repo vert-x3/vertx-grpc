@@ -167,4 +167,57 @@ public class ServerHandlerTest extends GrpcTestBase {
           .onComplete(should.asyncAssertSuccess());
       }));
   }
+
+  @Test
+  public void testBidiStreaming(TestContext should) throws Exception {
+
+    int numItems = 128;
+
+    Async test = should.async();
+
+    VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
+    };
+    ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
+
+    GrpcService service = new GrpcService().serviceDefinition(serviceDef);
+    service.requestHandler(request -> {
+      request.messageHandler(msg -> {
+        ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
+        Item item = (Item) request.methodDefinition().getMethodDescriptor().parseRequest(in);
+        request.response().write(item);
+      });
+      request.endHandler(v -> {
+        request.response().end();
+      });
+    });
+
+    vertx.createHttpServer().requestHandler(service).listen(8080, "localhost")
+      .onComplete(should.asyncAssertSuccess(v -> {
+        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
+          .usePlaintext()
+          .build();
+        VertxStreamingGrpc.StreamingVertxStub stub = VertxStreamingGrpc.newVertxStub(channel);
+        final List<String> items = new ArrayList<>();
+        AtomicInteger count = new AtomicInteger(numItems);
+
+        Handler<WriteStream<Item>> h = ws -> vertx.setPeriodic(10, id -> {
+          int val = count.decrementAndGet();
+          if (val >= 0) {
+            ws.write(Item.newBuilder().setValue("the-value-" + (numItems - val - 1)).build());
+          } else {
+            vertx.cancelTimer(id);
+            ws.end();
+          }
+        });
+
+        stub.pipe(h)
+          .endHandler(v1 -> {
+            List<String> expected = IntStream.rangeClosed(0, numItems - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
+            should.assertEquals(expected, items);
+            test.complete();
+          })
+          .exceptionHandler(should::fail)
+          .handler(item -> items.add(item.getValue()));
+      }));
+  }
 }

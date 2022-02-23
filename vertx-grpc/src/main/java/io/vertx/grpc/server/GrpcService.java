@@ -27,21 +27,25 @@ public class GrpcService implements Handler<HttpServerRequest> {
         case UNARY:
         case SERVER_STREAMING:
         case CLIENT_STREAMING:
+        case BIDI_STREAMING:
           GrpcRequest grpcRequest = new GrpcRequest(new GrpcResponseImpl(desc, request), method);
           request.handler(envelope -> {
-            if (envelope.length() > 0) {
-              int len = envelope.getInt(1);
-              Buffer data = envelope.slice(5, 5 + len);
+            int idx = 0;
+            while (idx < envelope.length()) {
+              int len = envelope.getInt(idx + 1);
+              Buffer data = envelope.slice(idx + 5, idx + 5 + len);
               GrpcMessage msg = new GrpcMessage(data);
               Handler<GrpcMessage> msgHandler = grpcRequest.messageHandler;
               if (msgHandler != null) {
                 msgHandler.handle(msg);
               }
-            } else {
-              Handler<Void> handler = grpcRequest.endHandler;
-              if (handler != null) {
-                handler.handle(null);
-              }
+              idx += 5 + len;
+            }
+          });
+          request.endHandler(v -> {
+            Handler<Void> handler = grpcRequest.endHandler;
+            if (handler != null) {
+              handler.handle(null);
             }
           });
           handleUnary(grpcRequest);
