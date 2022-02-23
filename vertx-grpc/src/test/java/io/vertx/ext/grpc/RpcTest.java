@@ -11,8 +11,6 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 import io.vertx.ext.grpc.utils.IterableReadStream;
@@ -21,10 +19,8 @@ import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.BlockingServerInterceptor;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.VertxServerBuilder;
-import io.vertx.grpc.server.GrpcService;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -371,48 +367,5 @@ public class RpcTest extends GrpcTestBase {
             test.complete();
           }));
       });
-  }
-
-  @Test
-  public void someTest(TestContext should) throws Exception {
-
-    Async test = should.async();
-
-    VertxGreeterGrpc.GreeterVertxImplBase greeterVertxImplBase = new VertxGreeterGrpc.GreeterVertxImplBase() {
-      @Override
-      public Future<HelloReply> sayHello(HelloRequest request) {
-        System.out.println("SAY HELLO");
-        return Future.succeededFuture(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-      }
-    };
-    ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
-
-    GrpcService service = new GrpcService().serviceDefinition(serviceDef);
-    service.requestHandler(request -> {
-      System.out.println("HELLO REQUEST");
-      request.messageHandler(msg -> {
-        ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
-        HelloRequest helloRequest = (HelloRequest) request.methodDefinition().getMethodDescriptor().parseRequest(in);
-        
-      });
-    });
-
-
-    vertx.createHttpServer().requestHandler(service).listen(8080, "localhost")
-      .onComplete(should.asyncAssertSuccess(v -> {
-
-        channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-          .usePlaintext()
-          .build();
-
-        VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-        HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-
-        stub.sayHello(request).onComplete(should.asyncAssertSuccess(res -> {
-          should.assertTrue(Context.isOnEventLoopThread());
-          should.assertEquals("Hello Julien", res.getMessage());
-          test.complete();
-        }));
-      }));
   }
 }

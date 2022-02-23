@@ -1,6 +1,7 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.ManagedChannel;
+import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
@@ -51,14 +52,14 @@ public class ServerHandlerTest extends GrpcTestBase {
     VertxGreeterGrpc.GreeterVertxImplBase greeterVertxImplBase = new VertxGreeterGrpc.GreeterVertxImplBase() {
     };
     ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
+    ServerMethodDefinition<HelloRequest, HelloReply> meth = (ServerMethodDefinition<HelloRequest, HelloReply>) serviceDef.getMethod("helloworld.Greeter/SayHello");
 
-    GrpcService service = new GrpcService().serviceDefinition(serviceDef);
-    service.requestHandler(request -> {
-      request.messageHandler(msg -> {
-        ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
-        HelloRequest helloRequest = (HelloRequest) request.methodDefinition().getMethodDescriptor().parseRequest(in);
+    GrpcService service = new GrpcService();
+
+    service.methodHandler(meth, call -> {
+      call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
-        request.response().end(helloReply);
+        call.end(helloReply);
       });
     });
 
@@ -87,19 +88,15 @@ public class ServerHandlerTest extends GrpcTestBase {
     VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
     };
     ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
+    ServerMethodDefinition<Empty, Item> method = (ServerMethodDefinition<Empty, Item>) serviceDef.getMethod("streaming.Streaming/Source");
 
-    GrpcService service = new GrpcService().serviceDefinition(serviceDef);
-    service.requestHandler(request -> {
-      request.messageHandler(msg -> {
-        for (int i = 0;i < numItems;i++) {
-          Item item = Item.newBuilder().setValue("the-value-" + i).build();
-          if (i == numItems -1) {
-            request.response().end(item);
-          } else {
-            request.response().write(item);
-          }
-        }
-      });
+    GrpcService service = new GrpcService();
+    service.methodHandler(method, call -> {
+      for (int i = 0;i < numItems;i++) {
+        Item item = Item.newBuilder().setValue("the-value-" + i).build();
+        call.write(item);
+      }
+      call.end();
     });
 
     vertx.createHttpServer().requestHandler(service).listen(8080, "localhost")
@@ -131,16 +128,15 @@ public class ServerHandlerTest extends GrpcTestBase {
     VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
     };
     ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
+    ServerMethodDefinition<Item, Empty> method = (ServerMethodDefinition<Item, Empty>) serviceDef.getMethod("streaming.Streaming/Sink");
 
-    GrpcService service = new GrpcService().serviceDefinition(serviceDef);
-    service.requestHandler(request -> {
-      request.messageHandler(msg -> {
-        ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
-        Item item = (Item) request.methodDefinition().getMethodDescriptor().parseRequest(in);
+    GrpcService service = new GrpcService();
+    service.methodHandler(method, call -> {
+      call.handler(item -> {
         // Should assert item
       });
-      request.endHandler(v -> {
-        request.response().end(Empty.getDefaultInstance());
+      call.endHandler(v -> {
+        call.end(Empty.getDefaultInstance());
       });
     });
 
@@ -178,16 +174,15 @@ public class ServerHandlerTest extends GrpcTestBase {
     VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
     };
     ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
+    ServerMethodDefinition<Item, Item> def = (ServerMethodDefinition<Item, Item>) serviceDef.getMethod("streaming.Streaming/Pipe");
 
-    GrpcService service = new GrpcService().serviceDefinition(serviceDef);
-    service.requestHandler(request -> {
-      request.messageHandler(msg -> {
-        ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
-        Item item = (Item) request.methodDefinition().getMethodDescriptor().parseRequest(in);
-        request.response().write(item);
+    GrpcService service = new GrpcService();
+    service.methodHandler(def, call -> {
+      call.handler(item -> {
+        call.write(item);
       });
-      request.endHandler(v -> {
-        request.response().end();
+      call.endHandler(v -> {
+        call.end();
       });
     });
 
