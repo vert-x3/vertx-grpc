@@ -15,7 +15,7 @@ import io.vertx.core.streams.WriteStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
-import io.vertx.grpc.server.GrpcService;
+import io.vertx.grpc.server.GrpcServer;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -45,7 +45,7 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    GrpcService service = new GrpcService().methodCallHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    GrpcServer service = new GrpcServer().methodCallHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         call.end(helloReply);
@@ -74,7 +74,7 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    GrpcService service = new GrpcService();
+    GrpcServer service = new GrpcServer();
     service.methodCallHandler(StreamingGrpc.getSourceMethod(), call -> {
       for (int i = 0;i < numItems;i++) {
         Item item = Item.newBuilder().setValue("the-value-" + i).build();
@@ -109,7 +109,7 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     // Async test = should.async();
 
-    GrpcService service = new GrpcService();
+    GrpcServer service = new GrpcServer();
     service.methodCallHandler(StreamingGrpc.getSinkMethod(), call -> {
       call.handler(item -> {
         // Should assert item
@@ -150,7 +150,7 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    GrpcService service = new GrpcService();
+    GrpcServer service = new GrpcServer();
     service.methodCallHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
         call.write(item);

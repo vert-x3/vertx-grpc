@@ -8,24 +8,24 @@ import io.vertx.core.buffer.Buffer;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class GrpcMethodCall<Req, Resp> {
+public class GrpcServerMethodCall<Req, Resp> {
 
-  final GrpcRequest request;
+  final GrpcServerRequest request;
   final MethodDescriptor<Req, Resp> methodDesc;
   Handler<Req> handler;
   Handler<Void> endHandler;
 
-  public GrpcMethodCall(GrpcRequest request, MethodDescriptor<Req, Resp> def) {
+  public GrpcServerMethodCall(GrpcServerRequest request, MethodDescriptor<Req, Resp> def) {
     this.request = request;
     this.methodDesc = def;
   }
 
-  public GrpcMethodCall<Req, Resp> handler(Handler<Req> handler) {
+  public GrpcServerMethodCall<Req, Resp> handler(Handler<Req> handler) {
     this.handler = handler;
     return this;
   }
 
-  public GrpcMethodCall<Req, Resp> endHandler(Handler<Void> endHandler) {
+  public GrpcServerMethodCall<Req, Resp> endHandler(Handler<Void> endHandler) {
     this.endHandler = endHandler;
     return this;
   }

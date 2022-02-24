@@ -5,13 +5,13 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 
-public class GrpcRequest {
+public class GrpcServerRequest {
 
   final HttpServerRequest httpRequest;
   Handler<GrpcMessage> messageHandler;
   Handler<Void> endHandler;
 
-  public GrpcRequest(HttpServerRequest httpRequest) {
+  public GrpcServerRequest(HttpServerRequest httpRequest) {
     this.httpRequest = httpRequest;
   }
 
@@ -19,12 +19,12 @@ public class GrpcRequest {
     return httpRequest.path().substring(1);
   }
 
-  public GrpcRequest messageHandler(Handler<GrpcMessage> messageHandler) {
+  public GrpcServerRequest messageHandler(Handler<GrpcMessage> messageHandler) {
     this.messageHandler = messageHandler;
     return this;
   }
 
-  public GrpcRequest endHandler(Handler<Void> endHandler) {
+  public GrpcServerRequest endHandler(Handler<Void> endHandler) {
     this.endHandler = endHandler;
     return this;
   }
@@ -40,7 +40,7 @@ public class GrpcRequest {
   public void end() {
     write(null, true);
   }
-  
+
   private boolean headerSent;
 
   private void write(Buffer message, boolean end) {
