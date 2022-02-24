@@ -1,6 +1,6 @@
 package io.vertx.grpc.server;
 
-import io.grpc.ServerMethodDefinition;
+import io.grpc.MethodDescriptor;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -12,7 +12,7 @@ import java.util.Map;
 public class GrpcService implements Handler<HttpServerRequest> {
 
   private Handler<GrpcRequest> requestHandler;
-  private Map<String, MethodCallHandler<?, ?>> handlerMap = new HashMap<>();
+  private Map<String, MethodCallHandler<?, ?>> methodCallHandlers = new HashMap<>();
 
   @Override
   public void handle(HttpServerRequest request) {
@@ -41,7 +41,7 @@ public class GrpcService implements Handler<HttpServerRequest> {
 
   private void handleUnary(GrpcRequest request) {
     String fmn = request.fullMethodName();
-    MethodCallHandler<?, ?> method = handlerMap.get(fmn);
+    MethodCallHandler<?, ?> method = methodCallHandlers.get(fmn);
     if (method != null) {
       method.handle(request);
     } else {
@@ -59,36 +59,36 @@ public class GrpcService implements Handler<HttpServerRequest> {
     return this;
   }
 
-  public <Req, Resp> GrpcService methodHandler(ServerMethodDefinition<Req, Resp> def, Handler<GrpcMethodCall<Req, Resp>> handler) {
-    handlerMap.put(def.getMethodDescriptor().getFullMethodName(), new MethodCallHandler<>(def, handler));
+  public <Req, Resp> GrpcService methodCallHandler(MethodDescriptor<Req, Resp> methodDesc, Handler<GrpcMethodCall<Req, Resp>> handler) {
+    methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, handler));
     return this;
   }
 
   private static class MethodCallHandler<Req, Resp> implements Handler<GrpcRequest> {
-    final ServerMethodDefinition<Req, Resp> def;
+    final MethodDescriptor<Req, Resp> def;
     final Handler<GrpcMethodCall<Req, Resp>> handler;
-    MethodCallHandler(ServerMethodDefinition<Req, Resp> def, Handler<GrpcMethodCall<Req, Resp>> handler) {
+    MethodCallHandler(MethodDescriptor<Req, Resp> def, Handler<GrpcMethodCall<Req, Resp>> handler) {
       this.def = def;
       this.handler = handler;
     }
     @Override
     public void handle(GrpcRequest request) {
-      GrpcMethodCall<Req, Resp> call = new GrpcMethodCall<>(request, def);
+      GrpcMethodCall<Req, Resp> methodCall = new GrpcMethodCall<>(request, def);
       request.messageHandler(msg -> {
         ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
-        Req obj = def.getMethodDescriptor().parseRequest(in);
-        Handler<Req> handler = call.handler;
+        Req obj = def.parseRequest(in);
+        Handler<Req> handler = methodCall.handler;
         if (handler != null) {
           handler.handle(obj);
         }
       });
       request.endHandler(v -> {
-        Handler<Void> handler = call.endHandler;
+        Handler<Void> handler = methodCall.endHandler;
         if (handler != null) {
           handler.handle(null);
         }
       });
-      handler.handle(call);
+      handler.handle(methodCall);
     }
   }
 }

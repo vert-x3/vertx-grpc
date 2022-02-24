@@ -1,6 +1,6 @@
 package io.vertx.grpc.server;
 
-import io.grpc.ServerMethodDefinition;
+import io.grpc.MethodDescriptor;
 import io.vertx.core.Handler;
 import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
@@ -11,13 +11,13 @@ import java.io.InputStream;
 public class GrpcMethodCall<Req, Resp> {
 
   final GrpcRequest request;
-  final ServerMethodDefinition<Req, Resp> def;
+  final MethodDescriptor<Req, Resp> methodDesc;
   Handler<Req> handler;
   Handler<Void> endHandler;
 
-  public GrpcMethodCall(GrpcRequest request, ServerMethodDefinition<Req, Resp> def) {
+  public GrpcMethodCall(GrpcRequest request, MethodDescriptor<Req, Resp> def) {
     this.request = request;
-    this.def = def;
+    this.methodDesc = def;
   }
 
   public GrpcMethodCall<Req, Resp> handler(Handler<Req> handler) {
@@ -40,7 +40,7 @@ public class GrpcMethodCall<Req, Resp> {
 
   private Buffer encode(Resp resp) {
     Buffer encoded = Buffer.buffer();
-    InputStream stream = def.getMethodDescriptor().streamResponse(resp);
+    InputStream stream = methodDesc.streamResponse(resp);
     byte[] tmp = new byte[256];
     int i;
     try {

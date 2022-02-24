@@ -1,32 +1,28 @@
 package io.vertx.ext.grpc;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ServerMethodDefinition;
-import io.grpc.ServerServiceDefinition;
+import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.VertxGreeterGrpc;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
+import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.examples.streaming.VertxStreamingGrpc;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.ext.grpc.utils.IterableReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.server.GrpcService;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -49,14 +45,7 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    VertxGreeterGrpc.GreeterVertxImplBase greeterVertxImplBase = new VertxGreeterGrpc.GreeterVertxImplBase() {
-    };
-    ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
-    ServerMethodDefinition<HelloRequest, HelloReply> meth = (ServerMethodDefinition<HelloRequest, HelloReply>) serviceDef.getMethod("helloworld.Greeter/SayHello");
-
-    GrpcService service = new GrpcService();
-
-    service.methodHandler(meth, call -> {
+    GrpcService service = new GrpcService().methodCallHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         call.end(helloReply);
@@ -85,13 +74,8 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
-    };
-    ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
-    ServerMethodDefinition<Empty, Item> method = (ServerMethodDefinition<Empty, Item>) serviceDef.getMethod("streaming.Streaming/Source");
-
     GrpcService service = new GrpcService();
-    service.methodHandler(method, call -> {
+    service.methodCallHandler(StreamingGrpc.getSourceMethod(), call -> {
       for (int i = 0;i < numItems;i++) {
         Item item = Item.newBuilder().setValue("the-value-" + i).build();
         call.write(item);
@@ -125,13 +109,8 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     // Async test = should.async();
 
-    VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
-    };
-    ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
-    ServerMethodDefinition<Item, Empty> method = (ServerMethodDefinition<Item, Empty>) serviceDef.getMethod("streaming.Streaming/Sink");
-
     GrpcService service = new GrpcService();
-    service.methodHandler(method, call -> {
+    service.methodCallHandler(StreamingGrpc.getSinkMethod(), call -> {
       call.handler(item -> {
         // Should assert item
       });
@@ -171,13 +150,8 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    VertxStreamingGrpc.StreamingVertxImplBase greeterVertxImplBase = new VertxStreamingGrpc.StreamingVertxImplBase() {
-    };
-    ServerServiceDefinition serviceDef = greeterVertxImplBase.bindService();
-    ServerMethodDefinition<Item, Item> def = (ServerMethodDefinition<Item, Item>) serviceDef.getMethod("streaming.Streaming/Pipe");
-
     GrpcService service = new GrpcService();
-    service.methodHandler(def, call -> {
+    service.methodCallHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
         call.write(item);
       });
