@@ -13,4 +13,12 @@ public class GrpcMessage {
   public Buffer data() {
     return data;
   }
+
+  public Buffer encode() {
+    Buffer message = Buffer.buffer(data.length());
+    message.appendByte((byte)0);      // Compression
+    message.appendInt(data.length()); // Length
+    message.appendBuffer(data);
+    return message;
+  }
 }
