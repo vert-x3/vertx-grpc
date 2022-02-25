@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  * @author <a href="mailto:plopes@redhat.com">Paulo Lopes</a>
  */
-public class ServerHandlerTest extends GrpcTestBase {
+public class ServerTest extends GrpcTestBase {
 
   private volatile ManagedChannel channel;
 
@@ -45,7 +45,7 @@ public class ServerHandlerTest extends GrpcTestBase {
 
     Async test = should.async();
 
-    GrpcServer service = new GrpcServer().methodCallHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    GrpcServer service = new GrpcServer().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         call.response().end(helloReply);
@@ -75,7 +75,7 @@ public class ServerHandlerTest extends GrpcTestBase {
     Async test = should.async();
 
     GrpcServer service = new GrpcServer();
-    service.methodCallHandler(StreamingGrpc.getSourceMethod(), call -> {
+    service.callHandler(StreamingGrpc.getSourceMethod(), call -> {
       for (int i = 0;i < numItems;i++) {
         Item item = Item.newBuilder().setValue("the-value-" + i).build();
         call.response().write(item);
@@ -110,7 +110,7 @@ public class ServerHandlerTest extends GrpcTestBase {
     // Async test = should.async();
 
     GrpcServer service = new GrpcServer();
-    service.methodCallHandler(StreamingGrpc.getSinkMethod(), call -> {
+    service.callHandler(StreamingGrpc.getSinkMethod(), call -> {
       call.handler(item -> {
         // Should assert item
       });
@@ -151,7 +151,7 @@ public class ServerHandlerTest extends GrpcTestBase {
     Async test = should.async();
 
     GrpcServer service = new GrpcServer();
-    service.methodCallHandler(StreamingGrpc.getPipeMethod(), call -> {
+    service.callHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
         call.response().write(item);
       });

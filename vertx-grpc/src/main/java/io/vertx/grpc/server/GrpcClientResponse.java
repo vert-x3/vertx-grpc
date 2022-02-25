@@ -17,21 +17,29 @@ public class GrpcClientResponse {
     httpResponse.handler(buff -> {
       Iterable<GrpcMessage> messages = GrpcMessageCodec.decode(buff);
       for (GrpcMessage message : messages) {
-        Handler<GrpcMessage> handler = messageHandler;
-        if (handler != null) {
-          handler.handle(message);
-        }
+        handle(message);
       }
     });
     httpResponse.endHandler(v -> {
-      Handler<Void> handler = endHandler;
-      if (handler != null) {
-        handler.handle(null);
-      }
+      handleEnd();
     });
   }
 
-  public GrpcClientResponse handler(Handler<GrpcMessage> handler) {
+  private void handle(GrpcMessage message) {
+    Handler<GrpcMessage> handler = messageHandler;
+    if (handler != null) {
+      handler.handle(message);
+    }
+  }
+
+  private void handleEnd() {
+    Handler<Void> handler = endHandler;
+    if (handler != null) {
+      handler.handle(null);
+    }
+  }
+
+  public GrpcClientResponse messageHandler(Handler<GrpcMessage> handler) {
     messageHandler = handler;
     return this;
   }

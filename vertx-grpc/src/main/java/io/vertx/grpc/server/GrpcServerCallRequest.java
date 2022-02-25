@@ -5,20 +5,16 @@ import io.vertx.core.Handler;
 
 public class GrpcServerCallRequest<Req, Resp> {
 
-  final GrpcServerRequest grpcRequest;
-  final MethodDescriptor<Req, Resp> methodDesc;
-  final GrpcServerCallResponse<Req, Resp> response;
-  Handler<Req> handler;
-  Handler<Void> endHandler;
+  private final GrpcServerCallResponse<Req, Resp> response;
+  private Handler<Req> messageHandler;
+  private Handler<Void> endHandler;
 
   public GrpcServerCallRequest(GrpcServerRequest grpcRequest, MethodDescriptor<Req, Resp> methodDesc) {
-    this.grpcRequest = grpcRequest;
-    this.methodDesc = methodDesc;
-    this.response = new GrpcServerCallResponse<>(grpcRequest.response, methodDesc);
+    this.response = new GrpcServerCallResponse<>(grpcRequest.response(), methodDesc);
   }
 
   public GrpcServerCallRequest<Req, Resp> handler(Handler<Req> handler) {
-    this.handler = handler;
+    this.messageHandler = handler;
     return this;
   }
 
@@ -29,5 +25,19 @@ public class GrpcServerCallRequest<Req, Resp> {
 
   public GrpcServerCallResponse<Req, Resp> response() {
     return response;
+  }
+
+  void handleMessage(Req message) {
+    Handler<Req> handler = messageHandler;
+    if (handler != null) {
+      handler.handle(message);
+    }
+  }
+
+  void handleEnd() {
+    Handler<Void> handler = endHandler;
+    if (handler != null) {
+      handler.handle(null);
+    }
   }
 }

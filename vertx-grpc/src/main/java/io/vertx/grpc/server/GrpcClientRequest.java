@@ -1,18 +1,17 @@
 package io.vertx.grpc.server;
 
 import io.vertx.core.Future;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
 
 public class GrpcClientRequest {
 
-  private final HttpClientRequest request;
+  private final HttpClientRequest httpRequest;
   private String fullMethodName;
   private boolean headerSent;
   private Future<GrpcClientResponse> response;
 
   public GrpcClientRequest(HttpClientRequest httpRequest) {
-    this.request = httpRequest;
+    this.httpRequest = httpRequest;
     this.response = httpRequest.response().map(httpResponse -> {
       GrpcClientResponse grpcResponse = new GrpcClientResponse(httpResponse);
       grpcResponse.init();
@@ -37,7 +36,7 @@ public class GrpcClientRequest {
     if (!headerSent) {
       throw new IllegalStateException();
     }
-    request.end();
+    httpRequest.end();
   }
 
   private void write(GrpcMessage message, boolean end) {
@@ -45,19 +44,19 @@ public class GrpcClientRequest {
       if (fullMethodName == null) {
         throw new IllegalStateException();
       }
-      request.putHeader("content-type", "application/grpc");
-      request.putHeader("grpc-encoding", "identity");
-      request.putHeader("grpc-accept-encoding", "gzip");
-      request.putHeader("grpc-accept-encoding", "gzip");
-      request.putHeader("te", "trailers");
-      request.setChunked(true);
-      request.setURI("/" + fullMethodName);
+      httpRequest.putHeader("content-type", "application/grpc");
+      httpRequest.putHeader("grpc-encoding", "identity");
+      httpRequest.putHeader("grpc-accept-encoding", "gzip");
+      httpRequest.putHeader("grpc-accept-encoding", "gzip");
+      httpRequest.putHeader("te", "trailers");
+      httpRequest.setChunked(true);
+      httpRequest.setURI("/" + fullMethodName);
       headerSent = true;
     }
     if (end) {
-      request.end(message.encode());
+      httpRequest.end(message.encode());
     } else {
-      request.write(message.encode());
+      httpRequest.write(message.encode());
     }
   }
 

@@ -56,7 +56,7 @@ public class ClientTest extends GrpcTestBase {
           .onComplete(should.asyncAssertSuccess(callRequest -> {
             callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
               AtomicInteger count = new AtomicInteger();
-              callResponse.handler(reply -> {
+              callResponse.messageHandler(reply -> {
                 should.assertEquals(1, count.incrementAndGet());
                 should.assertEquals("Hello Julien", reply.getMessage());
               });
@@ -88,7 +88,7 @@ public class ClientTest extends GrpcTestBase {
           .onComplete(should.asyncAssertSuccess(callRequest -> {
             callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
               AtomicInteger count = new AtomicInteger();
-              callResponse.handler(item -> {
+              callResponse.messageHandler(item -> {
                 int i = count.getAndIncrement();
                 should.assertEquals("the-value-" + i, item.getValue());
               });
@@ -129,7 +129,7 @@ public class ClientTest extends GrpcTestBase {
           .onComplete(should.asyncAssertSuccess(callRequest -> {
             callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
               AtomicInteger count = new AtomicInteger();
-              callResponse.handler(item -> {
+              callResponse.messageHandler(item -> {
                 count.incrementAndGet();
               });
               callResponse.endHandler(v2 -> {
@@ -168,7 +168,7 @@ public class ClientTest extends GrpcTestBase {
           .onComplete(should.asyncAssertSuccess(callRequest -> {
             callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
               AtomicInteger count = new AtomicInteger();
-              callResponse.handler(item -> {
+              callResponse.messageHandler(item -> {
                 int i = count.getAndIncrement();
                 should.assertEquals("the-value-" + i, item.getValue());
               });

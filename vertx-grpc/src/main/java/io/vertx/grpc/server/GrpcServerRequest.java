@@ -7,8 +7,8 @@ public class GrpcServerRequest {
 
   final HttpServerRequest httpRequest;
   final GrpcServerResponse response;
-  Handler<GrpcMessage> messageHandler;
-  Handler<Void> endHandler;
+  private Handler<GrpcMessage> messageHandler;
+  private Handler<Void> endHandler;
 
   public GrpcServerRequest(HttpServerRequest httpRequest) {
     this.httpRequest = httpRequest;
@@ -19,6 +19,20 @@ public class GrpcServerRequest {
     return httpRequest.path().substring(1);
   }
 
+  void handleMessage(GrpcMessage message) {
+    Handler<GrpcMessage> msgHandler = messageHandler;
+    if (msgHandler != null) {
+      msgHandler.handle(message);
+    }
+  }
+
+  void handleEnd() {
+    Handler<Void> handler = endHandler;
+    if (handler != null) {
+      handler.handle(null);
+    }
+  }
+
   public GrpcServerRequest messageHandler(Handler<GrpcMessage> messageHandler) {
     this.messageHandler = messageHandler;
     return this;
@@ -27,5 +41,9 @@ public class GrpcServerRequest {
   public GrpcServerRequest endHandler(Handler<Void> endHandler) {
     this.endHandler = endHandler;
     return this;
+  }
+
+  public GrpcServerResponse response() {
+    return response;
   }
 }

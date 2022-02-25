@@ -7,34 +7,37 @@ import java.io.ByteArrayInputStream;
 
 public class GrpcClientCallResponse<Req, Resp> {
 
-  private final GrpcClientResponse grpcResponse;
   private final MethodDescriptor<Req, Resp> methodDesc;
   private Handler<Resp> messageHandler;
   private Handler<Void> endHandler;
 
   public GrpcClientCallResponse(GrpcClientResponse grpcResponse, MethodDescriptor<Req, Resp> methodDesc) {
-
-    grpcResponse.handler(msg -> {
-      ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
-      Resp obj = methodDesc.parseResponse(in);
-      Handler<Resp> handler = messageHandler;
-      if (handler != null) {
-        handler.handle(obj);
-      }
-
+    grpcResponse.messageHandler(msg -> {
+      handleMessage(msg);
     });
     grpcResponse.endHandler(v -> {
-      Handler<Void> handler = endHandler;
-      if (handler != null) {
-        handler.handle(null);
-      }
+      handleEnd();
     });
-
     this.methodDesc = methodDesc;
-    this.grpcResponse = grpcResponse;
   }
 
-  public GrpcClientCallResponse<Req, Resp> handler(Handler<Resp> handler) {
+  private void handleMessage(GrpcMessage message) {
+    ByteArrayInputStream in = new ByteArrayInputStream(message.data().getBytes());
+    Resp obj = methodDesc.parseResponse(in);
+    Handler<Resp> handler = messageHandler;
+    if (handler != null) {
+      handler.handle(obj);
+    }
+  }
+
+  private void handleEnd() {
+    Handler<Void> handler = endHandler;
+    if (handler != null) {
+      handler.handle(null);
+    }
+  }
+
+  public GrpcClientCallResponse<Req, Resp> messageHandler(Handler<Resp> handler) {
     messageHandler = handler;
     return this;
   }
