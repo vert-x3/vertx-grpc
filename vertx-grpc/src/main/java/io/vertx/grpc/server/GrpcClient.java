@@ -1,5 +1,6 @@
 package io.vertx.grpc.server;
 
+import io.grpc.MethodDescriptor;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
@@ -28,6 +29,10 @@ public class GrpcClient {
       .setServer(server);
     return client.request(options)
       .map(request -> new GrpcClientRequest(request));
+  }
+
+  public <Req, Resp> Future<GrpcClientCallRequest<Req, Resp>> call(SocketAddress server, MethodDescriptor<Req, Resp> methodDesc) {
+    return request(server).map(grpcRequest -> new GrpcClientCallRequest<>(grpcRequest, methodDesc));
   }
 
 }

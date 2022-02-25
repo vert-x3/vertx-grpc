@@ -33,6 +33,13 @@ public class GrpcClientRequest {
     write(message, true);
   }
 
+  public void end() {
+    if (!headerSent) {
+      throw new IllegalStateException();
+    }
+    request.end();
+  }
+
   private void write(GrpcMessage message, boolean end) {
     if (!headerSent) {
       if (fullMethodName == null) {
@@ -45,6 +52,7 @@ public class GrpcClientRequest {
       request.putHeader("te", "trailers");
       request.setChunked(true);
       request.setURI("/" + fullMethodName);
+      headerSent = true;
     }
     if (end) {
       request.end(message.encode());

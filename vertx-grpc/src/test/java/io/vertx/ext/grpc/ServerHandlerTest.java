@@ -48,7 +48,7 @@ public class ServerHandlerTest extends GrpcTestBase {
     GrpcServer service = new GrpcServer().methodCallHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
-        call.end(helloReply);
+        call.response().end(helloReply);
       });
     });
 
@@ -78,9 +78,9 @@ public class ServerHandlerTest extends GrpcTestBase {
     service.methodCallHandler(StreamingGrpc.getSourceMethod(), call -> {
       for (int i = 0;i < numItems;i++) {
         Item item = Item.newBuilder().setValue("the-value-" + i).build();
-        call.write(item);
+        call.response().write(item);
       }
-      call.end();
+      call.response().end();
     });
 
     vertx.createHttpServer().requestHandler(service).listen(8080, "localhost")
@@ -115,7 +115,7 @@ public class ServerHandlerTest extends GrpcTestBase {
         // Should assert item
       });
       call.endHandler(v -> {
-        call.end(Empty.getDefaultInstance());
+        call.response().end(Empty.getDefaultInstance());
       });
     });
 
@@ -153,10 +153,10 @@ public class ServerHandlerTest extends GrpcTestBase {
     GrpcServer service = new GrpcServer();
     service.methodCallHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
-        call.write(item);
+        call.response().write(item);
       });
       call.endHandler(v -> {
-        call.end();
+        call.response().end();
       });
     });
 

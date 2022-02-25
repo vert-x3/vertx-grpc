@@ -1,41 +1,28 @@
 package io.vertx.grpc.server;
 
 import io.grpc.MethodDescriptor;
-import io.vertx.core.Handler;
 import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public class GrpcServerMethodCall<Req, Resp> {
+public class GrpcServerCallResponse<Req, Resp> {
 
-  final GrpcServerRequest request;
+  final GrpcServerResponse grpcResponse;
   final MethodDescriptor<Req, Resp> methodDesc;
-  Handler<Req> handler;
-  Handler<Void> endHandler;
 
-  public GrpcServerMethodCall(GrpcServerRequest request, MethodDescriptor<Req, Resp> def) {
-    this.request = request;
-    this.methodDesc = def;
-  }
-
-  public GrpcServerMethodCall<Req, Resp> handler(Handler<Req> handler) {
-    this.handler = handler;
-    return this;
-  }
-
-  public GrpcServerMethodCall<Req, Resp> endHandler(Handler<Void> endHandler) {
-    this.endHandler = endHandler;
-    return this;
+  public GrpcServerCallResponse(GrpcServerResponse grpcResponse, MethodDescriptor<Req, Resp> methodDesc) {
+    this.grpcResponse = grpcResponse;
+    this.methodDesc = methodDesc;
   }
 
   public void write(Resp message) {
-    request.write(encode(message));
+    grpcResponse.write(encode(message));
   }
 
   public void end(Resp message) {
-    request.end(encode(message));
+    grpcResponse.end(encode(message));
   }
 
   private Buffer encode(Resp resp) {
@@ -54,6 +41,6 @@ public class GrpcServerMethodCall<Req, Resp> {
   }
 
   public void end() {
-    request.end();
+    grpcResponse.end();
   }
 }

@@ -3,7 +3,7 @@ package io.vertx.grpc.server;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpClientResponse;
 
-public class GrpcClientResponse extends GrpcMessageDecoder {
+public class GrpcClientResponse {
 
   private HttpClientResponse httpResponse;
   private Handler<GrpcMessage> messageHandler;
@@ -14,21 +14,21 @@ public class GrpcClientResponse extends GrpcMessageDecoder {
   }
 
   void init() {
-    httpResponse.handler(this);
+    httpResponse.handler(buff -> {
+      Iterable<GrpcMessage> messages = GrpcMessageCodec.decode(buff);
+      for (GrpcMessage message : messages) {
+        Handler<GrpcMessage> handler = messageHandler;
+        if (handler != null) {
+          handler.handle(message);
+        }
+      }
+    });
     httpResponse.endHandler(v -> {
       Handler<Void> handler = endHandler;
       if (handler != null) {
         handler.handle(null);
       }
     });
-  }
-
-  @Override
-  public void handle(GrpcMessage msg) {
-    Handler<GrpcMessage> handler = messageHandler;
-    if (handler != null) {
-      handler.handle(msg);
-    }
   }
 
   public GrpcClientResponse handler(Handler<GrpcMessage> handler) {

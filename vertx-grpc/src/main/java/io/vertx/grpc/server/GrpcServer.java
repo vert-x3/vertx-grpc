@@ -59,21 +59,21 @@ public class GrpcServer implements Handler<HttpServerRequest> {
     return this;
   }
 
-  public <Req, Resp> GrpcServer methodCallHandler(MethodDescriptor<Req, Resp> methodDesc, Handler<GrpcServerMethodCall<Req, Resp>> handler) {
+  public <Req, Resp> GrpcServer methodCallHandler(MethodDescriptor<Req, Resp> methodDesc, Handler<GrpcServerCallRequest<Req, Resp>> handler) {
     methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, handler));
     return this;
   }
 
   private static class MethodCallHandler<Req, Resp> implements Handler<GrpcServerRequest> {
     final MethodDescriptor<Req, Resp> def;
-    final Handler<GrpcServerMethodCall<Req, Resp>> handler;
-    MethodCallHandler(MethodDescriptor<Req, Resp> def, Handler<GrpcServerMethodCall<Req, Resp>> handler) {
+    final Handler<GrpcServerCallRequest<Req, Resp>> handler;
+    MethodCallHandler(MethodDescriptor<Req, Resp> def, Handler<GrpcServerCallRequest<Req, Resp>> handler) {
       this.def = def;
       this.handler = handler;
     }
     @Override
     public void handle(GrpcServerRequest request) {
-      GrpcServerMethodCall<Req, Resp> methodCall = new GrpcServerMethodCall<>(request, def);
+      GrpcServerCallRequest<Req, Resp> methodCall = new GrpcServerCallRequest<>(request, def);
       request.messageHandler(msg -> {
         ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
         Req obj = def.parseRequest(in);
