@@ -1,14 +1,17 @@
 package io.vertx.grpc.server;
 
 import io.grpc.MethodDescriptor;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.streams.WriteStream;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-public class GrpcClientCallRequest<Req, Resp> {
+public class GrpcClientCallRequest<Req, Resp> implements WriteStream<Req> {
 
   private final GrpcClientRequest grpcRequest;
   private final MethodDescriptor<Req, Resp> methodDesc;
@@ -21,16 +24,49 @@ public class GrpcClientCallRequest<Req, Resp> {
     this.methodDesc = methodDesc;
   }
 
-  public void write(Req message) {
-    grpcRequest.write(new GrpcMessage(encode(message)));
+  @Override
+  public GrpcClientCallRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler) {
+    grpcRequest.exceptionHandler(handler);
+    return this;
   }
 
-  public void end(Req message) {
-    grpcRequest.end(new GrpcMessage(encode(message)));
+  @Override
+  public void write(Req data, Handler<AsyncResult<Void>> handler) {
+    write(data).onComplete(handler);
   }
 
-  public void end() {
-    grpcRequest.end();
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    end().onComplete(handler);
+  }
+
+  @Override
+  public GrpcClientCallRequest<Req, Resp> setWriteQueueMaxSize(int maxSize) {
+    grpcRequest.setWriteQueueMaxSize(maxSize);
+    return this;
+  }
+
+  @Override
+  public boolean writeQueueFull() {
+    return grpcRequest.writeQueueFull();
+  }
+
+  @Override
+  public GrpcClientCallRequest<Req, Resp> drainHandler(Handler<Void> handler) {
+    grpcRequest.drainHandler(handler);
+    return this;
+  }
+
+  public Future<Void> write(Req message) {
+    return grpcRequest.write(new GrpcMessage(encode(message)));
+  }
+
+  public Future<Void> end(Req message) {
+    return grpcRequest.end(new GrpcMessage(encode(message)));
+  }
+
+  public Future<Void> end() {
+    return grpcRequest.end();
   }
 
   public Future<GrpcClientCallResponse<Req, Resp>> response() {

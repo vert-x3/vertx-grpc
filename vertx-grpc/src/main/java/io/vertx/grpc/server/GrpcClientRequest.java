@@ -1,9 +1,12 @@
 package io.vertx.grpc.server;
 
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpClientRequest;
+import io.vertx.core.streams.WriteStream;
 
-public class GrpcClientRequest {
+public class GrpcClientRequest implements WriteStream<GrpcMessage> {
 
   private final HttpClientRequest httpRequest;
   private String fullMethodName;
@@ -24,22 +27,55 @@ public class GrpcClientRequest {
     return this;
   }
 
-  public void write(GrpcMessage message) {
-    write(message, false);
+  @Override
+  public GrpcClientRequest exceptionHandler(Handler<Throwable> handler) {
+    httpRequest.exceptionHandler(handler);
+    return this;
   }
 
-  public void end(GrpcMessage message) {
-    write(message, true);
+  @Override
+  public void write(GrpcMessage data, Handler<AsyncResult<Void>> handler) {
+    write(data).onComplete(handler);
   }
 
-  public void end() {
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    end().onComplete(handler);
+  }
+
+  @Override
+  public GrpcClientRequest setWriteQueueMaxSize(int maxSize) {
+    httpRequest.setWriteQueueMaxSize(maxSize);
+    return this;
+  }
+
+  @Override
+  public boolean writeQueueFull() {
+    return httpRequest.writeQueueFull();
+  }
+
+  @Override
+  public GrpcClientRequest drainHandler(Handler<Void> handler) {
+    httpRequest.drainHandler(handler);
+    return this;
+  }
+
+  public Future<Void> write(GrpcMessage message) {
+    return write(message, false);
+  }
+
+  public Future<Void> end(GrpcMessage message) {
+    return write(message, true);
+  }
+
+  public Future<Void> end() {
     if (!headerSent) {
       throw new IllegalStateException();
     }
-    httpRequest.end();
+    return httpRequest.end();
   }
 
-  private void write(GrpcMessage message, boolean end) {
+  private Future<Void> write(GrpcMessage message, boolean end) {
     if (!headerSent) {
       if (fullMethodName == null) {
         throw new IllegalStateException();
@@ -54,9 +90,9 @@ public class GrpcClientRequest {
       headerSent = true;
     }
     if (end) {
-      httpRequest.end(message.encode());
+      return httpRequest.end(message.encode());
     } else {
-      httpRequest.write(message.encode());
+      return httpRequest.write(message.encode());
     }
   }
 

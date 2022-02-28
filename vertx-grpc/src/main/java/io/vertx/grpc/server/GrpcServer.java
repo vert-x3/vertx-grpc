@@ -2,7 +2,6 @@ package io.vertx.grpc.server;
 
 import io.grpc.MethodDescriptor;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 
 import java.io.ByteArrayInputStream;
@@ -17,19 +16,7 @@ public class GrpcServer implements Handler<HttpServerRequest> {
   @Override
   public void handle(HttpServerRequest httpRequest) {
     GrpcServerRequest grpcRequest = new GrpcServerRequest(httpRequest);
-    httpRequest.handler(envelope -> {
-      int idx = 0;
-      while (idx < envelope.length()) {
-        int len = envelope.getInt(idx + 1);
-        Buffer data = envelope.slice(idx + 5, idx + 5 + len);
-        GrpcMessage message = new GrpcMessage(data);
-        grpcRequest.handleMessage(message);
-        idx += 5 + len;
-      }
-    });
-    httpRequest.endHandler(v -> {
-      grpcRequest.handleEnd();
-    });
+    grpcRequest.init();
     handle(grpcRequest);
   }
 
