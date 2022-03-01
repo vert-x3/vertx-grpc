@@ -90,9 +90,9 @@ public class GrpcClientRequest implements WriteStream<GrpcMessage> {
       headerSent = true;
     }
     if (end) {
-      return httpRequest.end(message.encode());
+      return httpRequest.end(message.encoded());
     } else {
-      return httpRequest.write(message.encode());
+      return httpRequest.write(message.encoded());
     }
   }
 

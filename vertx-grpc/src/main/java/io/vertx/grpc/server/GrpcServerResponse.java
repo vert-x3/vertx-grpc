@@ -61,15 +61,6 @@ public class GrpcServerResponse implements WriteStream<GrpcMessage> {
   private boolean headerSent;
 
   private Future<Void>  write(GrpcMessage message, boolean end) {
-    Buffer encoded;
-    if (message != null) {
-      encoded = Buffer.buffer(message.data().length());
-      encoded.appendByte((byte)0); // Compression
-      encoded.appendInt(message.data().length()); // Length
-      encoded.appendBuffer(message.data());
-    } else {
-      encoded = null;
-    }
     if (!headerSent) {
       headerSent = true;
       MultiMap responseHeaders = httpResponse.headers();
@@ -80,13 +71,13 @@ public class GrpcServerResponse implements WriteStream<GrpcMessage> {
     if (end) {
       MultiMap responseTrailers = httpResponse.trailers();
       responseTrailers.set("grpc-status", "0");
-      if (encoded != null) {
-        return httpResponse.end(encoded);
+      if (message != null) {
+        return httpResponse.end(message.encoded());
       } else {
         return httpResponse.end();
       }
     } else {
-      return httpResponse.write(encoded);
+      return httpResponse.write(message.encoded());
     }
   }
 }
