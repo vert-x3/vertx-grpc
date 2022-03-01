@@ -16,6 +16,7 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerCallResponse;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -42,13 +43,30 @@ public class ServerTest extends GrpcTestBase {
 
   @Test
   public void testUnary(TestContext should) throws Exception {
+    testUnary(should, "identity", "identity");
+  }
+
+  @Test
+  public void testUnaryDecompression(TestContext should) throws Exception {
+    testUnary(should, "gzip", "identity");
+  }
+
+  @Test
+  public void testUnaryCompression(TestContext should) throws Exception {
+    testUnary(should, "identity", "gzip");
+  }
+
+  private void testUnary(TestContext should, String requestEncoding, String responseEncoding) throws Exception {
 
     Async test = should.async();
 
     GrpcServer service = new GrpcServer().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
-        call.response().end(helloReply);
+        GrpcServerCallResponse<HelloRequest, HelloReply> response = call.response();
+        response
+          .encoding(responseEncoding)
+          .end(helloReply);
       });
     });
 
@@ -58,6 +76,7 @@ public class ServerTest extends GrpcTestBase {
           .usePlaintext()
           .build();
         VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
+        stub = stub.withCompression(requestEncoding);
         HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
         stub.sayHello(request).onComplete(should.asyncAssertSuccess(res -> {
           should.assertTrue(Context.isOnEventLoopThread());

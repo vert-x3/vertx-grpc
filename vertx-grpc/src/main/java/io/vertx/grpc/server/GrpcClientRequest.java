@@ -83,16 +83,15 @@ public class GrpcClientRequest implements WriteStream<GrpcMessage> {
       httpRequest.putHeader("content-type", "application/grpc");
       httpRequest.putHeader("grpc-encoding", "identity");
       httpRequest.putHeader("grpc-accept-encoding", "gzip");
-      httpRequest.putHeader("grpc-accept-encoding", "gzip");
       httpRequest.putHeader("te", "trailers");
       httpRequest.setChunked(true);
       httpRequest.setURI("/" + fullMethodName);
       headerSent = true;
     }
     if (end) {
-      return httpRequest.end(message.encoded());
+      return httpRequest.end(message.encode());
     } else {
-      return httpRequest.write(message.encoded());
+      return httpRequest.write(message.encode());
     }
   }
 

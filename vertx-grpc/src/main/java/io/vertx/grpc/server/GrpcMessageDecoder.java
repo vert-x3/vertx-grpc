@@ -8,13 +8,15 @@ import io.vertx.core.streams.impl.InboundBuffer;
 
 abstract class GrpcMessageDecoder implements Handler<Buffer> {
 
-  static final GrpcMessage END_SENTINEL = new GrpcMessage(Buffer.buffer());
+  static final GrpcMessage END_SENTINEL = GrpcMessage.message(Buffer.buffer());
 
+  private final String compression;
   private final ReadStream<Buffer> stream;
   private final InboundBuffer<GrpcMessage> queue;
   private Buffer buffer;
 
-  GrpcMessageDecoder(Context context, ReadStream<Buffer> stream) {
+  GrpcMessageDecoder(Context context, ReadStream<Buffer> stream, String compression) {
+    this.compression = compression;
     this.stream = stream;
     this.queue = new InboundBuffer<>(context);
   }
@@ -51,8 +53,17 @@ abstract class GrpcMessageDecoder implements Handler<Buffer> {
     boolean pause = false;
     int len;
     while (idx + 5 <= buffer.length() && (len = buffer.getInt(idx + 1)) + 5 <= buffer.length()) {
-      Buffer data = buffer.slice(idx + 5, idx + 5 + len);
-      GrpcMessage message = new GrpcMessage(data);
+      boolean compressed = buffer.getByte(idx) == 1;
+      if (compressed && compression == null) {
+        throw new UnsupportedOperationException("Handle me");
+      }
+      Buffer payload = buffer.slice(idx + 5, idx + 5 + len);
+      GrpcMessage message;
+      if (compressed) {
+        message = new GrpcMessage.Compressed(payload, compression);
+      } else {
+        message = new GrpcMessage.Base(payload);
+      }
       pause |= !queue.write(message);
       idx += 5 + len;
     }

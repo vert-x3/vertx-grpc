@@ -59,7 +59,7 @@ public class GrpcServer implements Handler<HttpServerRequest> {
     public void handle(GrpcServerRequest request) {
       GrpcServerCallRequest<Req, Resp> methodCall = new GrpcServerCallRequest<>(request, def);
       request.messageHandler(msg -> {
-        ByteArrayInputStream in = new ByteArrayInputStream(msg.data().getBytes());
+        ByteArrayInputStream in = new ByteArrayInputStream(msg.payload().getBytes());
         Req requestMessage = def.parseRequest(in);
         methodCall.handleMessage(requestMessage);
       });

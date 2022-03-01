@@ -26,7 +26,7 @@ public class GrpcClientCallResponse<Req, Resp> implements ReadStream<Resp> {
   }
 
   private void handleMessage(GrpcMessage message) {
-    ByteArrayInputStream in = new ByteArrayInputStream(message.data().getBytes());
+    ByteArrayInputStream in = new ByteArrayInputStream(message.payload().getBytes());
     Resp obj = methodDesc.parseResponse(in);
     Handler<Resp> handler = messageHandler;
     if (handler != null) {

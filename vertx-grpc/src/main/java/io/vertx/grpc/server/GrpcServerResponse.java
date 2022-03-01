@@ -4,16 +4,21 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.streams.WriteStream;
 
 public class GrpcServerResponse implements WriteStream<GrpcMessage> {
 
   private final HttpServerResponse httpResponse;
+  private String encoding = "identity";
 
   public GrpcServerResponse(HttpServerResponse httpResponse) {
     this.httpResponse = httpResponse;
+  }
+
+  public GrpcServerResponse encoding(String encoding) {
+    this.encoding = encoding;
+    return this;
   }
 
   @Override
@@ -65,19 +70,19 @@ public class GrpcServerResponse implements WriteStream<GrpcMessage> {
       headerSent = true;
       MultiMap responseHeaders = httpResponse.headers();
       responseHeaders.set("content-type", "application/grpc");
-      responseHeaders.set("grpc-encoding", "identity");
+      responseHeaders.set("grpc-encoding", encoding);
       responseHeaders.set("grpc-accept-encoding", "gzip");
     }
     if (end) {
       MultiMap responseTrailers = httpResponse.trailers();
       responseTrailers.set("grpc-status", "0");
       if (message != null) {
-        return httpResponse.end(message.encoded());
+        return httpResponse.end(message.encode(encoding));
       } else {
         return httpResponse.end();
       }
     } else {
-      return httpResponse.write(message.encoded());
+      return httpResponse.write(message.encode(encoding));
     }
   }
 }

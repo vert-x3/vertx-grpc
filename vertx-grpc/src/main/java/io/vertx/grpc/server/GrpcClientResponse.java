@@ -12,7 +12,7 @@ public class GrpcClientResponse extends GrpcMessageDecoder implements ReadStream
   private Handler<Void> endHandler;
 
   public GrpcClientResponse(HttpClientResponse httpResponse) {
-    super(Vertx.currentContext(), httpResponse); // A bit ugly
+    super(Vertx.currentContext(), httpResponse, null); // A bit ugly
     this.httpResponse = httpResponse;
   }
 

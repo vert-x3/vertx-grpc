@@ -21,8 +21,13 @@ public class GrpcServerCallResponse<Req, Resp> implements WriteStream<Resp> {
     this.methodDesc = methodDesc;
   }
 
+  public GrpcServerCallResponse<Req, Resp> encoding(String encoding) {
+    grpcResponse.encoding(encoding);
+    return this;
+  }
+
   public Future<Void> write(Resp message) {
-    return grpcResponse.write(new GrpcMessage(encode(message)));
+    return grpcResponse.write(GrpcMessage.message(encode(message)));
   }
 
   @Override

@@ -58,11 +58,11 @@ public class GrpcClientCallRequest<Req, Resp> implements WriteStream<Req> {
   }
 
   public Future<Void> write(Req message) {
-    return grpcRequest.write(new GrpcMessage(encode(message)));
+    return grpcRequest.write(GrpcMessage.message(encode(message)));
   }
 
   public Future<Void> end(Req message) {
-    return grpcRequest.end(new GrpcMessage(encode(message)));
+    return grpcRequest.end(GrpcMessage.message(encode(message)));
   }
 
   public Future<Void> end() {

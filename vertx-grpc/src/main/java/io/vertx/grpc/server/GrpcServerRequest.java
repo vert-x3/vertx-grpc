@@ -13,7 +13,7 @@ public class GrpcServerRequest extends GrpcMessageDecoder implements ReadStream<
   private Handler<Void> endHandler;
 
   public GrpcServerRequest(HttpServerRequest httpRequest) {
-    super(((HttpServerRequestInternal) httpRequest).context(), httpRequest);
+    super(((HttpServerRequestInternal) httpRequest).context(), httpRequest, httpRequest.headers().get("grpc-encoding"));
     this.httpRequest = httpRequest;
     this.response = new GrpcServerResponse(httpRequest.response());
   }
