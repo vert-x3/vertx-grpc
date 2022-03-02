@@ -7,12 +7,13 @@ import io.vertx.core.streams.ReadStream;
 
 public class GrpcClientResponse extends GrpcMessageDecoder implements ReadStream<GrpcMessage> {
 
-  private HttpClientResponse httpResponse;
+  private final HttpClientResponse httpResponse;
+  private GrpcStatus status;
   private Handler<GrpcMessage> messageHandler;
   private Handler<Void> endHandler;
 
   public GrpcClientResponse(HttpClientResponse httpResponse) {
-    super(Vertx.currentContext(), httpResponse, null); // A bit ugly
+    super(Vertx.currentContext(), httpResponse, httpResponse.headers().get("grpc-encoding")); // A bit ugly
     this.httpResponse = httpResponse;
   }
 
@@ -25,10 +26,21 @@ public class GrpcClientResponse extends GrpcMessageDecoder implements ReadStream
   }
 
   protected void handleEnd() {
+    String responseStatus = httpResponse.getTrailer("grpc-status");
+    if (responseStatus == null) {
+      responseStatus = httpResponse.getHeader("grpc-status");
+    }
+    if (responseStatus != null) {
+      status = GrpcStatus.valueOf(Integer.parseInt(responseStatus));
+    }
     Handler<Void> handler = endHandler;
     if (handler != null) {
       handler.handle(null);
     }
+  }
+
+  public GrpcStatus status() {
+    return status;
   }
 
   public GrpcClientResponse messageHandler(Handler<GrpcMessage> handler) {

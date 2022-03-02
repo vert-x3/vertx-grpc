@@ -21,6 +21,11 @@ public class GrpcServerCallResponse<Req, Resp> implements WriteStream<Resp> {
     this.methodDesc = methodDesc;
   }
 
+  public GrpcServerCallResponse<Req, Resp> status(GrpcStatus status) {
+    grpcResponse.status(status);
+    return this;
+  }
+
   public GrpcServerCallResponse<Req, Resp> encoding(String encoding) {
     grpcResponse.encoding(encoding);
     return this;

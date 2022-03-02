@@ -3,6 +3,7 @@ package io.vertx.grpc.server;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.compression.GzipOptions;
 import io.netty.handler.codec.compression.StandardCompressionOptions;
@@ -28,6 +29,11 @@ public interface GrpcMessage {
     }
 
     @Override
+    public boolean isCompressed() {
+      return false;
+    }
+
+    @Override
     public Buffer payload() {
       return data;
     }
@@ -39,7 +45,7 @@ public interface GrpcMessage {
 
     private static Buffer encode(Buffer payload, String encoding) {
       ByteBuf byteBuf = payload.getByteBuf();
-      CompositeByteBuf composite = byteBuf.alloc().compositeBuffer();
+      CompositeByteBuf composite = Unpooled.compositeBuffer();
       boolean compressed;
       switch (encoding) {
         case "identity":
@@ -84,6 +90,12 @@ public interface GrpcMessage {
       this.compressed = compressed;
     }
 
+    @Override
+    public boolean isCompressed() {
+      return true;
+    }
+
+    @Override
     public Buffer payload() {
       if (payload == null) {
         if ("gzip".equals(compression)) {
@@ -108,6 +120,8 @@ public interface GrpcMessage {
       throw new UnsupportedOperationException();
     }
   }
+
+  boolean isCompressed();
 
   Buffer payload();
 

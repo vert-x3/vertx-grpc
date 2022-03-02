@@ -7,13 +7,23 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.streams.WriteStream;
 
+import java.util.Objects;
+
 public class GrpcServerResponse implements WriteStream<GrpcMessage> {
 
   private final HttpServerResponse httpResponse;
   private String encoding = "identity";
+  private GrpcStatus status = GrpcStatus.OK;
+  private boolean headerSent;
 
   public GrpcServerResponse(HttpServerResponse httpResponse) {
     this.httpResponse = httpResponse;
+  }
+
+  public GrpcServerResponse status(GrpcStatus status) {
+    Objects.requireNonNull(status);
+    this.status = status;
+    return this;
   }
 
   public GrpcServerResponse encoding(String encoding) {
@@ -63,19 +73,22 @@ public class GrpcServerResponse implements WriteStream<GrpcMessage> {
     return this;
   }
 
-  private boolean headerSent;
-
   private Future<Void>  write(GrpcMessage message, boolean end) {
+    MultiMap responseHeaders = httpResponse.headers();
     if (!headerSent) {
       headerSent = true;
-      MultiMap responseHeaders = httpResponse.headers();
       responseHeaders.set("content-type", "application/grpc");
       responseHeaders.set("grpc-encoding", encoding);
       responseHeaders.set("grpc-accept-encoding", "gzip");
+      if (end) {
+        responseHeaders.set("grpc-status", status.toString());
+      }
     }
     if (end) {
-      MultiMap responseTrailers = httpResponse.trailers();
-      responseTrailers.set("grpc-status", "0");
+      if (!responseHeaders.contains("grpc-status")) {
+        MultiMap responseTrailers = httpResponse.trailers();
+        responseTrailers.set("grpc-status", status.toString());
+      }
       if (message != null) {
         return httpResponse.end(message.encode(encoding));
       } else {

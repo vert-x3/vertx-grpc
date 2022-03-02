@@ -6,10 +6,13 @@ import io.vertx.core.Handler;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.streams.WriteStream;
 
+import java.util.Objects;
+
 public class GrpcClientRequest implements WriteStream<GrpcMessage> {
 
   private final HttpClientRequest httpRequest;
   private String fullMethodName;
+  private String encoding = "identity";
   private boolean headerSent;
   private Future<GrpcClientResponse> response;
 
@@ -20,6 +23,12 @@ public class GrpcClientRequest implements WriteStream<GrpcMessage> {
       grpcResponse.init();
       return grpcResponse;
     });
+  }
+
+  public GrpcClientRequest encoding(String encoding) {
+    Objects.requireNonNull(encoding);
+    this.encoding = encoding;
+    return this;
   }
 
   public GrpcClientRequest fullMethodName(String fullMethodName) {
@@ -81,7 +90,7 @@ public class GrpcClientRequest implements WriteStream<GrpcMessage> {
         throw new IllegalStateException();
       }
       httpRequest.putHeader("content-type", "application/grpc");
-      httpRequest.putHeader("grpc-encoding", "identity");
+      httpRequest.putHeader("grpc-encoding", encoding);
       httpRequest.putHeader("grpc-accept-encoding", "gzip");
       httpRequest.putHeader("te", "trailers");
       httpRequest.setChunked(true);
@@ -89,9 +98,9 @@ public class GrpcClientRequest implements WriteStream<GrpcMessage> {
       headerSent = true;
     }
     if (end) {
-      return httpRequest.end(message.encode());
+      return httpRequest.end(message.encode(encoding));
     } else {
-      return httpRequest.write(message.encode());
+      return httpRequest.write(message.encode(encoding));
     }
   }
 

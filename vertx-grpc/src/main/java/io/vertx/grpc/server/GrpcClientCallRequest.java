@@ -24,6 +24,11 @@ public class GrpcClientCallRequest<Req, Resp> implements WriteStream<Req> {
     this.methodDesc = methodDesc;
   }
 
+  public GrpcClientCallRequest<Req, Resp> encoding(String encoding) {
+    grpcRequest.encoding(encoding);
+    return this;
+  }
+
   @Override
   public GrpcClientCallRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler) {
     grpcRequest.exceptionHandler(handler);

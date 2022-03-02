@@ -41,6 +41,10 @@ public class GrpcClientCallResponse<Req, Resp> implements ReadStream<Resp> {
     }
   }
 
+  public GrpcStatus status() {
+    return grpcResponse.status();
+  }
+
   @Override
   public ReadStream<Resp> exceptionHandler(Handler<Throwable> handler) {
     grpcResponse.exceptionHandler(handler);
