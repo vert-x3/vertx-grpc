@@ -8,6 +8,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -64,9 +65,14 @@ public abstract class GrpcTestBase2 {
     return promise.future();
   }
 
+
   protected void startServer(GrpcServer server) {
+    startServer(new HttpServerOptions().setPort(8080).setHost("localhost"), server);
+  }
+
+  protected void startServer(HttpServerOptions options, GrpcServer server) {
     CompletableFuture<Void> res = new CompletableFuture<>();
-    vertx.createHttpServer().requestHandler(server).listen(8080, "localhost")
+    vertx.createHttpServer(options).requestHandler(server).listen()
       .onComplete(ar -> {
         if (ar.succeeded()) {
           res.complete(null);

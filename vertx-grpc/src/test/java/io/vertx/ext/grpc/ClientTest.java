@@ -10,10 +10,14 @@ import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
+import io.vertx.grpc.VertxServerBuilder;
 import io.vertx.grpc.server.GrpcClient;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerCallResponse;
@@ -73,6 +77,46 @@ public class ClientTest extends GrpcTestBase2 {
     client.call(SocketAddress.inetSocketAddress(port, "localhost"), GreeterGrpc.getSayHelloMethod())
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.encoding(requestEncoding);
+        callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
+          AtomicInteger count = new AtomicInteger();
+          callResponse.messageHandler(reply -> {
+            should.assertEquals(1, count.incrementAndGet());
+            should.assertEquals("Hello Julien", reply.getMessage());
+          });
+          callResponse.endHandler(v2 -> {
+            should.assertEquals(1, count.get());
+            test.complete();
+          });
+        }));
+        callRequest.end(HelloRequest.newBuilder().setName("Julien").build());
+      }));
+  }
+
+  @Test
+  public void testSSL(TestContext should) {
+
+    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        responseObserver.onCompleted();
+      }
+    };
+    startServer(called, VertxServerBuilder.forPort(vertx, 8443).useSsl(options -> options
+      .setSsl(true)
+      .setUseAlpn(true)
+      .setKeyStoreOptions(new JksOptions()
+        .setPath("tls/server-keystore.jks")
+        .setPassword("wibble"))));
+
+    Async test = should.async();
+    GrpcClient client = new GrpcClient(new HttpClientOptions().setSsl(true)
+      .setUseAlpn(true)
+      .setTrustStoreOptions(new JksOptions()
+        .setPath("tls/client-truststore.jks")
+        .setPassword("wibble")), vertx);
+    client.call(SocketAddress.inetSocketAddress(8443, "localhost"), GreeterGrpc.getSayHelloMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
           AtomicInteger count = new AtomicInteger();
           callResponse.messageHandler(reply -> {

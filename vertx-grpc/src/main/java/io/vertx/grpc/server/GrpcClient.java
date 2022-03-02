@@ -15,12 +15,14 @@ public class GrpcClient {
   private final Vertx vertx;
   private HttpClient client;
 
-  public GrpcClient(Vertx vertx) {
+  public GrpcClient(HttpClientOptions options, Vertx vertx) {
     this.vertx = vertx;
-    this.client = vertx.createHttpClient(new HttpClientOptions()
-      .setProtocolVersion(HttpVersion.HTTP_2)
-      .setHttp2ClearTextUpgrade(false)
-    );
+    this.client = vertx.createHttpClient(new HttpClientOptions(options)
+      .setProtocolVersion(HttpVersion.HTTP_2));
+  }
+
+  public GrpcClient(Vertx vertx) {
+    this(new HttpClientOptions().setHttp2ClearTextUpgrade(false), vertx);
   }
 
   public Future<GrpcClientRequest> request(SocketAddress server) {

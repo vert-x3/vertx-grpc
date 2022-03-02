@@ -10,6 +10,8 @@ import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.stub.StreamObserver;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.VertxChannelBuilder;
@@ -77,6 +79,40 @@ public class ServerTest extends GrpcTestBase2 {
   }
 
   @Test
+  public void testSSL(TestContext should) {
+
+    startServer(new HttpServerOptions()
+      .setSsl(true)
+      .setUseAlpn(true)
+      .setPort(8443)
+      .setHost("localhost")
+      .setKeyStoreOptions(new JksOptions()
+        .setPath("tls/server-keystore.jks")
+        .setPassword("wibble")), new GrpcServer().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+      call.handler(helloRequest -> {
+        HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
+        GrpcServerCallResponse<HelloRequest, HelloReply> response = call.response();
+        response
+          .end(helloReply);
+      });
+    }));
+
+    channel = VertxChannelBuilder.forAddress(vertx, "localhost", 8443)
+      .useSsl(options -> {
+        options.setSsl(true)
+          .setUseAlpn(true)
+          .setTrustStoreOptions(new JksOptions()
+            .setPath("tls/client-truststore.jks")
+            .setPassword("wibble"));
+      })
+      .build();
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    HelloReply res = stub.sayHello(request);
+    should.assertEquals("Hello Julien", res.getMessage());
+  }
+
+  @Test
   public void testStatus(TestContext should) {
 
     startServer(new GrpcServer().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
@@ -102,7 +138,7 @@ public class ServerTest extends GrpcTestBase2 {
 
   @Test
   public void testServerStreaming(TestContext should) {
-    
+
     startServer(new GrpcServer().callHandler(StreamingGrpc.getSourceMethod(), call -> {
       for (int i = 0; i < NUM_ITEMS; i++) {
         Item item = Item.newBuilder().setValue("the-value-" + i).build();
