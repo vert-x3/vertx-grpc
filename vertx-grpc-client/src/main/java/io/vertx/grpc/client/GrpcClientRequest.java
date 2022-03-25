@@ -2,6 +2,7 @@ package io.vertx.grpc.client;
 
 import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -24,6 +25,7 @@ import io.vertx.grpc.common.ServiceName;
  *   <li>To send a streaming request, call {@link #write(Req)} any time you need and then {@link #end()}</li>
  * </ul>
  */
+@VertxGen
 public interface GrpcClientRequest<Req, Resp> extends WriteStream<Req> {
 
   @Fluent

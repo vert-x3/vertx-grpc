@@ -2,6 +2,7 @@ package io.vertx.grpc.client;
 
 import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.grpc.common.GrpcMessage;
@@ -14,6 +15,7 @@ import io.vertx.grpc.common.GrpcStatus;
  * of the end of the response.
  *
  */
+@VertxGen
 public interface GrpcClientResponse<Req, Resp> extends ReadStream<Resp> {
 
   /**

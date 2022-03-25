@@ -1,6 +1,8 @@
 package io.vertx.grpc.client;
 
 import io.grpc.MethodDescriptor;
+import io.vertx.codegen.annotations.GenIgnore;
+import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
@@ -23,6 +25,7 @@ import io.vertx.grpc.common.GrpcMessage;
  *   <li>a gRPC message {@link #request(SocketAddress, MethodDescriptor)}: {@link GrpcClientRequest}/{@link GrpcClientRequest} with gRPC messages to call a given method of a gRPC service</li>
  * </ul>
  */
+@VertxGen
 public interface GrpcClient {
 
   /**
@@ -60,6 +63,7 @@ public interface GrpcClient {
    * @param server the server hosting the service
    * @return a future request
    */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
   <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> method);
 
 }
