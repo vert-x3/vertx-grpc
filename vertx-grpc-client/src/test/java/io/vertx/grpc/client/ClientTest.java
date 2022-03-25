@@ -13,6 +13,7 @@ package io.vertx.grpc.client;
 import io.grpc.Grpc;
 import io.grpc.ServerCredentials;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.TlsServerCredentials;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
@@ -293,6 +294,45 @@ public class ClientTest extends GrpcTestBase {
             callRequest.end();
           }
         });
+      }));
+  }
+
+  @Test
+  public void testReset(TestContext should) throws Exception {
+
+    Async done = should.async(2);
+
+    startServer(new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item item) {
+          }
+          @Override
+          public void onError(Throwable t) {
+            should.assertEquals(StatusRuntimeException.class, t.getClass());
+            StatusRuntimeException ex = (StatusRuntimeException) t;
+            should.assertEquals(Status.CANCELLED.getCode(), ex.getStatus().getCode());
+            done.countDown();
+          }
+          @Override
+          public void onCompleted() {
+          }
+        };
+      }
+    });
+
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getSinkMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.write(Item.newBuilder().setValue("item").build())
+          .onComplete(should.asyncAssertSuccess(v -> {
+            callRequest.reset();
+        }));
+        callRequest.response().onComplete(should.asyncAssertFailure(err -> {
+          done.countDown();
+        }));
       }));
   }
 }

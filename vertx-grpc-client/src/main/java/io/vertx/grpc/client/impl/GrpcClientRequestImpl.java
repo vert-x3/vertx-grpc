@@ -155,4 +155,9 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   @Override public Future<GrpcClientResponse<Req, Resp>> response() {
     return response;
   }
+
+  @Override
+  public void reset() {
+    httpRequest.reset();
+  }
 }

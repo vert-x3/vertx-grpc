@@ -71,6 +71,13 @@ public interface GrpcClientRequest<Req, Resp> extends WriteStream<Req> {
   @CacheReturn
   Future<GrpcClientResponse<Req, Resp>> response();
 
+  /**
+   * Reset the stream.
+   *
+   * This is an HTTP/2 operation.
+   */
+  void reset();
+
   @Override
   GrpcClientRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler);
 
