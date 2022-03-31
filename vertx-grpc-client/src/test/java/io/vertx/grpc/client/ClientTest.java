@@ -46,11 +46,6 @@ public class ClientTest extends GrpcTestBase {
 
   private static final int NUM_ITEMS = 128;
 
-  @Override
-  public void tearDown(TestContext should) {
-    super.tearDown(should);
-  }
-
   @Test
   public void testUnary(TestContext should) throws IOException {
     testUnary(should, "identity", "identity");
