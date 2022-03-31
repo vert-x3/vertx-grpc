@@ -10,8 +10,15 @@
  */
 package io.vertx.grpc.client;
 
+import io.grpc.ClientInterceptor;
+import io.grpc.ForwardingServerCall;
 import io.grpc.Grpc;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
 import io.grpc.ServerCredentials;
+import io.grpc.ServerInterceptor;
+import io.grpc.ServerInterceptors;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.TlsServerCredentials;
@@ -35,7 +42,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -328,6 +337,68 @@ public class ClientTest extends GrpcTestBase {
         callRequest.response().onComplete(should.asyncAssertFailure(err -> {
           done.countDown();
         }));
+      }));
+  }
+
+  @Test
+  public void testMetadata(TestContext should) throws Exception {
+
+    AtomicInteger step = new AtomicInteger();
+    ServerInterceptor interceptor = new ServerInterceptor() {
+      @Override
+      public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+        should.assertEquals("custom_request_header_value", headers.get(Metadata.Key.of("custom_request_header", Metadata.ASCII_STRING_MARSHALLER)));
+        step.getAndIncrement();
+        return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
+          @Override
+          public void sendHeaders(Metadata headers) {
+            headers.put(Metadata.Key.of("custom_response_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_header_value");
+            step.getAndIncrement();
+            super.sendHeaders(headers);
+          }
+          @Override
+          public void close(Status status, Metadata trailers) {
+            trailers.put(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_trailer_value");
+            step.getAndIncrement();
+            super.close(status, trailers);
+          }
+        },headers);
+      }
+    };
+
+    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
+
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> plainResponseObserver) {
+        ServerCallStreamObserver<HelloReply> responseObserver =
+          (ServerCallStreamObserver<HelloReply>) plainResponseObserver;
+        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        responseObserver.onCompleted();
+      }
+    };
+    startServer(ServerInterceptors.intercept(called, interceptor));
+
+    Async test = should.async();
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), GreeterGrpc.getSayHelloMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.headers().set("custom_request_header", "custom_request_header_value");
+        callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
+          should.assertEquals("custom_response_header_value", callResponse.headers().get("custom_response_header"));
+          AtomicInteger count = new AtomicInteger();
+          callResponse.messageHandler(reply -> {
+            should.assertEquals(1, count.incrementAndGet());
+            should.assertEquals("Hello Julien", reply.getMessage());
+          });
+          callResponse.endHandler(v2 -> {
+            should.assertEquals(GrpcStatus.OK, callResponse.status());
+            should.assertEquals("custom_response_trailer_value", callResponse.trailers().get("custom_response_trailer"));
+            should.assertEquals(1, count.get());
+            should.assertEquals(3, step.getAndIncrement());
+            test.complete();
+          });
+        }));
+        callRequest.end(HelloRequest.newBuilder().setName("Julien").build());
       }));
   }
 }

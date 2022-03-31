@@ -6,8 +6,8 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.ServiceName;
 
 /**
@@ -27,6 +27,11 @@ import io.vertx.grpc.common.ServiceName;
  */
 @VertxGen
 public interface GrpcClientRequest<Req, Resp> extends WriteStream<Req> {
+
+  /**
+   * @return the {@link MultiMap} to reader metadata headers
+   */
+  MultiMap headers();
 
   @Fluent
   GrpcClientRequest<Req, Resp> encoding(String encoding);

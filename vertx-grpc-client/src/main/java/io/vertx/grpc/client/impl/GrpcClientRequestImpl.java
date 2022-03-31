@@ -13,8 +13,10 @@ package io.vertx.grpc.client.impl;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpClientRequest;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -33,8 +35,9 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   private ServiceName serviceName;
   private String methodName;
   private String encoding = "identity";
-  private boolean headerSent;
+  private boolean headersSent;
   private Future<GrpcClientResponse<Req, Resp>> response;
+  private MultiMap headers;
 
   public GrpcClientRequestImpl(HttpClientRequest httpRequest, Function<Req, GrpcMessage> messageEncoder, Function<GrpcMessage, Resp> messageDecoder) {
     this.httpRequest = httpRequest;
@@ -47,6 +50,17 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override
+  public MultiMap headers() {
+    if (headersSent) {
+      throw new IllegalStateException("Headers already sent");
+    }
+    if (headers == null) {
+      headers = MultiMap.caseInsensitiveMultiMap();
+    }
+    return headers;
+  }
+
+  @Override
   public GrpcClientRequest<Req, Resp> serviceName(ServiceName serviceName) {
     this.serviceName = serviceName;
     return this;
@@ -54,7 +68,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
 
   @Override
   public GrpcClientRequest<Req, Resp> fullMethodName(String fullMethodName) {
-    if (headerSent) {
+    if (headersSent) {
       throw new IllegalStateException("Request already sent");
     }
     int idx = fullMethodName.lastIndexOf('/');
@@ -120,14 +134,14 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override public Future<Void> end() {
-    if (!headerSent) {
+    if (!headersSent) {
       throw new IllegalStateException();
     }
     return httpRequest.end();
   }
 
   private Future<Void> write(GrpcMessage message, boolean end) {
-    if (!headerSent) {
+    if (!headersSent) {
       ServiceName serviceName = this.serviceName;
       String methodName = this.methodName;
       if (serviceName == null) {
@@ -136,6 +150,16 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
       if (methodName == null) {
         throw new IllegalStateException();
       }
+      if (headers != null) {
+        MultiMap requestHeaders = httpRequest.headers();
+        for (Map.Entry<String, String> header : headers) {
+          if (!header.getKey().startsWith("grpc-")) {
+            requestHeaders.add(header.getKey(), header.getValue());
+          } else {
+            // Log ?
+          }
+        }
+      }
       String uri = serviceName.pathOf(methodName);
       httpRequest.putHeader("content-type", "application/grpc");
       httpRequest.putHeader("grpc-encoding", encoding);
@@ -143,7 +167,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
       httpRequest.putHeader("te", "trailers");
       httpRequest.setChunked(true);
       httpRequest.setURI(uri);
-      headerSent = true;
+      headersSent = true;
     }
     if (end) {
       return httpRequest.end(message.encode(encoding));

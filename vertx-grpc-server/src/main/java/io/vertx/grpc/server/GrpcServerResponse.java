@@ -4,8 +4,8 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.streams.WriteStream;
-import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
 
 @VertxGen
@@ -22,6 +22,16 @@ public interface GrpcServerResponse<Req, Resp> extends WriteStream<Resp> {
 
   @Fluent
   GrpcServerResponse<Req, Resp> encoding(String encoding);
+
+  /**
+   * @return the {@link MultiMap} to write metadata headers
+   */
+  MultiMap headers();
+
+  /**
+   * @return the {@link MultiMap} to write metadata trailers
+   */
+  MultiMap trailers();
 
   @Override
   GrpcServerResponse<Req, Resp> exceptionHandler(Handler<Throwable> handler);

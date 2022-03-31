@@ -11,6 +11,7 @@
 package io.vertx.grpc.client.impl;
 
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientResponse;
 
@@ -44,6 +45,16 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
     if (handler != null) {
       handler.handle(messageDecoder.apply(msg));
     }
+  }
+
+  @Override
+  public MultiMap headers() {
+    return httpResponse.headers();
+  }
+
+  @Override
+  public MultiMap trailers() {
+    return httpResponse.trailers();
   }
 
   protected void handleEnd() {

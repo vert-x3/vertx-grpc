@@ -19,6 +19,7 @@ import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.server.GrpcServerResponse;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -31,7 +32,9 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   private final Function<Resp, GrpcMessage> encoder;
   private String encoding = "identity";
   private GrpcStatus status = GrpcStatus.OK;
-  private boolean headerSent;
+  private boolean headersSent;
+  private boolean trailersSent;
+  private MultiMap headers, trailers;
 
   public GrpcServerResponseImpl(HttpServerResponse httpResponse, Function<Resp, GrpcMessage> encoder) {
     this.httpResponse = httpResponse;
@@ -47,6 +50,28 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   public GrpcServerResponse<Req, Resp> encoding(String encoding) {
     this.encoding = encoding;
     return this;
+  }
+
+  @Override
+  public MultiMap headers() {
+    if (headersSent) {
+      throw new IllegalStateException("Headers already sent");
+    }
+    if (headers == null) {
+      headers = MultiMap.caseInsensitiveMultiMap();
+    }
+    return headers;
+  }
+
+  @Override
+  public MultiMap trailers() {
+    if (trailersSent) {
+      throw new IllegalStateException("Trailers already sent");
+    }
+    if (trailers == null) {
+      trailers = MultiMap.caseInsensitiveMultiMap();
+    }
+    return trailers;
   }
 
   @Override
@@ -93,8 +118,17 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
 
   private Future<Void>  write(GrpcMessage message, boolean end) {
     MultiMap responseHeaders = httpResponse.headers();
-    if (!headerSent) {
-      headerSent = true;
+    if (!headersSent) {
+      headersSent = true;
+      if (headers != null) {
+        for (Map.Entry<String, String> header : headers) {
+          if (!header.getKey().startsWith("grpc-")) {
+            responseHeaders.add(header.getKey(), header.getValue());
+          } else {
+            // Log ?
+          }
+        }
+      }
       responseHeaders.set("content-type", "application/grpc");
       responseHeaders.set("grpc-encoding", encoding);
       responseHeaders.set("grpc-accept-encoding", "gzip");
@@ -103,9 +137,20 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
       }
     }
     if (end) {
+      trailersSent = true;
       if (!responseHeaders.contains("grpc-status")) {
         MultiMap responseTrailers = httpResponse.trailers();
         responseTrailers.set("grpc-status", status.toString());
+      }
+      if (trailers != null) {
+        MultiMap responseTrailers = httpResponse.trailers();
+        for (Map.Entry<String, String> trailer : trailers) {
+          if (!trailer.getKey().startsWith("grpc-")) {
+            responseTrailers.add(trailer.getKey(), trailer.getValue());
+          } else {
+            // Log ?
+          }
+        }
       }
       if (message != null) {
         return httpResponse.end(message.encode(encoding));

@@ -4,6 +4,7 @@ import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
@@ -23,6 +24,16 @@ public interface GrpcClientResponse<Req, Resp> extends ReadStream<Resp> {
    */
   @CacheReturn
   GrpcStatus status();
+
+  /**
+   * @return the {@link MultiMap} to write metadata headers
+   */
+  MultiMap headers();
+
+  /**
+   * @return the {@link MultiMap} to write metadata trailers
+   */
+  MultiMap trailers();
 
   /**
    * Set a handler to be notified with incoming messages.

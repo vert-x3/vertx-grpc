@@ -5,8 +5,8 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.streams.ReadStream;
-import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.ServiceName;
 
 @VertxGen
@@ -29,6 +29,11 @@ public interface GrpcServerRequest<Req, Resp> extends ReadStream<Req> {
    */
   @CacheReturn
   String fullMethodName();
+
+  /**
+   * @return the {@link MultiMap} to read metadata headers
+   */
+  MultiMap headers();
 
   /**
    * Set a handler to be notified with incoming messages.

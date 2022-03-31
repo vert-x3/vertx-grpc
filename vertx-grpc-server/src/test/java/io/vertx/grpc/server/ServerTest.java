@@ -10,10 +10,19 @@
  */
 package io.vertx.grpc.server;
 
+import io.grpc.CallOptions;
+import io.grpc.Channel;
 import io.grpc.ChannelCredentials;
+import io.grpc.ClientCall;
+import io.grpc.ClientInterceptor;
+import io.grpc.ClientInterceptors;
+import io.grpc.ForwardingClientCall;
+import io.grpc.ForwardingClientCallListener;
 import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
+import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.TlsChannelCredentials;
@@ -242,5 +251,54 @@ public class ServerTest extends GrpcTestBase {
     test.awaitSuccess(20_000);
     List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
     should.assertEquals(expected, items);
+  }
+
+  @Test
+  public void testMetadata(TestContext should) {
+
+    startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+      should.assertEquals("custom_request_header_value", call.headers().get("custom_request_header"));
+      call.handler(helloRequest -> {
+        HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
+        GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
+        response.headers().set("custom_response_header", "custom_response_header_value");
+        response.trailers().set("custom_response_footer", "custom_response_footer_value");
+        response
+          .end(helloReply);
+      });
+    }));
+
+    channel = ManagedChannelBuilder.forAddress("localhost", port)
+      .usePlaintext()
+      .build();
+
+    ClientInterceptor interceptor = new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
+        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
+          @Override
+          public void start(Listener<RespT> responseListener, Metadata headers) {
+            headers.put(Metadata.Key.of("custom_request_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_request_header_value");
+            super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
+              @Override
+              public void onHeaders(Metadata headers) {
+                should.assertEquals("custom_response_header_value", headers.get(Metadata.Key.of("custom_response_header", Metadata.ASCII_STRING_MARSHALLER)));
+                super.onHeaders(headers);
+              }
+              @Override
+              public void onClose(Status status, Metadata trailers) {
+                should.assertEquals("custom_response_footer_value", trailers.get(Metadata.Key.of("custom_response_footer", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
+                super.onClose(status, trailers);
+              }
+            }, headers);
+          }
+        };
+      }
+    };
+
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(ClientInterceptors.intercept(channel, interceptor));
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    HelloReply res = stub.sayHello(request);
+    should.assertEquals("Hello Julien", res.getMessage());
   }
 }

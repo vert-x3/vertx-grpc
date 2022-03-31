@@ -11,6 +11,7 @@
 package io.vertx.grpc.server.impl;
 
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.grpc.common.GrpcMessage;
@@ -44,6 +45,11 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
 
   public String fullMethodName() {
     return methodCall.fullMethodName();
+  }
+
+  @Override
+  public MultiMap headers() {
+    return httpRequest.headers();
   }
 
   @Override
