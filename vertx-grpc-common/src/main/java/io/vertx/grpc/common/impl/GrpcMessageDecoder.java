@@ -13,6 +13,7 @@ package io.vertx.grpc.common.impl;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.StreamResetException;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 import io.vertx.grpc.common.GrpcMessage;
@@ -38,6 +39,13 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
   public void init() {
     stream.handler(this);
     stream.endHandler(v -> queue.write(END_SENTINEL));
+    stream.exceptionHandler(err -> {
+      if (err instanceof StreamResetException) {
+        handleReset(((StreamResetException)err).getCode());
+      } else {
+        handleException(err);
+      }
+    });
     queue.drainHandler(v -> stream.resume());
     queue.handler(msg -> {
       if (msg == END_SENTINEL) {
@@ -48,12 +56,16 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
     });
   }
 
-  protected void handleEnd() {
+  protected void handleReset(long code) {
+  }
 
+  protected void handleException(Throwable err) {
+  }
+
+  protected void handleEnd() {
   }
 
   protected void handleMessage(GrpcMessage msg) {
-
   }
 
   @Override

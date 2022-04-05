@@ -19,12 +19,10 @@ import io.grpc.ClientInterceptors;
 import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
 import io.grpc.Grpc;
-import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.TlsChannelCredentials;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
@@ -32,7 +30,6 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
-import io.grpc.stub.StreamObserver;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.ext.unit.Async;
@@ -42,47 +39,20 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ServerTest extends GrpcTestBase {
-
-  private static final int NUM_ITEMS = 128;
-  private volatile ManagedChannel channel;
+public class ServerRequestTest extends ServerTestBase {
 
   @Override
-  public void tearDown(TestContext should) {
-    if (channel != null) {
-      channel.shutdown();
-    }
-    super.tearDown(should);
-  }
-
-  @Test
-  public void testUnary(TestContext should) {
-    testUnary(should, "identity", "identity");
-  }
-
-  @Test
-  public void testUnaryDecompression(TestContext should) {
-    testUnary(should, "gzip", "identity");
-  }
-
-  @Test
-  public void testUnaryCompression(TestContext should) {
-    testUnary(should, "identity", "gzip");
-  }
-
-  private void testUnary(TestContext should, String requestEncoding, String responseEncoding) {
-
+  protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) {
     startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
+        if (!requestEncoding.equals("identity")) {
+          should.assertEquals(requestEncoding, call.encoding());
+        }
         GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
         response
           .encoding(responseEncoding)
@@ -90,13 +60,7 @@ public class ServerTest extends GrpcTestBase {
       });
     }));
 
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel).withCompression(requestEncoding);
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    HelloReply res = stub.sayHello(request);
-    should.assertEquals("Hello Julien", res.getMessage());
+    super.testUnary(should, requestEncoding, responseEncoding);
   }
 
   @Test
@@ -126,7 +90,7 @@ public class ServerTest extends GrpcTestBase {
     should.assertEquals("Hello Julien", res.getMessage());
   }
 
-  @Test
+  @Override
   public void testStatus(TestContext should) {
 
     startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
@@ -138,19 +102,10 @@ public class ServerTest extends GrpcTestBase {
       });
     }));
 
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    channel = ManagedChannelBuilder.forAddress( "localhost", port)
-      .usePlaintext()
-      .build();
-    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
-    try {
-      stub.sayHello(request);
-    } catch (StatusRuntimeException e) {
-      should.assertEquals(Status.UNAVAILABLE, e.getStatus());
-    }
+    super.testStatus(should);
   }
 
-  @Test
+  @Override
   public void testServerStreaming(TestContext should) {
 
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getSourceMethod(), call -> {
@@ -161,18 +116,10 @@ public class ServerTest extends GrpcTestBase {
       call.response().end();
     }));
 
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingBlockingStub stub = StreamingGrpc.newBlockingStub(channel);
-
-    List<String> items = new ArrayList<>();
-    stub.source(Empty.newBuilder().build()).forEachRemaining(item -> items.add(item.getValue()));
-    List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-    should.assertEquals(expected, items);
+    super.testServerStreaming(should);
   }
 
-  @Test
+  @Override
   public void testClientStreaming(TestContext should) throws Exception {
 
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getSinkMethod(), call -> {
@@ -184,33 +131,10 @@ public class ServerTest extends GrpcTestBase {
       });
     }));
 
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async test = should.async();
-    StreamObserver<Item> items = stub.sink(new StreamObserver<Empty>() {
-      @Override
-      public void onNext(Empty value) {
-      }
-      @Override
-      public void onError(Throwable t) {
-        should.fail(t);
-      }
-      @Override
-      public void onCompleted() {
-        test.complete();
-      }
-    });
-    for (int i = 0; i < NUM_ITEMS; i++) {
-      items.onNext(Item.newBuilder().setValue("the-value-" + i).build());
-      Thread.sleep(10);
-    }
-    items.onCompleted();
+    super.testClientStreaming(should);
   }
 
-  @Test
+  @Override
   public void testBidiStreaming(TestContext should) throws Exception {
 
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
@@ -222,35 +146,7 @@ public class ServerTest extends GrpcTestBase {
       });
     }));
 
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async test = should.async();
-    List<String> items = new ArrayList<>();
-    StreamObserver<Item> writer = stub.pipe(new StreamObserver<Item>() {
-      @Override
-      public void onNext(Item item) {
-        items.add(item.getValue());
-      }
-      @Override
-      public void onError(Throwable t) {
-        should.fail(t);
-      }
-      @Override
-      public void onCompleted() {
-        test.complete();
-      }
-    });
-    for (int i = 0; i < NUM_ITEMS; i++) {
-      writer.onNext(Item.newBuilder().setValue("the-value-" + i).build());
-      Thread.sleep(10);
-    }
-    writer.onCompleted();
-    test.awaitSuccess(20_000);
-    List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-    should.assertEquals(expected, items);
+    super.testBidiStreaming(should);
   }
 
   @Test
@@ -300,5 +196,21 @@ public class ServerTest extends GrpcTestBase {
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
     HelloReply res = stub.sayHello(request);
     should.assertEquals("Hello Julien", res.getMessage());
+  }
+
+  @Test
+  public void testHandleReset(TestContext should) {
+
+    Async test = should.async();
+    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+      call.errorHandler(v -> {
+        test.complete();
+      });
+      call.handler(item -> {
+        call.response().write(item);
+      });
+    }));
+
+    super.testHandleReset(should);
   }
 }

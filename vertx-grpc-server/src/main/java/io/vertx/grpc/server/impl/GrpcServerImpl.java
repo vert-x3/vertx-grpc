@@ -84,7 +84,11 @@ public class GrpcServerImpl implements GrpcServer {
   }
 
   public <Req, Resp> GrpcServer callHandler(MethodDescriptor<Req, Resp> methodDesc, Handler<GrpcServerRequest<Req, Resp>> handler) {
-    methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, handler));
+    if (handler != null) {
+      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, handler));
+    } else {
+      methodCallHandlers.remove(methodDesc.getFullMethodName());
+    }
     return this;
   }
 

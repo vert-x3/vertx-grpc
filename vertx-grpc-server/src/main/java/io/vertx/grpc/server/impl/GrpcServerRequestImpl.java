@@ -14,6 +14,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.impl.GrpcMessageDecoder;
@@ -23,6 +24,8 @@ import io.vertx.grpc.server.GrpcServerResponse;
 
 import java.util.function.Function;
 
+import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
+
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
@@ -31,6 +34,8 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
   final HttpServerRequest httpRequest;
   final GrpcServerResponse<Req, Resp> response;
   private Handler<Req> messageHandler;
+  private Handler<GrpcError> errorHandler;
+  private Handler<Throwable> exceptionHandler;
   private Function<GrpcMessage, Req> messageDecoder;
   private Handler<Void> endHandler;
   private GrpcMethodCall methodCall;
@@ -50,6 +55,11 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
   @Override
   public MultiMap headers() {
     return httpRequest.headers();
+  }
+
+  @Override
+  public String encoding() {
+    return httpRequest.getHeader("grpc-encoding");
   }
 
   @Override
@@ -77,8 +87,33 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
   }
 
   @Override
+  protected void handleReset(long code) {
+    Handler<GrpcError> handler = errorHandler;
+    if (handler != null) {
+      GrpcError error = mapHttp2ErrorCode(code);
+      if (error != null) {
+        handler.handle(error);
+      }
+    }
+  }
+
+  @Override
+  protected void handleException(Throwable err) {
+    Handler<Throwable> handler = exceptionHandler;
+    if (handler != null) {
+      handler.handle(err);
+    }
+  }
+
+  @Override
   public GrpcServerRequest<Req, Resp> handler(Handler<Req> handler) {
     return messageHandler(handler);
+  }
+
+  @Override
+  public GrpcServerRequest<Req, Resp> errorHandler(Handler<GrpcError> handler) {
+    this.errorHandler = handler;
+    return this;
   }
 
   public GrpcServerRequest<Req, Resp> messageHandler(Handler<Req> handler) {
@@ -93,7 +128,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
 
   @Override
   public GrpcServerRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler) {
-    httpRequest.exceptionHandler(handler);
+    exceptionHandler = handler;
     return this;
   }
 

@@ -7,6 +7,7 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.ServiceName;
 
 @VertxGen
@@ -36,6 +37,11 @@ public interface GrpcServerRequest<Req, Resp> extends ReadStream<Req> {
   MultiMap headers();
 
   /**
+   * @return the request encoding
+   */
+  String encoding();
+
+  /**
    * Set a handler to be notified with incoming messages.
    *
    * @param handler the message handler
@@ -43,6 +49,15 @@ public interface GrpcServerRequest<Req, Resp> extends ReadStream<Req> {
    */
   @Fluent
   GrpcServerRequest<Req, Resp> messageHandler(Handler<Req> handler);
+
+  /**
+   * Set a handler to be notified with gRPC errors.
+   *
+   * @param handler the error handler
+   * @return a reference to this, so the API can be used fluently
+   */
+  @Fluent
+  GrpcServerRequest<Req, Resp> errorHandler(Handler<GrpcError> handler);
 
   /**
    * @return the response
