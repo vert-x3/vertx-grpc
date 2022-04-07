@@ -21,6 +21,9 @@ public interface GrpcServerResponse<Req, Resp> extends WriteStream<Resp> {
   GrpcServerResponse<Req, Resp> status(GrpcStatus status);
 
   @Fluent
+  GrpcServerResponse<Req, Resp> reset();
+
+  @Fluent
   GrpcServerResponse<Req, Resp> encoding(String encoding);
 
   /**

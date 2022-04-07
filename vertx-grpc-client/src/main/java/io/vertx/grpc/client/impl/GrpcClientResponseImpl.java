@@ -16,11 +16,14 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientResponse;
 
 import io.vertx.grpc.client.GrpcClientResponse;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.impl.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcStatus;
 
 import java.util.function.Function;
+
+import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -31,12 +34,24 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
   private final Function<GrpcMessage, Resp> messageDecoder;
   private GrpcStatus status;
   private Handler<Resp> messageHandler;
+  private Handler<GrpcError> errorHandler;
   private Handler<Void> endHandler;
 
   public GrpcClientResponseImpl(HttpClientResponse httpResponse, Function<GrpcMessage, Resp> messageDecoder) {
     super(Vertx.currentContext(), httpResponse, httpResponse.headers().get("grpc-encoding")); // A bit ugly
     this.httpResponse = httpResponse;
     this.messageDecoder = messageDecoder;
+  }
+
+  @Override
+  protected void handleReset(long code) {
+    Handler<GrpcError> handler = errorHandler;
+    if (handler != null) {
+      GrpcError error = mapHttp2ErrorCode(code);
+      if (error != null) {
+        handler.handle(error);
+      }
+    }
   }
 
   @Override
@@ -77,6 +92,12 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
 
   @Override public GrpcClientResponse<Req, Resp> messageHandler(Handler<Resp> handler) {
     messageHandler = handler;
+    return this;
+  }
+
+  @Override
+  public GrpcClientResponse<Req, Resp> errorHandler(Handler<GrpcError> handler) {
+    errorHandler = handler;
     return this;
   }
 

@@ -23,6 +23,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.TlsChannelCredentials;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
@@ -30,15 +31,19 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.StreamObserver;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcStatus;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -199,11 +204,59 @@ public class ServerRequestTest extends ServerTestBase {
   }
 
   @Test
+  public void testReset(TestContext should) {
+    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+      AtomicInteger count = new AtomicInteger();
+      call.handler(item -> {
+        switch (count.getAndIncrement()) {
+          case 0:
+            call.response().write(item);
+            break;
+          case 1:
+            call.response().reset();
+            break;
+        }
+      });
+    }));
+
+    channel = ManagedChannelBuilder.forAddress("localhost", port)
+      .usePlaintext()
+      .build();
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+
+    Async latch = should.async();
+    Async done = should.async();
+    ClientCallStreamObserver<Item> items = (ClientCallStreamObserver<Item>) stub.pipe(new StreamObserver<Item>() {
+      AtomicInteger count = new AtomicInteger();
+      @Override
+      public void onNext(Item value) {
+        if (count.getAndIncrement() == 0) {
+          latch.complete();
+        }
+      }
+      @Override
+      public void onError(Throwable t) {
+        should.assertEquals(StatusRuntimeException.class, t.getClass());
+        StatusRuntimeException sre = (StatusRuntimeException) t;
+        should.assertEquals(Status.UNAVAILABLE.getCode(), sre.getStatus().getCode());
+        done.complete();
+      }
+      @Override
+      public void onCompleted() {
+      }
+    });
+    items.onNext(Item.newBuilder().setValue("the-value-1").build());
+    latch.awaitSuccess(20_000);
+    items.onNext(Item.newBuilder().setValue("the-value-2").build());
+  }
+
+  @Test
   public void testHandleReset(TestContext should) {
 
     Async test = should.async();
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
-      call.errorHandler(v -> {
+      call.errorHandler(error -> {
+        should.assertEquals(GrpcError.CANCELLED, error);
         test.complete();
       });
       call.handler(item -> {

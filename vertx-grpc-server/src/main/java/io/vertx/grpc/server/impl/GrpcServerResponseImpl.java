@@ -47,6 +47,12 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
     return this;
   }
 
+  @Override
+  public GrpcServerResponse<Req, Resp> reset() {
+    httpResponse.reset();
+    return this;
+  }
+
   public GrpcServerResponse<Req, Resp> encoding(String encoding) {
     this.encoding = encoding;
     return this;
