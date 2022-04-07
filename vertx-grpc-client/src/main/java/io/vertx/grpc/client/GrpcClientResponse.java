@@ -32,6 +32,11 @@ public interface GrpcClientResponse<Req, Resp> extends ReadStream<Resp> {
   MultiMap headers();
 
   /**
+   * @return the response encoding
+   */
+  String encoding();
+
+  /**
    * @return the {@link MultiMap} to write metadata trailers
    */
   MultiMap trailers();

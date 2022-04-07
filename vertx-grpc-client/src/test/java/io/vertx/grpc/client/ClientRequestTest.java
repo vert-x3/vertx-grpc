@@ -10,7 +10,6 @@
  */
 package io.vertx.grpc.client;
 
-import io.grpc.ClientInterceptor;
 import io.grpc.ForwardingServerCall;
 import io.grpc.Grpc;
 import io.grpc.Metadata;
@@ -40,49 +39,16 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ClientTest extends GrpcTestBase {
+public class ClientRequestTest extends ClientTestBase {
 
-  private static final int NUM_ITEMS = 128;
+  protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) throws IOException {
 
-  @Test
-  public void testUnary(TestContext should) throws IOException {
-    testUnary(should, "identity", "identity");
-  }
-
-  @Test
-  public void testUnaryDecompression(TestContext should) throws IOException {
-    testUnary(should, "identity", "gzip");
-  }
-
-  @Test
-  public void testUnaryCompression(TestContext should) throws IOException {
-    testUnary(should, "gzip", "identity");
-  }
-
-  private void testUnary(TestContext should, String requestEncoding, String responseEncoding) throws IOException {
-
-    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
-      @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> plainResponseObserver) {
-        ServerCallStreamObserver<HelloReply> responseObserver =
-          (ServerCallStreamObserver<HelloReply>) plainResponseObserver;
-        responseObserver.setCompression(responseEncoding);
-        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-        responseObserver.onCompleted();
-      }
-    };
-    startServer(called);
+    super.testUnary(should, requestEncoding, responseEncoding);
 
     Async test = should.async();
     GrpcClient client = GrpcClient.client(vertx);
@@ -90,6 +56,7 @@ public class ClientTest extends GrpcTestBase {
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.encoding(requestEncoding);
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
+          should.assertEquals(responseEncoding, callResponse.encoding());
           AtomicInteger count = new AtomicInteger();
           callResponse.messageHandler(reply -> {
             should.assertEquals(1, count.incrementAndGet());
@@ -148,14 +115,7 @@ public class ClientTest extends GrpcTestBase {
   @Test
   public void testStatus(TestContext should) throws IOException {
 
-    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
-      @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
-        responseObserver.onError(Status.UNAVAILABLE
-          .withDescription("Greeter temporarily unavailable...").asRuntimeException());
-      }
-    };
-    startServer(called);
+    super.testStatus(should);
 
     Async test = should.async();
     GrpcClient client = GrpcClient.client(vertx);
@@ -177,15 +137,7 @@ public class ClientTest extends GrpcTestBase {
   @Test
   public void testServerStreaming(TestContext should) throws IOException {
 
-    startServer(new StreamingGrpc.StreamingImplBase() {
-      @Override
-      public void source(Empty request, StreamObserver<Item> responseObserver) {
-        for (int i = 0;i < NUM_ITEMS;i++) {
-          responseObserver.onNext(Item.newBuilder().setValue("the-value-" + i).build());
-        }
-        responseObserver.onCompleted();
-      }
-    });
+    super.testServerStreaming(should);
 
     final Async test = should.async();
     GrpcClient client = GrpcClient.client(vertx);
@@ -208,31 +160,9 @@ public class ClientTest extends GrpcTestBase {
   }
 
   @Test
-  public void testClientStreaming(TestContext should) throws IOException {
+  public void testClientStreaming(TestContext should) throws Exception {
 
-    startServer(new StreamingGrpc.StreamingImplBase() {
-      @Override
-      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
-        return new StreamObserver<Item>() {
-          final List<String> items = new ArrayList<>();
-          @Override
-          public void onNext(Item item) {
-            items.add(item.getValue());
-          }
-          @Override
-          public void onError(Throwable t) {
-            should.fail(t);
-          }
-          @Override
-          public void onCompleted() {
-            List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-            should.assertEquals(expected, items);
-            responseObserver.onNext(Empty.getDefaultInstance());
-            responseObserver.onCompleted();
-          }
-        };
-      }
-    });
+    super.testClientStreaming(should);
 
     Async done = should.async();
     GrpcClient client = GrpcClient.client(vertx);
@@ -263,14 +193,9 @@ public class ClientTest extends GrpcTestBase {
   }
 
   @Test
-  public void testBidiStreaming(TestContext should) throws IOException {
+  public void testBidiStreaming(TestContext should) throws Exception {
 
-    startServer(new StreamingGrpc.StreamingImplBase() {
-      @Override
-      public StreamObserver<Item> pipe(StreamObserver<Item> responseObserver) {
-        return responseObserver;
-      }
-    });
+    super.testBidiStreaming(should);
 
     Async done = should.async();
     GrpcClient client = GrpcClient.client(vertx);
@@ -304,38 +229,19 @@ public class ClientTest extends GrpcTestBase {
   @Test
   public void testReset(TestContext should) throws Exception {
 
-    Async done = should.async(2);
-
-    startServer(new StreamingGrpc.StreamingImplBase() {
-      @Override
-      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
-        return new StreamObserver<Item>() {
-          @Override
-          public void onNext(Item item) {
-          }
-          @Override
-          public void onError(Throwable t) {
-            should.assertEquals(StatusRuntimeException.class, t.getClass());
-            StatusRuntimeException ex = (StatusRuntimeException) t;
-            should.assertEquals(Status.CANCELLED.getCode(), ex.getStatus().getCode());
-            done.countDown();
-          }
-          @Override
-          public void onCompleted() {
-          }
-        };
-      }
-    });
+    super.testReset(should);
 
     GrpcClient client = GrpcClient.client(vertx);
-    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getSinkMethod())
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getPipeMethod())
       .onComplete(should.asyncAssertSuccess(callRequest -> {
-        callRequest.write(Item.newBuilder().setValue("item").build())
-          .onComplete(should.asyncAssertSuccess(v -> {
-            callRequest.reset();
-        }));
-        callRequest.response().onComplete(should.asyncAssertFailure(err -> {
-          done.countDown();
+        callRequest.write(Item.newBuilder().setValue("item").build());
+        callRequest.response().onComplete(should.asyncAssertSuccess(resp -> {
+          AtomicInteger count = new AtomicInteger();
+          resp.handler(item -> {
+            if (count.getAndIncrement() == 0) {
+              callRequest.reset();
+            }
+          });
         }));
       }));
   }
@@ -343,40 +249,7 @@ public class ClientTest extends GrpcTestBase {
   @Test
   public void testMetadata(TestContext should) throws Exception {
 
-    AtomicInteger step = new AtomicInteger();
-    ServerInterceptor interceptor = new ServerInterceptor() {
-      @Override
-      public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-        should.assertEquals("custom_request_header_value", headers.get(Metadata.Key.of("custom_request_header", Metadata.ASCII_STRING_MARSHALLER)));
-        step.getAndIncrement();
-        return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
-          @Override
-          public void sendHeaders(Metadata headers) {
-            headers.put(Metadata.Key.of("custom_response_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_header_value");
-            step.getAndIncrement();
-            super.sendHeaders(headers);
-          }
-          @Override
-          public void close(Status status, Metadata trailers) {
-            trailers.put(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_trailer_value");
-            step.getAndIncrement();
-            super.close(status, trailers);
-          }
-        },headers);
-      }
-    };
-
-    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
-
-      @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> plainResponseObserver) {
-        ServerCallStreamObserver<HelloReply> responseObserver =
-          (ServerCallStreamObserver<HelloReply>) plainResponseObserver;
-        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-        responseObserver.onCompleted();
-      }
-    };
-    startServer(ServerInterceptors.intercept(called, interceptor));
+    super.testMetadata(should);
 
     Async test = should.async();
     GrpcClient client = GrpcClient.client(vertx);
@@ -385,6 +258,7 @@ public class ClientTest extends GrpcTestBase {
         callRequest.headers().set("custom_request_header", "custom_request_header_value");
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
           should.assertEquals("custom_response_header_value", callResponse.headers().get("custom_response_header"));
+          should.assertEquals(3, testMetadataStep.getAndIncrement());
           AtomicInteger count = new AtomicInteger();
           callResponse.messageHandler(reply -> {
             should.assertEquals(1, count.incrementAndGet());
@@ -394,7 +268,7 @@ public class ClientTest extends GrpcTestBase {
             should.assertEquals(GrpcStatus.OK, callResponse.status());
             should.assertEquals("custom_response_trailer_value", callResponse.trailers().get("custom_response_trailer"));
             should.assertEquals(1, count.get());
-            should.assertEquals(3, step.getAndIncrement());
+            should.assertEquals(4, testMetadataStep.getAndIncrement());
             test.complete();
           });
         }));

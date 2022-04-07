@@ -68,6 +68,11 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
   }
 
   @Override
+  public String encoding() {
+    return httpResponse.getHeader("grpc-encoding");
+  }
+
+  @Override
   public MultiMap trailers() {
     return httpResponse.trailers();
   }
