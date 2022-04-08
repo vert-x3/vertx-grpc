@@ -42,7 +42,7 @@ import java.util.stream.IntStream;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ClientStubTest extends ClientTestBase {
+public class ClientBridgeTest extends ClientTestBase {
 
   protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) throws IOException {
 

@@ -1,4 +1,4 @@
-package io.vertx.grpc.server.stub.impl;
+package io.vertx.grpc.server.impl;
 
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
@@ -10,13 +10,13 @@ import io.grpc.Status;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.impl.Utils;
 import io.vertx.grpc.server.GrpcServer;
-import io.vertx.grpc.server.stub.GrpcStub;
+import io.vertx.grpc.server.GrpcServiceBridge;
 
-public class GrpcStubImpl implements GrpcStub {
+public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
 
   private final ServerServiceDefinition serviceDef;
 
-  public GrpcStubImpl(ServerServiceDefinition serviceDef) {
+  public GrpcServiceBridgeImpl(ServerServiceDefinition serviceDef) {
     this.serviceDef = serviceDef;
   }
 

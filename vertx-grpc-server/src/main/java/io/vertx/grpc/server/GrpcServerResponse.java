@@ -20,6 +20,12 @@ public interface GrpcServerResponse<Req, Resp> extends WriteStream<Resp> {
   @Fluent
   GrpcServerResponse<Req, Resp> status(GrpcStatus status);
 
+
+  /**
+   * Reset the stream.
+   *
+   * This is an HTTP/2 operation.
+   */
   @Fluent
   GrpcServerResponse<Req, Resp> reset();
 

@@ -11,7 +11,6 @@
 package io.vertx.grpc.server;
 
 import io.grpc.ForwardingServerCall;
-import io.grpc.ForwardingServerCallListener;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
@@ -29,15 +28,12 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.server.stub.GrpcStub;
 import org.junit.Test;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ServerStubTest extends ServerTestBase {
+public class ServerBridgeTest extends ServerTestBase {
 
   @Override
   protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) {
@@ -56,7 +52,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(impl);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
 
@@ -74,7 +70,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(impl);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
 
@@ -96,7 +92,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(impl);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
 
@@ -130,7 +126,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(impl);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
 
@@ -161,7 +157,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(impl);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
 
@@ -202,7 +198,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(ServerInterceptors.intercept(impl, interceptor));
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(ServerInterceptors.intercept(impl, interceptor));
     serverStub.bind(server);
     startServer(server);
 
@@ -235,7 +231,7 @@ public class ServerStubTest extends ServerTestBase {
     };
 
     GrpcServer server = GrpcServer.server();
-    GrpcStub serverStub = GrpcStub.stub(impl);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
 
