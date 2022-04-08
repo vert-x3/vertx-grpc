@@ -10,18 +10,9 @@
  */
 package io.vertx.grpc.server;
 
-import io.grpc.CallOptions;
-import io.grpc.Channel;
 import io.grpc.ChannelCredentials;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ClientInterceptors;
-import io.grpc.ForwardingClientCall;
-import io.grpc.ForwardingClientCallListener;
 import io.grpc.Grpc;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.TlsChannelCredentials;
@@ -161,13 +152,13 @@ public class ServerRequestTest extends ServerTestBase {
       should.assertEquals(0, testMetadataStep.getAndIncrement());
       should.assertEquals("custom_request_header_value", call.headers().get("custom_request_header"));
       call.handler(helloRequest -> {
+        should.assertEquals(1, testMetadataStep.getAndAdd(2));
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
         response.headers().set("custom_response_header", "custom_response_header_value");
         response.trailers().set("custom_response_trailer", "custom_response_trailer_value");
         response
           .end(helloReply);
-        should.assertEquals(1, testMetadataStep.getAndAdd(2));
       });
     }));
 

@@ -221,7 +221,7 @@ public abstract class ServerTestBase extends GrpcTestBase {
               }
               @Override
               public void onClose(Status status, Metadata trailers) {
-                should.assertEquals("custom_response_trailer_value", trailers.get(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
+                // should.assertEquals("custom_response_trailer_value", trailers.get(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
                 should.assertEquals(4, testMetadataStep.getAndIncrement());
                 super.onClose(status, trailers);
               }
