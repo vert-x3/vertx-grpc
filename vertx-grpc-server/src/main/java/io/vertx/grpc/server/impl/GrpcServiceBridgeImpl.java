@@ -10,6 +10,7 @@ import io.grpc.Status;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.impl.Utils;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerResponse;
 import io.vertx.grpc.server.GrpcServiceBridge;
 
 public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
@@ -52,9 +53,10 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
         }
         @Override
         public void close(Status status, Metadata trailers) {
-          Utils.writeMetadata(trailers, req.response().trailers());
-          req.response().status(GrpcStatus.valueOf(status.getCode().value()));
-          req.response().end();
+          GrpcServerResponse<Req, Resp> response = req.response();
+          Utils.writeMetadata(trailers, response.trailers());
+          response.status(GrpcStatus.valueOf(status.getCode().value()));
+          response.end();
         }
         @Override
         public boolean isCancelled() {

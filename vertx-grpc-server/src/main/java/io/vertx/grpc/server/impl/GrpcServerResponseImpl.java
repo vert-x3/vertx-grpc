@@ -126,7 +126,7 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
     MultiMap responseHeaders = httpResponse.headers();
     if (!headersSent) {
       headersSent = true;
-      if (headers != null) {
+      if (headers != null && headers.size() > 0) {
         for (Map.Entry<String, String> header : headers) {
           if (!header.getKey().startsWith("grpc-")) {
             responseHeaders.add(header.getKey(), header.getValue());
@@ -148,7 +148,7 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
         MultiMap responseTrailers = httpResponse.trailers();
         responseTrailers.set("grpc-status", status.toString());
       }
-      if (trailers != null) {
+      if (trailers != null && trailers.size() > 0) {
         MultiMap responseTrailers = httpResponse.trailers();
         for (Map.Entry<String, String> trailer : trailers) {
           if (!trailer.getKey().startsWith("grpc-")) {
