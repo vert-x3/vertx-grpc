@@ -66,12 +66,4 @@ public interface GrpcClient {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> method);
 
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  <Req, Resp> GrpcUnaryCall<Req, Resp> unaryCall(MethodDescriptor<Req, Resp> method);
-
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  <Req, Resp> GrpcClientStreamingCall<Req, Resp> clientStreamingCall(MethodDescriptor<Req, Resp> method);
-
-  @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  <Req, Resp> GrpcServerStreamingCall<Req, Resp> serverStreamingCall(MethodDescriptor<Req, Resp> method);
 }
