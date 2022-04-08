@@ -32,6 +32,9 @@ import io.grpc.stub.StreamObserver;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.test.core.Repeat;
+import io.vertx.test.core.RepeatRule;
+import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.ArrayList;

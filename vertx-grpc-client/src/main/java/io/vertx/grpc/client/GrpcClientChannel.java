@@ -10,6 +10,7 @@ import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.common.impl.Utils;
 
 import javax.annotation.Nullable;
+import java.util.LinkedList;
 import java.util.concurrent.Executor;
 
 /**
@@ -28,10 +29,19 @@ public class GrpcClientChannel extends io.grpc.Channel {
   @Override
   public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> newCall(MethodDescriptor<RequestT, ResponseT> methodDescriptor, CallOptions callOptions) {
     Executor exec = callOptions.getExecutor();
+
     return new ClientCall<RequestT, ResponseT>() {
+
       private Future<GrpcClientRequest<RequestT, ResponseT>> fut;
+      private Listener<ResponseT> listener;
+      private final LinkedList<ResponseT> queue = new LinkedList<>();
+      private int requests = 0;
+      private Status status;
+      private Metadata trailers;
+
       @Override
       public void start(Listener<ResponseT> responseListener, Metadata headers) {
+        listener = responseListener;
         fut = client.request(server, methodDescriptor);
         fut.onComplete(ar1 -> {
           if (ar1.succeeded()) {
@@ -57,9 +67,10 @@ public class GrpcClientChannel extends io.grpc.Channel {
                   if (exec == null) {
                     responseListener.onMessage(msg);
                   } else {
-                    exec.execute(() -> {
-                      responseListener.onMessage(msg);
-                    });
+                    synchronized (queue) {
+                      queue.add(msg);
+                    }
+                    checkPending();
                   }
                 });
                 response.endHandler(v -> {
@@ -68,9 +79,11 @@ public class GrpcClientChannel extends io.grpc.Channel {
                   if (exec == null) {
                     responseListener.onClose(responseStatus, responseTrailers);
                   } else {
-                    exec.execute(() -> {
-                      responseListener.onClose(responseStatus, responseTrailers);
-                    });
+                    synchronized (queue) {
+                      status = responseStatus;
+                      trailers = responseTrailers;
+                    }
+                    checkPending();
                   }
                 });
               }
@@ -81,21 +94,59 @@ public class GrpcClientChannel extends io.grpc.Channel {
           }
         });
       }
+
+      private void checkPending() {
+        while (true) {
+          Runnable cmd;
+          synchronized (queue) {
+            if (queue.isEmpty()) {
+              Status responseStatus = status;
+              if (responseStatus == null) {
+                break;
+              }
+              Metadata responseTrailers = trailers;
+              status = null;
+              trailers = null;
+              cmd = () -> {
+                listener.onClose(responseStatus, responseTrailers);
+              };
+            } else {
+              if (requests == 0) {
+                break;
+              }
+              requests--;
+              ResponseT msg = queue.poll();
+              cmd = () -> {
+                listener.onMessage(msg);
+              };
+            }
+          }
+          exec.execute(cmd);
+        }
+      }
+
       @Override
       public void request(int numMessages) {
+        synchronized (queue) {
+          requests += numMessages;
+        }
+        checkPending();
       }
+
       @Override
       public void cancel(@Nullable String message, @Nullable Throwable cause) {
         fut.onSuccess(req -> {
           req.reset();
         });
       }
+
       @Override
       public void halfClose() {
         fut.onSuccess(req -> {
           req.end();
         });
       }
+
       @Override
       public void sendMessage(RequestT message) {
         fut.onSuccess(req -> {
