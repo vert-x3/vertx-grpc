@@ -194,6 +194,51 @@ public abstract class ServerTestBase extends GrpcTestBase {
     should.assertEquals(expected, items);
   }
 
+  protected AtomicInteger testMetadataStep;
+
+  @Test
+  public void testMetadata(TestContext should) {
+
+    testMetadataStep = new AtomicInteger();
+
+    channel = ManagedChannelBuilder.forAddress("localhost", port)
+      .usePlaintext()
+      .build();
+
+    ClientInterceptor interceptor = new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
+        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
+          @Override
+          public void start(Listener<RespT> responseListener, Metadata headers) {
+            headers.put(Metadata.Key.of("custom_request_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_request_header_value");
+            super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
+              @Override
+              public void onHeaders(Metadata headers) {
+                should.assertEquals("custom_response_header_value", headers.get(Metadata.Key.of("custom_response_header", Metadata.ASCII_STRING_MARSHALLER)));
+                should.assertEquals(3, testMetadataStep.getAndIncrement());
+                super.onHeaders(headers);
+              }
+              @Override
+              public void onClose(Status status, Metadata trailers) {
+                should.assertEquals("custom_response_trailer_value", trailers.get(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
+                should.assertEquals(4, testMetadataStep.getAndIncrement());
+                super.onClose(status, trailers);
+              }
+            }, headers);
+          }
+        };
+      }
+    };
+
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(ClientInterceptors.intercept(channel, interceptor));
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    HelloReply res = stub.sayHello(request);
+    should.assertEquals("Hello Julien", res.getMessage());
+
+    should.assertEquals(5, testMetadataStep.get());
+  }
+
   @Test
   public void testHandleReset(TestContext should) {
     channel = ManagedChannelBuilder.forAddress("localhost", port)

@@ -10,6 +10,13 @@
  */
 package io.vertx.grpc.server;
 
+import io.grpc.ForwardingServerCall;
+import io.grpc.ForwardingServerCallListener;
+import io.grpc.Metadata;
+import io.grpc.ServerCall;
+import io.grpc.ServerCallHandler;
+import io.grpc.ServerInterceptor;
+import io.grpc.ServerInterceptors;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.examples.helloworld.GreeterGrpc;
@@ -24,6 +31,8 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.server.stub.GrpcStub;
 import org.junit.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -157,6 +166,47 @@ public class ServerStubTest extends ServerTestBase {
     startServer(server);
 
     super.testBidiStreaming(should);
+  }
+
+  @Override
+  public void testMetadata(TestContext should) {
+
+    GreeterGrpc.GreeterImplBase impl = new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        responseObserver.onCompleted();
+      }
+    };
+
+    ServerInterceptor interceptor = new ServerInterceptor() {
+      @Override
+      public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+        should.assertEquals("custom_request_header_value", headers.get(Metadata.Key.of("custom_request_header", Metadata.ASCII_STRING_MARSHALLER)));
+        should.assertEquals(0, testMetadataStep.getAndIncrement());
+        return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
+          @Override
+          public void sendHeaders(Metadata headers) {
+            headers.put(Metadata.Key.of("custom_response_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_header_value");
+            should.assertEquals(1, testMetadataStep.getAndIncrement());
+            super.sendHeaders(headers);
+          }
+          @Override
+          public void close(Status status, Metadata trailers) {
+            trailers.put(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_trailer_value");
+            should.assertEquals(2, testMetadataStep.getAndIncrement());
+            super.close(status, trailers);
+          }
+        },headers);
+      }
+    };
+
+    GrpcServer server = GrpcServer.server();
+    GrpcStub serverStub = GrpcStub.stub(ServerInterceptors.intercept(impl, interceptor));
+    serverStub.bind(server);
+    startServer(server);
+
+    super.testMetadata(should);
   }
 
   @Test

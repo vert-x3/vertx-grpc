@@ -8,6 +8,7 @@ import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.impl.Utils;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.stub.GrpcStub;
 
@@ -43,7 +44,7 @@ public class GrpcStubImpl implements GrpcStub {
         }
         @Override
         public void sendHeaders(Metadata headers) {
-
+          Utils.writeMetadata(headers, req.response().headers());
         }
         @Override
         public void sendMessage(Resp message) {
@@ -51,6 +52,7 @@ public class GrpcStubImpl implements GrpcStub {
         }
         @Override
         public void close(Status status, Metadata trailers) {
+          Utils.writeMetadata(trailers, req.response().trailers());
           req.response().status(GrpcStatus.valueOf(status.getCode().value()));
           req.response().end();
         }
@@ -67,7 +69,7 @@ public class GrpcStubImpl implements GrpcStub {
           req.response().encoding(compressor);
         }
       };
-      ServerCall.Listener<Req> listener = callHandler.startCall(call, new Metadata());
+      ServerCall.Listener<Req> listener = callHandler.startCall(call, Utils.readMetadata(req.headers()));
       req.messageHandler(msg -> {
         listener.onMessage(msg);
       });

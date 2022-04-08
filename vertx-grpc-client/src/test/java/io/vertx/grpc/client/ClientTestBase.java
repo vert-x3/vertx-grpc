@@ -184,18 +184,18 @@ public abstract class ClientTestBase extends GrpcTestBase {
       @Override
       public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
         should.assertEquals("custom_request_header_value", headers.get(Metadata.Key.of("custom_request_header", Metadata.ASCII_STRING_MARSHALLER)));
-        testMetadataStep.getAndIncrement();
+        should.assertEquals(0, testMetadataStep.getAndIncrement());
         return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
           @Override
           public void sendHeaders(Metadata headers) {
             headers.put(Metadata.Key.of("custom_response_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_header_value");
-            testMetadataStep.getAndIncrement();
+            should.assertEquals(1, testMetadataStep.getAndIncrement());
             super.sendHeaders(headers);
           }
           @Override
           public void close(Status status, Metadata trailers) {
             trailers.put(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_trailer_value");
-            testMetadataStep.getAndIncrement();
+            should.assertEquals(2, testMetadataStep.getAndIncrement());
             super.close(status, trailers);
           }
         },headers);

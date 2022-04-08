@@ -223,5 +223,7 @@ public class ClientStubTest extends ClientTestBase {
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
     HelloReply res = stub.sayHello(request);
     should.assertEquals("Hello Julien", res.getMessage());
+
+    should.assertEquals(5, testMetadataStep.get());
   }
 }

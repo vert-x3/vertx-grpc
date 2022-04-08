@@ -1,6 +1,7 @@
 package io.vertx.grpc.server.stub;
 
 import io.grpc.BindableService;
+import io.grpc.ServerServiceDefinition;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.stub.impl.GrpcStubImpl;
 
@@ -15,8 +16,18 @@ public interface GrpcStub {
    * @param service the service
    * @return the stub
    */
+  static GrpcStub stub(ServerServiceDefinition service) {
+    return new GrpcStubImpl(service);
+  }
+
+  /**
+   * Create a stub for a given {@code service}.
+   *
+   * @param service the service
+   * @return the stub
+   */
   static GrpcStub stub(BindableService service) {
-    return new GrpcStubImpl(service.bindService());
+    return stub(service.bindService());
   }
 
   /**

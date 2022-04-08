@@ -158,49 +158,20 @@ public class ServerRequestTest extends ServerTestBase {
   public void testMetadata(TestContext should) {
 
     startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+      should.assertEquals(0, testMetadataStep.getAndIncrement());
       should.assertEquals("custom_request_header_value", call.headers().get("custom_request_header"));
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
         response.headers().set("custom_response_header", "custom_response_header_value");
-        response.trailers().set("custom_response_footer", "custom_response_footer_value");
+        response.trailers().set("custom_response_trailer", "custom_response_trailer_value");
         response
           .end(helloReply);
+        should.assertEquals(1, testMetadataStep.getAndAdd(2));
       });
     }));
 
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-
-    ClientInterceptor interceptor = new ClientInterceptor() {
-      @Override
-      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
-        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
-          @Override
-          public void start(Listener<RespT> responseListener, Metadata headers) {
-            headers.put(Metadata.Key.of("custom_request_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_request_header_value");
-            super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
-              @Override
-              public void onHeaders(Metadata headers) {
-                should.assertEquals("custom_response_header_value", headers.get(Metadata.Key.of("custom_response_header", Metadata.ASCII_STRING_MARSHALLER)));
-                super.onHeaders(headers);
-              }
-              @Override
-              public void onClose(Status status, Metadata trailers) {
-                should.assertEquals("custom_response_footer_value", trailers.get(Metadata.Key.of("custom_response_footer", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
-                super.onClose(status, trailers);
-              }
-            }, headers);
-          }
-        };
-      }
-    };
-
-    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(ClientInterceptors.intercept(channel, interceptor));
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    HelloReply res = stub.sayHello(request);
-    should.assertEquals("Hello Julien", res.getMessage());
+    super.testMetadata(should);
   }
 
   @Test
