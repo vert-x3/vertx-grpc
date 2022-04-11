@@ -38,6 +38,7 @@ import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -73,6 +74,36 @@ public class ClientBridgeTest extends ClientTestBase {
     stub.source(Empty.newBuilder().build()).forEachRemaining(item -> items.add(item.getValue()));
     List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
     should.assertEquals(expected, items);
+  }
+
+  @Override
+  public void testServerStreamingBackPressure(TestContext should) throws IOException {
+
+    super.testServerStreamingBackPressure(should);
+
+    GrpcClient client = GrpcClient.client(vertx);
+    GrpcClientChannel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));
+
+    StreamingGrpc.StreamingBlockingStub stub = StreamingGrpc.newBlockingStub(channel);
+    Iterator<Item> source = stub.source(Empty.newBuilder().build());
+    while (true) {
+      while (streamingBackPressureRound.size() == 0) {
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+        }
+      }
+      int toRead = streamingBackPressureRound.poll();
+      if (toRead >= 0) {
+        while (toRead-- > 0) {
+          should.assertTrue(source.hasNext());
+          Item item = source.next();
+        }
+      } else {
+        should.assertFalse(source.hasNext());
+        break;
+      }
+    }
   }
 
   @Override

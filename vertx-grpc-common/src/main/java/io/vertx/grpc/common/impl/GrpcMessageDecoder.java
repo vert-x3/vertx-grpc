@@ -78,7 +78,7 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
     int idx = 0;
     boolean pause = false;
     int len;
-    while (idx + 5 <= buffer.length() && (len = buffer.getInt(idx + 1)) + 5 <= buffer.length()) {
+    while (idx + 5 <= buffer.length() && (idx + 5 + (len = buffer.getInt(idx + 1)))<= buffer.length()) {
       boolean compressed = buffer.getByte(idx) == 1;
       if (compressed && compression == null) {
         throw new UnsupportedOperationException("Handle me");

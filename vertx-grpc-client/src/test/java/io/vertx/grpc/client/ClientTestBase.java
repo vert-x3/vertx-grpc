@@ -36,6 +36,8 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -93,6 +95,36 @@ public abstract class ClientTestBase extends GrpcTestBase {
           responseObserver.onNext(Item.newBuilder().setValue("the-value-" + i).build());
         }
         responseObserver.onCompleted();
+      }
+    });
+  }
+
+  protected final AtomicInteger serverFlowControl = new AtomicInteger();
+  protected final ConcurrentLinkedDeque<Integer> streamingBackPressureRound = new ConcurrentLinkedDeque<>();
+
+  @Test
+  public void testServerStreamingBackPressure(TestContext should) throws IOException {
+    streamingBackPressureRound.clear();
+    startServer(new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public void source(Empty request, StreamObserver<Item> responseObserver) {
+        ServerCallStreamObserver obs = (ServerCallStreamObserver) responseObserver;
+        AtomicInteger numRounds = new AtomicInteger(20);
+        Runnable readyHandler = () -> {
+          if (numRounds.decrementAndGet() > 0) {
+            int num = 0;
+            while (obs.isReady()) {
+              num++;
+              Item item = Item.newBuilder().setValue("the-value-" + num).build();
+              responseObserver.onNext(item);
+            }
+            streamingBackPressureRound.add(num);
+          } else {
+            streamingBackPressureRound.add(-1);
+            responseObserver.onCompleted();
+          }
+        };
+        obs.setOnReadyHandler(readyHandler);
       }
     });
   }

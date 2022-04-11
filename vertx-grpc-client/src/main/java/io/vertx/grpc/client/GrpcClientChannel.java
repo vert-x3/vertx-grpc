@@ -18,6 +18,8 @@ import java.util.concurrent.Executor;
  */
 public class GrpcClientChannel extends io.grpc.Channel {
 
+  private static final int MAX_INFLIGHT_MESSAGES = 16;
+
   private GrpcClient client;
   private SocketAddress server;
 
@@ -36,6 +38,7 @@ public class GrpcClientChannel extends io.grpc.Channel {
       private Listener<ResponseT> listener;
       private final LinkedList<ResponseT> queue = new LinkedList<>();
       private int requests = 0;
+      private GrpcClientResponse<RequestT, ResponseT> grpcResponse;
       private Status status;
       private Metadata trailers;
 
@@ -54,8 +57,8 @@ public class GrpcClientChannel extends io.grpc.Channel {
             Future<GrpcClientResponse<RequestT, ResponseT>> responseFuture = request.response();
             responseFuture.onComplete(ar2 -> {
               if (ar2.succeeded()) {
-                GrpcClientResponse<RequestT, ResponseT> response = ar2.result();
-                Metadata responseHeaders = Utils.readMetadata(response.headers());
+                grpcResponse = ar2.result();
+                Metadata responseHeaders = Utils.readMetadata(grpcResponse.headers());
                 if (exec == null) {
                   responseListener.onHeaders(responseHeaders);
                 } else {
@@ -63,19 +66,23 @@ public class GrpcClientChannel extends io.grpc.Channel {
                     responseListener.onHeaders(responseHeaders);
                   });
                 }
-                response.messageHandler(msg -> {
+                grpcResponse.messageHandler(msg -> {
                   if (exec == null) {
                     responseListener.onMessage(msg);
                   } else {
                     synchronized (queue) {
+                      // System.out.println("add " + msg);
                       queue.add(msg);
+                      if (queue.size() > MAX_INFLIGHT_MESSAGES) {
+                        grpcResponse.pause();
+                      }
                     }
                     checkPending();
                   }
                 });
-                response.endHandler(v -> {
-                  Status responseStatus = Status.fromCodeValue(response.status().code);
-                  Metadata responseTrailers = Utils.readMetadata(response.trailers());
+                grpcResponse.endHandler(v -> {
+                  Status responseStatus = Status.fromCodeValue(grpcResponse.status().code);
+                  Metadata responseTrailers = Utils.readMetadata(grpcResponse.trailers());
                   if (exec == null) {
                     responseListener.onClose(responseStatus, responseTrailers);
                   } else {
@@ -96,6 +103,7 @@ public class GrpcClientChannel extends io.grpc.Channel {
       }
 
       private void checkPending() {
+        boolean resume = false;
         while (true) {
           Runnable cmd;
           synchronized (queue) {
@@ -114,12 +122,18 @@ public class GrpcClientChannel extends io.grpc.Channel {
               if (requests == 0) {
                 break;
               }
+              if (queue.size() == MAX_INFLIGHT_MESSAGES) {
+                resume = true;
+              }
               requests--;
               ResponseT msg = queue.poll();
               cmd = () -> {
                 listener.onMessage(msg);
               };
             }
+          }
+          if (resume) {
+            grpcResponse.resume();
           }
           exec.execute(cmd);
         }

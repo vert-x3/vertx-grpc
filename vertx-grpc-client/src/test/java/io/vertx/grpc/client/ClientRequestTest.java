@@ -160,6 +160,47 @@ public class ClientRequestTest extends ClientTestBase {
   }
 
   @Test
+  public void testServerStreamingBackPressure(TestContext should) throws IOException {
+    super.testServerStreamingBackPressure(should);
+
+    Async test = should.async();
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getSourceMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
+          callResponse.pause();
+          AtomicInteger num = new AtomicInteger();
+          Runnable readBatch = () -> {
+            vertx.<Integer>executeBlocking(p -> {
+              while (streamingBackPressureRound.size() == 0) {
+                try {
+                  Thread.sleep(10);
+                } catch (InterruptedException e) {
+                }
+              }
+              p.complete(streamingBackPressureRound.poll());;
+            }).onSuccess(toRead -> {
+              num.set(toRead);
+              callResponse.resume();
+            });
+          };
+          readBatch.run();
+          callResponse.messageHandler(item -> {
+            if (num.decrementAndGet() == 0) {
+              callResponse.pause();
+              readBatch.run();
+            }
+          });
+          callResponse.endHandler(v -> {
+            should.assertEquals(-1, num.get());
+            test.complete();
+          });
+        }));
+        callRequest.end(Empty.getDefaultInstance());
+      }));
+  }
+
+  @Test
   public void testClientStreaming(TestContext should) throws Exception {
 
     super.testClientStreaming(should);
