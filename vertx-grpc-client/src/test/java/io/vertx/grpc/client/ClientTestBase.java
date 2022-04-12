@@ -27,19 +27,15 @@ import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.common.GrpcStatus;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -99,7 +95,6 @@ public abstract class ClientTestBase extends GrpcTestBase {
     });
   }
 
-  protected final AtomicInteger serverFlowControl = new AtomicInteger();
   protected final ConcurrentLinkedDeque<Integer> streamingBackPressureRound = new ConcurrentLinkedDeque<>();
 
   @Test
