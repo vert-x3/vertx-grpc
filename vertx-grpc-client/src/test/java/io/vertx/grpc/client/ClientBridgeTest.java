@@ -28,13 +28,11 @@ import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.test.core.Repeat;
-import io.vertx.test.core.RepeatRule;
-import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -87,13 +85,13 @@ public class ClientBridgeTest extends ClientTestBase {
     StreamingGrpc.StreamingBlockingStub stub = StreamingGrpc.newBlockingStub(channel);
     Iterator<Item> source = stub.source(Empty.newBuilder().build());
     while (true) {
-      while (streamingBackPressureRound.size() == 0) {
+      while (batchQueue.size() == 0) {
         try {
           Thread.sleep(10);
         } catch (InterruptedException e) {
         }
       }
-      int toRead = streamingBackPressureRound.poll();
+      int toRead = batchQueue.poll();
       if (toRead >= 0) {
         while (toRead-- > 0) {
           should.assertTrue(source.hasNext());
@@ -135,6 +133,48 @@ public class ClientBridgeTest extends ClientTestBase {
       Thread.sleep(10);
     }
     items.onCompleted();
+  }
+
+  @Override
+  public void testClientStreamingBackPressure(TestContext should) throws Exception {
+
+    super.testClientStreamingBackPressure(should);
+
+    GrpcClient client = GrpcClient.client(vertx);
+    GrpcClientChannel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));
+
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+    Async done = should.async();
+    stub.sink(new ClientResponseObserver<Item, Empty>() {
+      int batchCount = 0;
+      @Override
+      public void beforeStart(ClientCallStreamObserver<Item> requestStream) {
+        requestStream.setOnReadyHandler(() -> {
+          if (batchCount < NUM_BATCHES) {
+            int written = 0;
+            while (requestStream.isReady()) {
+              written++;
+              requestStream.onNext(Item.newBuilder().setValue("the-value-" + batchCount).build());
+            }
+            batchCount++;
+            batchQueue.add(written);
+          } else {
+            requestStream.onCompleted();
+          }
+        });
+      }
+      @Override
+      public void onNext(Empty value) {
+      }
+      @Override
+      public void onError(Throwable t) {
+        should.fail(t);
+      }
+      @Override
+      public void onCompleted() {
+        done.complete();
+      }
+    });
   }
 
   @Override

@@ -38,9 +38,26 @@ public class GrpcClientChannel extends io.grpc.Channel {
       private Listener<ResponseT> listener;
       private final LinkedList<ResponseT> queue = new LinkedList<>();
       private int requests = 0;
+      private GrpcClientRequest<RequestT, ResponseT> request;
       private GrpcClientResponse<RequestT, ResponseT> grpcResponse;
       private Status status;
       private Metadata trailers;
+      private boolean ready;
+
+      @Override
+      public synchronized boolean isReady() {
+        return ready;
+      }
+
+      private void checkReady() {
+        synchronized (this) {
+          if (ready || request.writeQueueFull()) {
+            return;
+          }
+          ready = true;
+        }
+        listener.onReady();
+      }
 
       @Override
       public void start(Listener<ResponseT> responseListener, Metadata headers) {
@@ -48,7 +65,10 @@ public class GrpcClientChannel extends io.grpc.Channel {
         fut = client.request(server, methodDescriptor);
         fut.onComplete(ar1 -> {
           if (ar1.succeeded()) {
-            GrpcClientRequest<RequestT, ResponseT> request = ar1.result();
+            request = ar1.result();
+            request.drainHandler(v -> {
+              checkReady();
+            });
             Utils.writeMetadata(headers, request.headers());
             String compressor = callOptions.getCompressor();
             if (compressor != null) {
@@ -95,7 +115,7 @@ public class GrpcClientChannel extends io.grpc.Channel {
                 });
               }
             });
-            responseListener.onReady();
+            checkReady();
           } else {
 
           }
@@ -163,8 +183,11 @@ public class GrpcClientChannel extends io.grpc.Channel {
 
       @Override
       public void sendMessage(RequestT message) {
-        fut.onSuccess(req -> {
-          req.write(message);
+        fut.onSuccess(v -> {
+          request.write(message);
+          synchronized (this) {
+            ready = !request.writeQueueFull();
+          }
         });
       }
     };

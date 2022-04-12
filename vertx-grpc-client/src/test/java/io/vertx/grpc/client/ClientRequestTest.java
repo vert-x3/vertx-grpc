@@ -10,16 +10,8 @@
  */
 package io.vertx.grpc.client;
 
-import io.grpc.ForwardingServerCall;
 import io.grpc.Grpc;
-import io.grpc.Metadata;
-import io.grpc.ServerCall;
-import io.grpc.ServerCallHandler;
 import io.grpc.ServerCredentials;
-import io.grpc.ServerInterceptor;
-import io.grpc.ServerInterceptors;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.TlsServerCredentials;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
@@ -39,6 +31,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -172,13 +165,13 @@ public class ClientRequestTest extends ClientTestBase {
           AtomicInteger num = new AtomicInteger();
           Runnable readBatch = () -> {
             vertx.<Integer>executeBlocking(p -> {
-              while (streamingBackPressureRound.size() == 0) {
+              while (batchQueue.size() == 0) {
                 try {
                   Thread.sleep(10);
                 } catch (InterruptedException e) {
                 }
               }
-              p.complete(streamingBackPressureRound.poll());;
+              p.complete(batchQueue.poll());;
             }).onSuccess(toRead -> {
               num.set(toRead);
               callResponse.resume();
@@ -200,7 +193,7 @@ public class ClientRequestTest extends ClientTestBase {
       }));
   }
 
-  @Test
+  @Override
   public void testClientStreaming(TestContext should) throws Exception {
 
     super.testClientStreaming(should);
@@ -230,6 +223,46 @@ public class ClientRequestTest extends ClientTestBase {
             callRequest.end();
           }
         });
+      }));
+  }
+
+  @Test
+  public void testClientStreamingBackPressure(TestContext should) throws Exception {
+
+    super.testClientStreamingBackPressure(should);
+
+    Async done = should.async();
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getSinkMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
+          callResponse.endHandler(v -> {
+            done.complete();
+          });
+        }));
+        AtomicInteger batchCount = new AtomicInteger(0);
+        Runnable[] write = new Runnable[1];
+        AtomicInteger written = new AtomicInteger();
+        write[0] = () -> {
+          if (callRequest.writeQueueFull()) {
+            batchQueue.add(written.get());
+            callRequest.drainHandler(v -> {
+              written.set(0);
+              if (batchCount.incrementAndGet() < NUM_BATCHES) {
+                write[0].run();
+              } else {
+                callRequest.end();
+              }
+            });
+          } else {
+            callRequest.write(Item.newBuilder().setValue("the-value-" + batchCount).build());
+            written.incrementAndGet();
+            vertx.runOnContext(v -> {
+              write[0].run();
+            });
+          }
+        };
+        write[0].run();
       }));
   }
 

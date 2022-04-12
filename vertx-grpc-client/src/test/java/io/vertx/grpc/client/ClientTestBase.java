@@ -45,6 +45,7 @@ import java.util.stream.IntStream;
 public abstract class ClientTestBase extends GrpcTestBase {
 
   static final int NUM_ITEMS = 128;
+  static final int NUM_BATCHES = 10;
 
   @Test
   public void testUnary(TestContext should) throws IOException {
@@ -95,11 +96,11 @@ public abstract class ClientTestBase extends GrpcTestBase {
     });
   }
 
-  protected final ConcurrentLinkedDeque<Integer> streamingBackPressureRound = new ConcurrentLinkedDeque<>();
+  protected final ConcurrentLinkedDeque<Integer> batchQueue = new ConcurrentLinkedDeque<>();
 
   @Test
   public void testServerStreamingBackPressure(TestContext should) throws IOException {
-    streamingBackPressureRound.clear();
+    batchQueue.clear();
     startServer(new StreamingGrpc.StreamingImplBase() {
       @Override
       public void source(Empty request, StreamObserver<Item> responseObserver) {
@@ -113,9 +114,9 @@ public abstract class ClientTestBase extends GrpcTestBase {
               Item item = Item.newBuilder().setValue("the-value-" + num).build();
               responseObserver.onNext(item);
             }
-            streamingBackPressureRound.add(num);
+            batchQueue.add(num);
           } else {
-            streamingBackPressureRound.add(-1);
+            batchQueue.add(-1);
             responseObserver.onCompleted();
           }
         };
@@ -143,6 +144,58 @@ public abstract class ClientTestBase extends GrpcTestBase {
           public void onCompleted() {
             List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
             should.assertEquals(expected, items);
+            responseObserver.onNext(Empty.getDefaultInstance());
+            responseObserver.onCompleted();
+          }
+        };
+      }
+    });
+  }
+
+  @Test
+  public void testClientStreamingBackPressure(TestContext should) throws Exception {
+    startServer(new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
+        return sink((ServerCallStreamObserver<Empty>) responseObserver);
+      }
+      private AtomicInteger toRead = new AtomicInteger();
+      final AtomicInteger batchCount = new AtomicInteger();
+      private void waitForBatch(ServerCallStreamObserver<Empty> responseObserver) {
+        if (batchCount.get() < NUM_BATCHES) {
+          batchCount.incrementAndGet();
+          new Thread(() -> {
+            while (batchQueue.isEmpty()) {
+              try {
+                Thread.sleep(10);
+              } catch (InterruptedException e) {
+                e.printStackTrace();
+              }
+            }
+            Integer num = batchQueue.poll();
+            responseObserver.request(num);
+            toRead.addAndGet(num);
+          }).start();
+        }
+      }
+      private StreamObserver<Item> sink(ServerCallStreamObserver<Empty> responseObserver) {
+        responseObserver.disableAutoRequest();
+        waitForBatch(responseObserver);
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item item) {
+            should.assertEquals("the-value-" + (batchCount.get() - 1), item.getValue());
+            if (toRead.decrementAndGet() == 0) {
+              waitForBatch(responseObserver);
+            }
+          }
+          @Override
+          public void onError(Throwable t) {
+            should.fail(t);
+          }
+          @Override
+          public void onCompleted() {
+            should.assertEquals(NUM_BATCHES, batchCount.get());
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
           }
