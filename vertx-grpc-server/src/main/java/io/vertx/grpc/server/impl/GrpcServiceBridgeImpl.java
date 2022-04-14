@@ -8,8 +8,11 @@ import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.impl.ReadStreamAdapter;
 import io.vertx.grpc.common.impl.Utils;
+import io.vertx.grpc.common.impl.WriteStreamAdapter;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServerResponse;
 import io.vertx.grpc.server.GrpcServiceBridge;
 
@@ -38,49 +41,91 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
   private <Req, Resp> void bind(GrpcServer server, ServerMethodDefinition<Req, Resp> methodDef) {
     server.callHandler(methodDef.getMethodDescriptor(), req -> {
       ServerCallHandler<Req, Resp> callHandler = methodDef.getServerCallHandler();
-      ServerCall<Req, Resp> call = new ServerCall<Req, Resp>() {
-        @Override
-        public void request(int numMessages) {
-          // ?
-        }
-        @Override
-        public void sendHeaders(Metadata headers) {
-          Utils.writeMetadata(headers, req.response().headers());
-        }
-        @Override
-        public void sendMessage(Resp message) {
-          req.response().write(message);
-        }
-        @Override
-        public void close(Status status, Metadata trailers) {
-          GrpcServerResponse<Req, Resp> response = req.response();
-          Utils.writeMetadata(trailers, response.trailers());
-          response.status(GrpcStatus.valueOf(status.getCode().value()));
-          response.end();
-        }
-        @Override
-        public boolean isCancelled() {
-          return false;
-        }
-        @Override
-        public MethodDescriptor<Req, Resp> getMethodDescriptor() {
-          return methodDef.getMethodDescriptor();
-        }
-        @Override
-        public void setCompression(String compressor) {
-          req.response().encoding(compressor);
-        }
-      };
+      ServerCallImpl<Req, Resp> call = new ServerCallImpl<>(req, methodDef);
       ServerCall.Listener<Req> listener = callHandler.startCall(call, Utils.readMetadata(req.headers()));
-      req.messageHandler(msg -> {
-        listener.onMessage(msg);
-      });
+      call.init(listener);
       req.errorHandler(error -> {
         listener.onCancel();
       });
-      req.endHandler(v -> {
-        listener.onHalfClose();
-      });
     });
+  }
+
+  private static class ServerCallImpl<Req, Resp> extends ServerCall<Req, Resp> {
+
+    private final GrpcServerRequest<Req, Resp> req;
+    private final ServerMethodDefinition<Req, Resp> methodDef;
+    private final ReadStreamAdapter<Req> readAdapter;
+    private final WriteStreamAdapter<Resp> writeAdapter;
+    private ServerCall.Listener<Req> listener;
+
+    public ServerCallImpl(GrpcServerRequest<Req, Resp> req, ServerMethodDefinition<Req, Resp> methodDef) {
+      this.req = req;
+      this.methodDef = methodDef;
+      this.readAdapter = new ReadStreamAdapter<Req>() {
+        @Override
+        protected void handleClose() {
+          listener.onHalfClose();
+        }
+        @Override
+        protected void handleMessage(Req msg) {
+          listener.onMessage(msg);
+        }
+      };
+      this.writeAdapter = new WriteStreamAdapter<Resp>() {
+        @Override
+        protected void handleReady() {
+          listener.onReady();
+        }
+      };
+    }
+
+    void init(ServerCall.Listener<Req> listener) {
+      this.listener = listener;
+      readAdapter.init(req);
+      writeAdapter.init(req.response());
+    }
+
+    @Override
+    public boolean isReady() {
+      return writeAdapter.isReady();
+    }
+
+    @Override
+    public void request(int numMessages) {
+      readAdapter.request(numMessages);
+    }
+
+    @Override
+    public void sendHeaders(Metadata headers) {
+      Utils.writeMetadata(headers, req.response().headers());
+    }
+
+    @Override
+    public void sendMessage(Resp message) {
+      writeAdapter.write(message);
+    }
+
+    @Override
+    public void close(Status status, Metadata trailers) {
+      GrpcServerResponse<Req, Resp> response = req.response();
+      Utils.writeMetadata(trailers, response.trailers());
+      response.status(GrpcStatus.valueOf(status.getCode().value()));
+      response.end();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return false;
+    }
+
+    @Override
+    public MethodDescriptor<Req, Resp> getMethodDescriptor() {
+      return methodDef.getMethodDescriptor();
+    }
+
+    @Override
+    public void setCompression(String compressor) {
+      req.response().encoding(compressor);
+    }
   }
 }
