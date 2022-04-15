@@ -20,6 +20,8 @@ import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.impl.GrpcClientImpl;
 import io.vertx.grpc.common.GrpcMessage;
 
+import java.util.function.Function;
+
 /**
  * A gRPC client for Vert.x
  *
@@ -75,5 +77,14 @@ public interface GrpcClient {
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> method);
+
+  /**
+   * Connect to the remote {@code server} and create a request for given {@code method} of a hosted gRPC service.
+   *
+   * @param server the server hosting the service
+   * @return a future request
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, Function<GrpcMessage, Resp> messageDecoder, Function<Req, GrpcMessage> messageEncoder, MethodDescriptor<Req, Resp> method);
 
 }

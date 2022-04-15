@@ -55,25 +55,7 @@ public class GrpcServerImpl implements GrpcServer {
   }
 
   private <Req, Resp> void handle(MethodCallHandler<Req, Resp> method, HttpServerRequest httpRequest, GrpcMethodCall methodCall) {
-    Function<GrpcMessage, Req> decoder = msg -> {
-      ByteArrayInputStream in = new ByteArrayInputStream(msg.payload().getBytes());
-      return method.def.parseRequest(in);
-    };
-    Function<Resp, GrpcMessage> encoder = msg -> {
-      Buffer encoded = Buffer.buffer();
-      InputStream stream = method.def.streamResponse(msg);
-      byte[] tmp = new byte[256];
-      int i;
-      try {
-        while ((i = stream.read(tmp)) != -1) {
-          encoded.appendBytes(tmp, 0, i);
-        }
-      } catch (IOException e) {
-        throw new VertxException(e);
-      }
-      return GrpcMessage.message(encoded);
-    };
-    GrpcServerRequestImpl<Req, Resp> grpcRequest = new GrpcServerRequestImpl<>(httpRequest, decoder, encoder, methodCall);
+    GrpcServerRequestImpl<Req, Resp> grpcRequest = new GrpcServerRequestImpl<>(httpRequest, method.messageDecoder, method.messageEncoder, methodCall);
     grpcRequest.init();
     method.handle(grpcRequest);
   }
@@ -85,20 +67,52 @@ public class GrpcServerImpl implements GrpcServer {
 
   public <Req, Resp> GrpcServer callHandler(MethodDescriptor<Req, Resp> methodDesc, Handler<GrpcServerRequest<Req, Resp>> handler) {
     if (handler != null) {
-      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, handler));
+      Function<GrpcMessage, Req> decoder = msg -> {
+        ByteArrayInputStream in = new ByteArrayInputStream(msg.payload().getBytes());
+        return methodDesc.parseRequest(in);
+      };
+      Function<Resp, GrpcMessage> encoder = msg -> {
+        Buffer encoded = Buffer.buffer();
+        InputStream stream =methodDesc.streamResponse(msg);
+        byte[] tmp = new byte[256];
+        int i;
+        try {
+          while ((i = stream.read(tmp)) != -1) {
+            encoded.appendBytes(tmp, 0, i);
+          }
+        } catch (IOException e) {
+          throw new VertxException(e);
+        }
+        return GrpcMessage.message(encoded);
+      };
+      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, decoder, encoder, handler));
     } else {
       methodCallHandlers.remove(methodDesc.getFullMethodName());
     }
     return this;
   }
 
+  @Override
+  public <Req, Resp> GrpcServer callHandler(MethodDescriptor<Req, Resp> methodDesc, Function<GrpcMessage, Req> messageDecoder, Function<Resp, GrpcMessage> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
+    if (handler != null) {
+      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, messageDecoder, messageEncoder, handler));
+    } else {
+      methodCallHandlers.remove(methodDesc.getFullMethodName());
+    }
+    return null;
+  }
+
   private static class MethodCallHandler<Req, Resp> implements Handler<GrpcServerRequest<Req, Resp>> {
 
     final MethodDescriptor<Req, Resp> def;
+    final Function<GrpcMessage, Req> messageDecoder;
+    final Function<Resp, GrpcMessage> messageEncoder;
     final Handler<GrpcServerRequest<Req, Resp>> handler;
 
-    MethodCallHandler(MethodDescriptor<Req, Resp> def, Handler<GrpcServerRequest<Req, Resp>> handler) {
+    MethodCallHandler(MethodDescriptor<Req, Resp> def, Function<GrpcMessage, Req> messageDecoder, Function<Resp, GrpcMessage> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
       this.def = def;
+      this.messageDecoder = messageDecoder;
+      this.messageEncoder = messageEncoder;
       this.handler = handler;
     }
 

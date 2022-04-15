@@ -75,12 +75,17 @@ public class GrpcClientImpl implements GrpcClient {
       ByteArrayInputStream in = new ByteArrayInputStream(msg.payload().getBytes());
       return method.parseResponse(in);
     };
+    return request(server, decoder, encoder, method);
+  }
+
+  @Override
+  public <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, Function<GrpcMessage, Resp> messageDecoder, Function<Req, GrpcMessage> messageEncoder, MethodDescriptor<Req, Resp> method) {
     RequestOptions options = new RequestOptions()
       .setMethod(HttpMethod.POST)
       .setServer(server);
     return client.request(options)
       .map(request -> {
-        GrpcClientRequestImpl<Req, Resp> call = new GrpcClientRequestImpl<>(request, encoder, decoder);
+        GrpcClientRequestImpl<Req, Resp> call = new GrpcClientRequestImpl<>(request, messageEncoder, messageDecoder);
         call.fullMethodName(method.getFullMethodName());
         return call;
       });

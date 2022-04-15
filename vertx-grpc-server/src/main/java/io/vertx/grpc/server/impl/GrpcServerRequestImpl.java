@@ -43,7 +43,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
   public GrpcServerRequestImpl(HttpServerRequest httpRequest, Function<GrpcMessage, Req> messageDecoder, Function<Resp, GrpcMessage> messageEncoder, GrpcMethodCall methodCall) {
     super(((HttpServerRequestInternal) httpRequest).context(), httpRequest, httpRequest.headers().get("grpc-encoding"));
     this.httpRequest = httpRequest;
-    this.response = new GrpcServerResponseImpl(httpRequest.response(), messageEncoder);
+    this.response = new GrpcServerResponseImpl<>(httpRequest.response(), messageEncoder);
     this.methodCall = methodCall;
     this.messageDecoder = messageDecoder;
   }
