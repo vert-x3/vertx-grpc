@@ -14,16 +14,19 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientRequest;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.MessageDecoder;
+import io.vertx.grpc.common.MessageEncoder;
 import io.vertx.grpc.common.ServiceName;
+import io.vertx.grpc.common.impl.BaseGrpcMessage;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -31,15 +34,15 @@ import io.vertx.grpc.common.ServiceName;
 public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, Resp> {
 
   private final HttpClientRequest httpRequest;
-  private final Function<Req, GrpcMessage> messageEncoder;
+  private final MessageEncoder<Req> messageEncoder;
   private ServiceName serviceName;
   private String methodName;
-  private String encoding = "identity";
+  private String encoding = null;
   private boolean headersSent;
   private Future<GrpcClientResponse<Req, Resp>> response;
   private MultiMap headers;
 
-  public GrpcClientRequestImpl(HttpClientRequest httpRequest, Function<Req, GrpcMessage> messageEncoder, Function<GrpcMessage, Resp> messageDecoder) {
+  public GrpcClientRequestImpl(HttpClientRequest httpRequest, MessageEncoder<Req> messageEncoder, MessageDecoder<Resp> messageDecoder) {
     this.httpRequest = httpRequest;
     this.messageEncoder = messageEncoder;
     this.response = httpRequest.response().map(httpResponse -> {
@@ -99,16 +102,6 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override
-  public void write(Req data, Handler<AsyncResult<Void>> handler) {
-    write(data).onComplete(handler);
-  }
-
-  @Override
-  public void end(Handler<AsyncResult<Void>> handler) {
-    end().onComplete(handler);
-  }
-
-  @Override
   public GrpcClientRequest<Req, Resp> setWriteQueueMaxSize(int maxSize) {
     httpRequest.setWriteQueueMaxSize(maxSize);
     return this;
@@ -125,12 +118,12 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
     return this;
   }
 
-  @Override public Future<Void> write(Req message) {
-    return write(messageEncoder.apply(message), false);
+  @Override public Future<Void> writeMessage(GrpcMessage message) {
+    return writeMessage(message, false);
   }
 
-  @Override public Future<Void> end(Req message) {
-    return write(messageEncoder.apply(message), true);
+  @Override public Future<Void> endMessage(GrpcMessage message) {
+    return writeMessage(message, true);
   }
 
   @Override public Future<Void> end() {
@@ -140,7 +133,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
     return httpRequest.end();
   }
 
-  private Future<Void> write(GrpcMessage message, boolean end) {
+  private Future<Void> writeMessage(GrpcMessage message, boolean end) {
     if (!headersSent) {
       ServiceName serviceName = this.serviceName;
       String methodName = this.methodName;
@@ -162,18 +155,67 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
       }
       String uri = serviceName.pathOf(methodName);
       httpRequest.putHeader("content-type", "application/grpc");
-      httpRequest.putHeader("grpc-encoding", encoding);
+      if (encoding != null) {
+        httpRequest.putHeader("grpc-encoding", encoding);
+      }
       httpRequest.putHeader("grpc-accept-encoding", "gzip");
       httpRequest.putHeader("te", "trailers");
       httpRequest.setChunked(true);
       httpRequest.setURI(uri);
       headersSent = true;
     }
-    if (end) {
-      return httpRequest.end(message.encode(encoding));
-    } else {
-      return httpRequest.write(message.encode(encoding));
+
+    if (encoding != null && !encoding.equals(message.encoding())) {
+      switch (encoding) {
+        case "gzip":
+          message = MessageEncoder.GZIP.encode(message.payload());
+          break;
+        case "identity":
+          if (!message.encoding().equals("identity")) {
+            if (!message.encoding().equals("gzip")) {
+              throw new UnsupportedOperationException("Not implemented");
+            }
+            Buffer decoded = MessageDecoder.GZIP.decode(message);
+            message = new GrpcMessage() {
+              @Override
+              public String encoding() {
+                return "identity";
+              }
+              @Override
+              public Buffer payload() {
+                return decoded;
+              }
+            };
+          }
+          break;
+      }
     }
+
+    if (end) {
+      return httpRequest.end(BaseGrpcMessage.encode(message));
+    } else {
+      return httpRequest.write(BaseGrpcMessage.encode(message));
+    }
+  }
+
+  @Override
+  public Future<Void> write(Req message) {
+    return writeMessage(messageEncoder.encode(message));
+  }
+
+  @Override
+  public Future<Void> end(Req message) {
+    return endMessage(messageEncoder.encode(message));
+  }
+
+  @Override
+  public void write(Req data, Handler<AsyncResult<Void>> handler) {
+    write(data).onComplete(handler);
+  }
+
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    end().onComplete(handler);
   }
 
   @Override public Future<GrpcClientResponse<Req, Resp>> response() {

@@ -15,13 +15,14 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
-import io.vertx.core.streams.ReadStream;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.grpc.common.GrpcError;
+import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.GrpcReadStream;
 import io.vertx.grpc.common.ServiceName;
 
 @VertxGen
-public interface GrpcServerRequest<Req, Resp> extends ReadStream<Req> {
+public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
 
   /**
    * @return the service name
@@ -42,23 +43,13 @@ public interface GrpcServerRequest<Req, Resp> extends ReadStream<Req> {
   String fullMethodName();
 
   /**
-   * @return the {@link MultiMap} to read metadata headers
-   */
-  MultiMap headers();
-
-  /**
-   * @return the request encoding
-   */
-  String encoding();
-
-  /**
    * Set a handler to be notified with incoming messages.
    *
    * @param handler the message handler
    * @return a reference to this, so the API can be used fluently
    */
   @Fluent
-  GrpcServerRequest<Req, Resp> messageHandler(Handler<Req> handler);
+  GrpcServerRequest<Req, Resp> messageHandler(Handler<GrpcMessage> handler);
 
   /**
    * Set a handler to be notified with gRPC errors.
@@ -91,5 +82,5 @@ public interface GrpcServerRequest<Req, Resp> extends ReadStream<Req> {
   GrpcServerRequest<Req, Resp> fetch(long amount);
 
   @Override
-  GrpcServerRequest<Req, Resp> endHandler(@Nullable Handler<Void> endHandler);
+  GrpcServerRequest<Req, Resp> endHandler(Handler<Void> endHandler);
 }

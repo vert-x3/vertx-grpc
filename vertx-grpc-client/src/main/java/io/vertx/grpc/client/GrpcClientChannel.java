@@ -12,11 +12,17 @@ package io.vertx.grpc.client;
 
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
+import io.grpc.Compressor;
+import io.grpc.CompressorRegistry;
+import io.grpc.Decompressor;
+import io.grpc.DecompressorRegistry;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.vertx.core.Future;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.grpc.common.impl.BridgeMessageEncoder;
+import io.vertx.grpc.common.impl.BridgeMessageDecoder;
 import io.vertx.grpc.common.impl.ReadStreamAdapter;
 import io.vertx.grpc.common.impl.Utils;
 import io.vertx.grpc.common.impl.WriteStreamAdapter;
@@ -39,6 +45,17 @@ public class GrpcClientChannel extends io.grpc.Channel {
 
   @Override
   public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> newCall(MethodDescriptor<RequestT, ResponseT> methodDescriptor, CallOptions callOptions) {
+
+    String encoding = callOptions.getCompressor();
+
+    Compressor compressor;
+    if (encoding != null) {
+      compressor = CompressorRegistry.getDefaultInstance().lookupCompressor(encoding);
+    } else {
+      compressor = null;
+    }
+
+
     Executor exec = callOptions.getExecutor();
 
     return new ClientCall<RequestT, ResponseT>() {
@@ -90,14 +107,21 @@ public class GrpcClientChannel extends io.grpc.Channel {
           if (ar1.succeeded()) {
             request = ar1.result();
             Utils.writeMetadata(headers, request.headers());
-            String compressor = callOptions.getCompressor();
-            if (compressor != null) {
-              request.encoding(compressor);
+            if (encoding != null) {
+              request.encoding(encoding);
             }
             Future<GrpcClientResponse<RequestT, ResponseT>> responseFuture = request.response();
             responseFuture.onComplete(ar2 -> {
               if (ar2.succeeded()) {
+
                 grpcResponse = ar2.result();
+
+                String respEncoding = grpcResponse.encoding();
+                Decompressor decompressor = DecompressorRegistry.getDefaultInstance().lookupDecompressor(respEncoding);
+
+
+                BridgeMessageDecoder<ResponseT> decoder = new BridgeMessageDecoder<>(methodDescriptor.getResponseMarshaller(), decompressor);
+
                 Metadata responseHeaders = Utils.readMetadata(grpcResponse.headers());
                 if (exec == null) {
                   responseListener.onHeaders(responseHeaders);
@@ -106,10 +130,10 @@ public class GrpcClientChannel extends io.grpc.Channel {
                     responseListener.onHeaders(responseHeaders);
                   });
                 }
-                readAdapter.init(grpcResponse);
+                readAdapter.init(grpcResponse, decoder);
               }
             });
-            writeAdapter.init(request);
+            writeAdapter.init(request, new BridgeMessageEncoder<>(methodDescriptor.getRequestMarshaller(), compressor));
           } else {
 
           }

@@ -28,14 +28,16 @@ import java.util.Queue;
 public class BaseGrpcMessage implements GrpcMessage {
 
   private final Buffer data;
+  private final String encoding;
 
-  public BaseGrpcMessage(Buffer data) {
+  public BaseGrpcMessage(Buffer data, String encoding) {
     this.data = data;
+    this.encoding = encoding;
   }
 
   @Override
-  public boolean isCompressed() {
-    return false;
+  public String encoding() {
+    return encoding;
   }
 
   @Override
@@ -43,43 +45,16 @@ public class BaseGrpcMessage implements GrpcMessage {
     return data;
   }
 
-  @Override
-  public Buffer encode(String encoding) {
-    return encode(data, encoding);
-  }
-
-  private static Buffer encode(Buffer payload, String encoding) {
-    ByteBuf byteBuf = payload.getByteBuf();
-    CompositeByteBuf composite = Unpooled.compositeBuffer();
-    boolean compressed;
-    switch (encoding) {
-      case "identity":
-        composite.addComponent(true, byteBuf);
-        compressed = false;
-        break;
-      case "gzip":
-        compressed = true;
-        GzipOptions options = StandardCompressionOptions.gzip();
-        ZlibEncoder encoder = ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP, options.compressionLevel(), options.windowBits(), options.memLevel());
-        EmbeddedChannel channel = new EmbeddedChannel(encoder);
-        channel.writeOutbound(payload.getByteBuf());
-        channel.finish();
-        Queue<Object> messages = channel.outboundMessages();
-        ByteBuf a;
-        while ((a = (ByteBuf) messages.poll()) != null) {
-          composite.addComponent(true, a);
-        }
-        channel.close();
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
-    int len = composite.readableBytes();
-    ByteBufAllocator alloc = byteBuf.alloc();
-    ByteBuf prefix = alloc.buffer(5, 5);
+  public static Buffer encode(GrpcMessage message) {
+    ByteBuf bbuf = message.payload().getByteBuf();
+    int len = bbuf.readableBytes();
+    boolean compressed = !message.encoding().equals("identity");
+    ByteBuf prefix = Unpooled.buffer(5, 5);
     prefix.writeByte(compressed ? 1 : 0);      // Compression flag
     prefix.writeInt(len);                      // Length
-    composite.addComponent(true, 0, prefix);
+    CompositeByteBuf composite = Unpooled.compositeBuffer();
+    composite.addComponent(true, prefix);
+    composite.addComponent(true, bbuf);
     return Buffer.buffer(composite);
   }
 }

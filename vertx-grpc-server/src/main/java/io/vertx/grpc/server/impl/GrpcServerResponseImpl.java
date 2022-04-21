@@ -14,14 +14,17 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.MessageDecoder;
+import io.vertx.grpc.common.MessageEncoder;
+import io.vertx.grpc.common.impl.BaseGrpcMessage;
 import io.vertx.grpc.server.GrpcServerResponse;
 
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -29,14 +32,14 @@ import java.util.function.Function;
 public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req, Resp> {
 
   private final HttpServerResponse httpResponse;
-  private final Function<Resp, GrpcMessage> encoder;
-  private String encoding = "identity";
+  private final MessageEncoder<Resp> encoder;
+  private String encoding;
   private GrpcStatus status = GrpcStatus.OK;
   private boolean headersSent;
   private boolean trailersSent;
   private MultiMap headers, trailers;
 
-  public GrpcServerResponseImpl(HttpServerResponse httpResponse, Function<Resp, GrpcMessage> encoder) {
+  public GrpcServerResponseImpl(HttpServerResponse httpResponse, MessageEncoder<Resp> encoder) {
     this.httpResponse = httpResponse;
     this.encoder = encoder;
   }
@@ -48,9 +51,8 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   }
 
   @Override
-  public GrpcServerResponse<Req, Resp> reset() {
+  public void reset() {
     httpResponse.reset();
-    return this;
   }
 
   public GrpcServerResponse<Req, Resp> encoding(String encoding) {
@@ -87,22 +89,27 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   }
 
   @Override
-  public Future<Void> write(Resp data) {
-    return write(encoder.apply(data), false);
+  public Future<Void> write(Resp message) {
+    return writeMessage(encoder.encode(message));
   }
 
   @Override
-  public void write(Resp data, Handler<AsyncResult<Void>> handler) {
-    write(data).onComplete(handler);
+  public Future<Void> end(Resp message) {
+    return endMessage(encoder.encode(message));
+  }
+
+  @Override
+  public Future<Void> writeMessage(GrpcMessage data) {
+    return writeMessage(data, false);
+  }
+
+  @Override
+  public Future<Void> endMessage(GrpcMessage message) {
+    return writeMessage(message, true);
   }
 
   public Future<Void> end() {
-    return write(null, true);
-  }
-
-  @Override
-  public void end(Handler<AsyncResult<Void>> handler) {
-    end().onComplete(handler);
+    return writeMessage(null, true);
   }
 
   @Override
@@ -122,7 +129,7 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
     return this;
   }
 
-  private Future<Void>  write(GrpcMessage message, boolean end) {
+  private Future<Void> writeMessage(GrpcMessage message, boolean end) {
     MultiMap responseHeaders = httpResponse.headers();
     if (!headersSent) {
       headersSent = true;
@@ -138,10 +145,37 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
       responseHeaders.set("content-type", "application/grpc");
       responseHeaders.set("grpc-encoding", encoding);
       responseHeaders.set("grpc-accept-encoding", "gzip");
-      if (end) {
+      if (message == null && end) {
         responseHeaders.set("grpc-status", status.toString());
       }
     }
+
+    if (encoding != null && message != null && encoding.equals(message.encoding())) {
+      switch (encoding) {
+        case "gzip":
+          message = MessageEncoder.GZIP.encode(message.payload());
+          break;
+        case "identity":
+          if (!message.encoding().equals("identity")) {
+            if (!message.encoding().equals("gzip")) {
+              throw new UnsupportedOperationException("Not implemented");
+            }
+            Buffer decoded = MessageDecoder.GZIP.decode(message);
+            message = new GrpcMessage() {
+              @Override
+              public String encoding() {
+                return "identity";
+              }
+              @Override
+              public Buffer payload() {
+                return decoded;
+              }
+            };
+          }
+          break;
+      }
+    }
+
     if (end) {
       trailersSent = true;
       if (!responseHeaders.contains("grpc-status")) {
@@ -159,12 +193,22 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
         }
       }
       if (message != null) {
-        return httpResponse.end(message.encode(encoding));
+        return httpResponse.end(BaseGrpcMessage.encode(message));
       } else {
         return httpResponse.end();
       }
     } else {
-      return httpResponse.write(message.encode(encoding));
+      return httpResponse.write(BaseGrpcMessage.encode(message));
     }
+  }
+
+  @Override
+  public void write(Resp data, Handler<AsyncResult<Void>> handler) {
+    write(data).onComplete(handler);
+  }
+
+  @Override
+  public void end(Handler<AsyncResult<Void>> handler) {
+    end().onComplete(handler);
   }
 }

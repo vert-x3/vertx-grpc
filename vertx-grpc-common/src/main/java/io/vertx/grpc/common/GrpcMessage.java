@@ -12,7 +12,6 @@ package io.vertx.grpc.common;
 
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.grpc.common.impl.BaseGrpcMessage;
 
 /**
  * A generic gRPC message
@@ -23,36 +22,13 @@ import io.vertx.grpc.common.impl.BaseGrpcMessage;
 public interface GrpcMessage {
 
   /**
-   * Create a gRPC message.
-   *
-   * @param payload the message payload, usually in protobuf format
-   * @return the message
+   * @return the message encoding
    */
-  static GrpcMessage message(Buffer payload) {
-    return new BaseGrpcMessage(payload);
-  }
-
-  /**
-   * @return wether the message is compressed
-   */
-  boolean isCompressed();
+  String encoding();
 
   /**
    * @return the message payload
    */
   Buffer payload();
-
-  /**
-   * Encode this message to the gRPC format
-   * @return the encoded message
-   */
-  default Buffer encode() {
-    return encode("identity");
-  }
-
-  /**
-   * Like {@link #encode()} but with the specific {@code encoding}
-   */
-  Buffer encode(String encoding);
 
 }

@@ -12,10 +12,13 @@ package io.vertx.grpc.server.impl;
 
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.MessageDecoder;
+import io.vertx.grpc.common.MessageEncoder;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.impl.GrpcMessageDecoder;
 import io.vertx.grpc.common.impl.GrpcMethodCall;
@@ -33,14 +36,14 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
 
   final HttpServerRequest httpRequest;
   final GrpcServerResponse<Req, Resp> response;
-  private Handler<Req> messageHandler;
+  private Handler<GrpcMessage> messageHandler;
   private Handler<GrpcError> errorHandler;
   private Handler<Throwable> exceptionHandler;
-  private Function<GrpcMessage, Req> messageDecoder;
+  private MessageDecoder<Req> messageDecoder;
   private Handler<Void> endHandler;
   private GrpcMethodCall methodCall;
 
-  public GrpcServerRequestImpl(HttpServerRequest httpRequest, Function<GrpcMessage, Req> messageDecoder, Function<Resp, GrpcMessage> messageEncoder, GrpcMethodCall methodCall) {
+  public GrpcServerRequestImpl(HttpServerRequest httpRequest, MessageDecoder<Req> messageDecoder, MessageEncoder<Resp> messageEncoder, GrpcMethodCall methodCall) {
     super(((HttpServerRequestInternal) httpRequest).context(), httpRequest, httpRequest.headers().get("grpc-encoding"));
     this.httpRequest = httpRequest;
     this.response = new GrpcServerResponseImpl<>(httpRequest.response(), messageEncoder);
@@ -73,9 +76,9 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
   }
 
   protected void handleMessage(GrpcMessage message) {
-    Handler<Req> msgHandler = messageHandler;
+    Handler<GrpcMessage> msgHandler = messageHandler;
     if (msgHandler != null) {
-      msgHandler.handle(messageDecoder.apply(message));
+      msgHandler.handle(message);
     }
   }
 
@@ -107,7 +110,35 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
 
   @Override
   public GrpcServerRequest<Req, Resp> handler(Handler<Req> handler) {
-    return messageHandler(handler);
+    if (handler != null) {
+      return messageHandler(msg -> {
+        GrpcMessage abc;
+        switch (msg.encoding()) {
+          case "identity":
+            abc = msg;
+            break;
+          case "gzip": {
+            abc = new GrpcMessage() {
+              @Override
+              public String encoding() {
+                return "identity";
+              }
+              @Override
+              public Buffer payload() {
+                return MessageDecoder.GZIP.decode(msg);
+              }
+            };
+            break;
+          }
+          default:
+            throw new UnsupportedOperationException();
+        }
+        Req decoded = messageDecoder.decode(abc);
+        handler.handle(decoded);
+      });
+    } else {
+      return messageHandler(null);
+    }
   }
 
   @Override
@@ -116,7 +147,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
     return this;
   }
 
-  public GrpcServerRequest<Req, Resp> messageHandler(Handler<Req> handler) {
+  public GrpcServerRequest<Req, Resp> messageHandler(Handler<GrpcMessage> handler) {
     this.messageHandler = handler;
     return this;
   }

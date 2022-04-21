@@ -10,7 +10,7 @@
  */
 package io.vertx.grpc.common.impl;
 
-import io.vertx.core.streams.ReadStream;
+import io.vertx.grpc.common.GrpcReadStream;
 
 import java.util.LinkedList;
 
@@ -25,15 +25,15 @@ public class ReadStreamAdapter<T> {
   private int requests = 0;
   private boolean ended;
   private boolean closed;
-  private ReadStream<T> stream;
+  private GrpcReadStream<T> stream;
 
   /**
    * Init the adapter with the stream.
    */
-  public final void init(ReadStream<T> stream) {
-    stream.handler(msg -> {
+  public final void init(GrpcReadStream<T> stream, BridgeMessageDecoder<T> decoder) {
+    stream.messageHandler(msg -> {
       synchronized (queue) {
-        queue.add(msg);
+        queue.add(decoder.decode(msg));
         if (queue.size() > MAX_INFLIGHT_MESSAGES) {
           stream.pause();
         }

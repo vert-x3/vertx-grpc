@@ -14,12 +14,14 @@ import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.client.GrpcClient;
 import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.GrpcServerResponse;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,15 +47,12 @@ public class ProxyTest extends GrpcTestBase {
       clientReq.pause();
       client.request(SocketAddress.inetSocketAddress(8080, "localhost")).onComplete(should.asyncAssertSuccess(proxyReq -> {
         proxyReq.response().onSuccess(resp -> {
-          resp.handler(msg -> {
-            clientReq.response().write(msg);
-          });
-          resp.endHandler(v -> {
-            clientReq.response().end();
-          });
+          GrpcServerResponse<Buffer, Buffer> bc = clientReq.response();
+          resp.messageHandler(bc::writeMessage);
+          resp.endHandler(v -> bc.end());
         });
         proxyReq.fullMethodName(clientReq.fullMethodName());
-        clientReq.messageHandler(proxyReq::write);
+        clientReq.messageHandler(proxyReq::writeMessage);
         clientReq.endHandler(v -> proxyReq.end());
         clientReq.resume();
       }));
@@ -65,7 +64,7 @@ public class ProxyTest extends GrpcTestBase {
         .onComplete(should.asyncAssertSuccess(callRequest -> {
           callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
             AtomicInteger count = new AtomicInteger();
-            callResponse.messageHandler(reply -> {
+            callResponse.handler(reply -> {
               should.assertEquals(1, count.incrementAndGet());
               should.assertEquals("Hello Julien", reply.getMessage());
             });

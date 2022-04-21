@@ -10,15 +10,19 @@
  */
 package io.vertx.grpc.common.impl;
 
-import io.vertx.core.streams.WriteStream;
+import io.grpc.Compressor;
+import io.grpc.MethodDescriptor;
+import io.vertx.grpc.common.GrpcWriteStream;
+import io.vertx.grpc.common.MessageEncoder;
 
 /**
  * An adapter between gRPC and Vert.x back-pressure.
  */
 public class WriteStreamAdapter<T> {
 
-  private WriteStream<T> stream;
+  private GrpcWriteStream<T> stream;
   private boolean ready;
+  private MessageEncoder<T> encoder;
 
   /**
    * Override this method to call gRPC {@code onReady}
@@ -26,9 +30,10 @@ public class WriteStreamAdapter<T> {
   protected void handleReady() {
   }
 
-  public final void init(WriteStream<T> stream) {
+  public final void init(GrpcWriteStream<T> stream, MessageEncoder<T> encoder) {
     synchronized (this) {
       this.stream = stream;
+      this.encoder = encoder;
     }
     stream.drainHandler(v -> {
       checkReady();
@@ -41,7 +46,7 @@ public class WriteStreamAdapter<T> {
   }
 
   public final void write(T msg) {
-    stream.write(msg);
+    stream.writeMessage(encoder.encode(msg));
     synchronized (this) {
       ready = !stream.writeQueueFull();
     }

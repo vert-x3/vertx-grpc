@@ -19,7 +19,6 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
-import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.net.SelfSignedCertificate;
@@ -31,7 +30,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -51,7 +49,7 @@ public class ClientRequestTest extends ClientTestBase {
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
           should.assertEquals(responseEncoding, callResponse.encoding());
           AtomicInteger count = new AtomicInteger();
-          callResponse.messageHandler(reply -> {
+          callResponse.handler(reply -> {
             should.assertEquals(1, count.incrementAndGet());
             should.assertEquals("Hello Julien", reply.getMessage());
           });
@@ -91,7 +89,7 @@ public class ClientRequestTest extends ClientTestBase {
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
           AtomicInteger count = new AtomicInteger();
-          callResponse.messageHandler(reply -> {
+          callResponse.handler(reply -> {
             should.assertEquals(1, count.incrementAndGet());
             should.assertEquals("Hello Julien", reply.getMessage());
           });
@@ -138,7 +136,7 @@ public class ClientRequestTest extends ClientTestBase {
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
           AtomicInteger count = new AtomicInteger();
-          callResponse.messageHandler(item -> {
+          callResponse.handler(item -> {
             int i = count.getAndIncrement();
             should.assertEquals("the-value-" + i, item.getValue());
           });
@@ -277,7 +275,7 @@ public class ClientRequestTest extends ClientTestBase {
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
           AtomicInteger count = new AtomicInteger();
-          callResponse.messageHandler(item -> {
+          callResponse.handler(item -> {
             int i = count.getAndIncrement();
             should.assertEquals("the-value-" + i, item.getValue());
           });
@@ -334,7 +332,7 @@ public class ClientRequestTest extends ClientTestBase {
           should.assertEquals("custom_response_header_value", callResponse.headers().get("custom_response_header"));
           should.assertEquals(3, testMetadataStep.getAndIncrement());
           AtomicInteger count = new AtomicInteger();
-          callResponse.messageHandler(reply -> {
+          callResponse.handler(reply -> {
             should.assertEquals(1, count.incrementAndGet());
             should.assertEquals("Hello Julien", reply.getMessage());
           });

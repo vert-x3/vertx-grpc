@@ -23,7 +23,16 @@ import io.vertx.grpc.common.GrpcMessage;
  */
 public abstract class GrpcMessageDecoder implements Handler<Buffer> {
 
-  static final GrpcMessage END_SENTINEL = GrpcMessage.message(Buffer.buffer());
+  static final GrpcMessage END_SENTINEL = new GrpcMessage() {
+    @Override
+    public String encoding() {
+      return null;
+    }
+    @Override
+    public Buffer payload() {
+      return null;
+    }
+  };
 
   private final String compression;
   private final ReadStream<Buffer> stream;
@@ -84,12 +93,7 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
         throw new UnsupportedOperationException("Handle me");
       }
       Buffer payload = buffer.slice(idx + 5, idx + 5 + len);
-      GrpcMessage message;
-      if (compressed) {
-        message = new CompressedGrpcMessage(payload, compression);
-      } else {
-        message = new BaseGrpcMessage(payload);
-      }
+      GrpcMessage message = new BaseGrpcMessage(payload, compressed ? compression : "identity");
       pause |= !queue.write(message);
       idx += 5 + len;
     }

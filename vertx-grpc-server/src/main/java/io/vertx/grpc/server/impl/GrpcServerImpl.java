@@ -12,17 +12,15 @@ package io.vertx.grpc.server.impl;
 
 import io.grpc.MethodDescriptor;
 import io.vertx.core.Handler;
-import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.MessageDecoder;
+import io.vertx.grpc.common.MessageEncoder;
 import io.vertx.grpc.common.impl.GrpcMethodCall;
 import io.vertx.grpc.server.GrpcServer;
 import io.vertx.grpc.server.GrpcServerRequest;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -32,7 +30,7 @@ import java.util.function.Function;
  */
 public class GrpcServerImpl implements GrpcServer {
 
-  private Handler<GrpcServerRequest<GrpcMessage, GrpcMessage>> requestHandler;
+  private Handler<GrpcServerRequest<Buffer, Buffer>> requestHandler;
   private Map<String, MethodCallHandler<?, ?>> methodCallHandlers = new HashMap<>();
 
   @Override
@@ -43,9 +41,9 @@ public class GrpcServerImpl implements GrpcServer {
     if (method != null) {
       handle(method, httpRequest, methodCall);
     } else {
-      Handler<GrpcServerRequest<GrpcMessage, GrpcMessage>> handler = requestHandler;
+      Handler<GrpcServerRequest<Buffer, Buffer>> handler = requestHandler;
       if (handler != null) {
-        GrpcServerRequestImpl<GrpcMessage, GrpcMessage> grpcRequest = new GrpcServerRequestImpl<>(httpRequest, Function.identity(), Function.identity(), methodCall);
+        GrpcServerRequestImpl<Buffer, Buffer> grpcRequest = new GrpcServerRequestImpl<>(httpRequest, MessageDecoder.IDENTITY, MessageEncoder.IDENTITY, methodCall);
         grpcRequest.init();
         handler.handle(grpcRequest);
       } else {
@@ -60,56 +58,28 @@ public class GrpcServerImpl implements GrpcServer {
     method.handle(grpcRequest);
   }
 
-  public GrpcServer callHandler(Handler<GrpcServerRequest<GrpcMessage, GrpcMessage>> handler) {
+  public GrpcServer callHandler(Handler<GrpcServerRequest<Buffer, Buffer>> handler) {
     this.requestHandler = handler;
     return this;
   }
 
   public <Req, Resp> GrpcServer callHandler(MethodDescriptor<Req, Resp> methodDesc, Handler<GrpcServerRequest<Req, Resp>> handler) {
     if (handler != null) {
-      Function<GrpcMessage, Req> decoder = msg -> {
-        ByteArrayInputStream in = new ByteArrayInputStream(msg.payload().getBytes());
-        return methodDesc.parseRequest(in);
-      };
-      Function<Resp, GrpcMessage> encoder = msg -> {
-        Buffer encoded = Buffer.buffer();
-        InputStream stream =methodDesc.streamResponse(msg);
-        byte[] tmp = new byte[256];
-        int i;
-        try {
-          while ((i = stream.read(tmp)) != -1) {
-            encoded.appendBytes(tmp, 0, i);
-          }
-        } catch (IOException e) {
-          throw new VertxException(e);
-        }
-        return GrpcMessage.message(encoded);
-      };
-      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, decoder, encoder, handler));
+      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, MessageDecoder.unmarshaller(methodDesc.getRequestMarshaller()), MessageEncoder.marshaller(methodDesc.getResponseMarshaller()), handler));
     } else {
       methodCallHandlers.remove(methodDesc.getFullMethodName());
     }
     return this;
   }
 
-  @Override
-  public <Req, Resp> GrpcServer callHandler(MethodDescriptor<Req, Resp> methodDesc, Function<GrpcMessage, Req> messageDecoder, Function<Resp, GrpcMessage> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
-    if (handler != null) {
-      methodCallHandlers.put(methodDesc.getFullMethodName(), new MethodCallHandler<>(methodDesc, messageDecoder, messageEncoder, handler));
-    } else {
-      methodCallHandlers.remove(methodDesc.getFullMethodName());
-    }
-    return null;
-  }
-
   private static class MethodCallHandler<Req, Resp> implements Handler<GrpcServerRequest<Req, Resp>> {
 
     final MethodDescriptor<Req, Resp> def;
-    final Function<GrpcMessage, Req> messageDecoder;
-    final Function<Resp, GrpcMessage> messageEncoder;
+    final MessageDecoder<Req> messageDecoder;
+    final MessageEncoder<Resp> messageEncoder;
     final Handler<GrpcServerRequest<Req, Resp>> handler;
 
-    MethodCallHandler(MethodDescriptor<Req, Resp> def, Function<GrpcMessage, Req> messageDecoder, Function<Resp, GrpcMessage> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
+    MethodCallHandler(MethodDescriptor<Req, Resp> def, MessageDecoder<Req> messageDecoder, MessageEncoder<Resp> messageEncoder, Handler<GrpcServerRequest<Req, Resp>> handler) {
       this.def = def;
       this.messageDecoder = messageDecoder;
       this.messageEncoder = messageEncoder;

@@ -15,10 +15,13 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.GrpcReadStream;
 import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.MessageDecoder;
 
 /**
  * A response from a gRPC server.
@@ -28,7 +31,7 @@ import io.vertx.grpc.common.GrpcStatus;
  *
  */
 @VertxGen
-public interface GrpcClientResponse<Req, Resp> extends ReadStream<Resp> {
+public interface GrpcClientResponse<Req, Resp> extends GrpcReadStream<Resp> {
 
   /**
    * @return the gRPC status or {@code null} when the status has not yet been received
@@ -37,28 +40,12 @@ public interface GrpcClientResponse<Req, Resp> extends ReadStream<Resp> {
   GrpcStatus status();
 
   /**
-   * @return the {@link MultiMap} to write metadata headers
-   */
-  MultiMap headers();
-
-  /**
-   * @return the response encoding
-   */
-  String encoding();
-
-  /**
    * @return the {@link MultiMap} to write metadata trailers
    */
   MultiMap trailers();
 
-  /**
-   * Set a handler to be notified with incoming messages.
-   *
-   * @param handler the message handler
-   * @return a reference to this, so the API can be used fluently
-   */
   @Fluent
-  GrpcClientResponse<Req, Resp> messageHandler(Handler<Resp> handler);
+  GrpcClientResponse<Req, Resp> messageHandler(Handler<GrpcMessage> handler);
 
   /**
    * Set a handler to be notified with gRPC errors.

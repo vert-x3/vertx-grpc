@@ -10,6 +10,10 @@
  */
 package io.vertx.grpc.server.impl;
 
+import io.grpc.Compressor;
+import io.grpc.CompressorRegistry;
+import io.grpc.Decompressor;
+import io.grpc.DecompressorRegistry;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.ServerCall;
@@ -18,6 +22,8 @@ import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.vertx.grpc.common.GrpcStatus;
+import io.vertx.grpc.common.impl.BridgeMessageEncoder;
+import io.vertx.grpc.common.impl.BridgeMessageDecoder;
 import io.vertx.grpc.common.impl.ReadStreamAdapter;
 import io.vertx.grpc.common.impl.Utils;
 import io.vertx.grpc.common.impl.WriteStreamAdapter;
@@ -67,8 +73,16 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
     private final ReadStreamAdapter<Req> readAdapter;
     private final WriteStreamAdapter<Resp> writeAdapter;
     private ServerCall.Listener<Req> listener;
+    private final Decompressor decompressor;
+    private Compressor compressor;
 
     public ServerCallImpl(GrpcServerRequest<Req, Resp> req, ServerMethodDefinition<Req, Resp> methodDef) {
+
+      String encoding = req.encoding();
+
+
+
+      this.decompressor = DecompressorRegistry.getDefaultInstance().lookupDecompressor(encoding);
       this.req = req;
       this.methodDef = methodDef;
       this.readAdapter = new ReadStreamAdapter<Req>() {
@@ -81,6 +95,7 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
           listener.onMessage(msg);
         }
       };
+      Compressor compressor = null;
       this.writeAdapter = new WriteStreamAdapter<Resp>() {
         @Override
         protected void handleReady() {
@@ -91,8 +106,8 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
 
     void init(ServerCall.Listener<Req> listener) {
       this.listener = listener;
-      readAdapter.init(req);
-      writeAdapter.init(req.response());
+      readAdapter.init(req, new BridgeMessageDecoder<>(methodDef.getMethodDescriptor().getRequestMarshaller(), decompressor));
+      writeAdapter.init(req.response(), new BridgeMessageEncoder<>(methodDef.getMethodDescriptor().getResponseMarshaller(), compressor));
     }
 
     @Override
@@ -134,8 +149,15 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
     }
 
     @Override
-    public void setCompression(String compressor) {
-      req.response().encoding(compressor);
+    public void setCompression(String encoding) {
+      compressor = CompressorRegistry.getDefaultInstance().lookupCompressor(encoding);
+      req.response().encoding(encoding);
+    }
+
+    @Override
+    public void setMessageCompression(boolean enabled) {
+      // ????
+      super.setMessageCompression(enabled);
     }
   }
 }

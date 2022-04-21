@@ -18,6 +18,8 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.streams.WriteStream;
+import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.GrpcWriteStream;
 import io.vertx.grpc.common.ServiceName;
 
 /**
@@ -36,12 +38,7 @@ import io.vertx.grpc.common.ServiceName;
  * </ul>
  */
 @VertxGen
-public interface GrpcClientRequest<Req, Resp> extends WriteStream<Req> {
-
-  /**
-   * @return the {@link MultiMap} to reader metadata headers
-   */
-  MultiMap headers();
+public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
 
   @Fluent
   GrpcClientRequest<Req, Resp> encoding(String encoding);
@@ -86,35 +83,14 @@ public interface GrpcClientRequest<Req, Resp> extends WriteStream<Req> {
   @CacheReturn
   Future<GrpcClientResponse<Req, Resp>> response();
 
-  /**
-   * Reset the stream.
-   *
-   * This is an HTTP/2 operation.
-   */
-  void reset();
-
   @Override
   GrpcClientRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler);
-
-  @Override
-  void write(Req data, Handler<AsyncResult<Void>> handler);
-
-  @Override
-  void end(Handler<AsyncResult<Void>> handler);
 
   @Override
   GrpcClientRequest<Req, Resp> setWriteQueueMaxSize(int maxSize);
 
   @Override
-  boolean writeQueueFull();
-
-  @Override
   GrpcClientRequest<Req, Resp> drainHandler(Handler<Void> handler);
 
-  Future<Void> write(Req message);
-
-  Future<Void> end(Req message);
-
-  Future<Void> end();
 
 }
