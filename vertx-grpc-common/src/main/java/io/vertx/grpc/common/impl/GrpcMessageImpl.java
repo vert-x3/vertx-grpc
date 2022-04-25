@@ -11,28 +11,19 @@
 package io.vertx.grpc.common.impl;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.compression.GzipOptions;
-import io.netty.handler.codec.compression.StandardCompressionOptions;
-import io.netty.handler.codec.compression.ZlibCodecFactory;
-import io.netty.handler.codec.compression.ZlibEncoder;
-import io.netty.handler.codec.compression.ZlibWrapper;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.grpc.common.GrpcMessage;
 
-import java.util.Queue;
+public class GrpcMessageImpl implements GrpcMessage {
 
-public class BaseGrpcMessage implements GrpcMessage {
-
-  private final Buffer data;
   private final String encoding;
+  private final Buffer payload;
 
-  public BaseGrpcMessage(Buffer data, String encoding) {
-    this.data = data;
+  public GrpcMessageImpl(String encoding, Buffer payload) {
     this.encoding = encoding;
+    this.payload = payload;
   }
 
   @Override
@@ -42,7 +33,7 @@ public class BaseGrpcMessage implements GrpcMessage {
 
   @Override
   public Buffer payload() {
-    return data;
+    return payload;
   }
 
   public static Buffer encode(GrpcMessage message) {

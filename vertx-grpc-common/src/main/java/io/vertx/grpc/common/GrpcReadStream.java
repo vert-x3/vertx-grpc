@@ -22,7 +22,8 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
   String encoding();
 
   /**
-   * Set a handler to be notified with incoming messages.
+   * Set a handler to be notified with incoming encoded messages. The {@code handler} is
+   * responsible for fully decoding incoming messages.
    *
    * @param handler the message handler
    * @return a reference to this, so the API can be used fluently

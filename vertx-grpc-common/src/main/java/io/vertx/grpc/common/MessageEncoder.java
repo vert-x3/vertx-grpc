@@ -24,17 +24,8 @@ public interface MessageEncoder<T> {
 
   MessageEncoder<Buffer> IDENTITY = new MessageEncoder<Buffer>() {
     @Override
-    public GrpcMessage encode(Buffer msg) {
-      return new GrpcMessage() {
-        @Override
-        public String encoding() {
-          return "identity";
-        }
-        @Override
-        public Buffer payload() {
-          return msg;
-        }
-      };
+    public GrpcMessage encode(Buffer payload) {
+      return GrpcMessage.message("identity", payload);
     }
   };
 
@@ -53,16 +44,7 @@ public interface MessageEncoder<T> {
         composite.addComponent(true, a);
       }
       channel.close();
-      return new GrpcMessage() {
-        @Override
-        public String encoding() {
-          return "gzip";
-        }
-        @Override
-        public Buffer payload() {
-          return Buffer.buffer(composite);
-        }
-      };
+      return GrpcMessage.message("gzip", Buffer.buffer(composite));
     }
   };
 
@@ -82,16 +64,7 @@ public interface MessageEncoder<T> {
         } catch (IOException e) {
           throw new VertxException(e);
         }
-        return new GrpcMessage() {
-          @Override
-          public String encoding() {
-            return "identity";
-          }
-          @Override
-          public Buffer payload() {
-            return encoded;
-          }
-        };
+        return GrpcMessage.message("identity", encoded);
       }
     };
   }

@@ -93,7 +93,7 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
         throw new UnsupportedOperationException("Handle me");
       }
       Buffer payload = buffer.slice(idx + 5, idx + 5 + len);
-      GrpcMessage message = new BaseGrpcMessage(payload, compressed ? compression : "identity");
+      GrpcMessage message = GrpcMessage.message(compressed ? compression : "identity", payload);
       pause |= !queue.write(message);
       idx += 5 + len;
     }

@@ -63,58 +63,22 @@ public class ClientMessageEncodingTest extends GrpcTestBase {
 
   @Test
   public void testZipRequestCompress(TestContext should) throws Exception {
-    testEncode(should, "gzip", new GrpcMessage() {
-      @Override
-      public String encoding() {
-        return "identity";
-      }
-      @Override
-      public Buffer payload() {
-        return Buffer.buffer("Hello World");
-      }
-    }, true);
+    testEncode(should, "gzip", GrpcMessage.message("identity", Buffer.buffer("Hello World")), true);
   }
 
   @Test
   public void testZipRequestPassThrough(TestContext should) throws Exception {
-    testEncode(should, "gzip", new GrpcMessage() {
-      @Override
-      public String encoding() {
-        return "gzip";
-      }
-      @Override
-      public Buffer payload() {
-        return zip(Buffer.buffer("Hello World"));
-      }
-    }, true);
+    testEncode(should, "gzip", GrpcMessage.message("gzip", zip(Buffer.buffer("Hello World"))), true);
   }
 
   @Test
   public void testIdentityRequestUnzip(TestContext should) throws Exception {
-    testEncode(should, "identity", new GrpcMessage() {
-      @Override
-      public String encoding() {
-        return "gzip";
-      }
-      @Override
-      public Buffer payload() {
-        return zip(Buffer.buffer("Hello World"));
-      }
-    }, false);
+    testEncode(should, "identity", GrpcMessage.message("gzip", zip(Buffer.buffer("Hello World"))), false);
   }
 
   @Test
   public void testIdentityRequestPassThrough(TestContext should) throws Exception {
-    testEncode(should, "identity", new GrpcMessage() {
-      @Override
-      public String encoding() {
-        return "identity";
-      }
-      @Override
-      public Buffer payload() {
-        return Buffer.buffer("Hello World");
-      }
-    }, false);
+    testEncode(should, "identity", GrpcMessage.message("identity", Buffer.buffer("Hello World")), false);
   }
 
   private void testEncode(TestContext should, String requestEncoding, GrpcMessage msg, boolean compressed) throws Exception {

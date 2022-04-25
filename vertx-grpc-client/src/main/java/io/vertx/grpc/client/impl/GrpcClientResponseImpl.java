@@ -127,16 +127,7 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
             abc = msg;
             break;
           case "gzip": {
-            abc = new GrpcMessage() {
-              @Override
-              public String encoding() {
-                return "identity";
-              }
-              @Override
-              public Buffer payload() {
-                return MessageDecoder.GZIP.decode(msg);
-              }
-            };
+            abc = GrpcMessage.message("identity", MessageDecoder.GZIP.decode(msg));
             break;
           }
           default:

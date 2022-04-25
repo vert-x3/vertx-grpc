@@ -20,7 +20,7 @@ import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.MessageDecoder;
 import io.vertx.grpc.common.MessageEncoder;
-import io.vertx.grpc.common.impl.BaseGrpcMessage;
+import io.vertx.grpc.common.impl.GrpcMessageImpl;
 import io.vertx.grpc.server.GrpcServerResponse;
 
 import java.util.Map;
@@ -161,16 +161,7 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
               throw new UnsupportedOperationException("Not implemented");
             }
             Buffer decoded = MessageDecoder.GZIP.decode(message);
-            message = new GrpcMessage() {
-              @Override
-              public String encoding() {
-                return "identity";
-              }
-              @Override
-              public Buffer payload() {
-                return decoded;
-              }
-            };
+            message = GrpcMessage.message("identity", decoded);
           }
           break;
       }
@@ -193,12 +184,12 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
         }
       }
       if (message != null) {
-        return httpResponse.end(BaseGrpcMessage.encode(message));
+        return httpResponse.end(GrpcMessageImpl.encode(message));
       } else {
         return httpResponse.end();
       }
     } else {
-      return httpResponse.write(BaseGrpcMessage.encode(message));
+      return httpResponse.write(GrpcMessageImpl.encode(message));
     }
   }
 

@@ -26,7 +26,7 @@ import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.MessageDecoder;
 import io.vertx.grpc.common.MessageEncoder;
 import io.vertx.grpc.common.ServiceName;
-import io.vertx.grpc.common.impl.BaseGrpcMessage;
+import io.vertx.grpc.common.impl.GrpcMessageImpl;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -176,25 +176,16 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
               throw new UnsupportedOperationException("Not implemented");
             }
             Buffer decoded = MessageDecoder.GZIP.decode(message);
-            message = new GrpcMessage() {
-              @Override
-              public String encoding() {
-                return "identity";
-              }
-              @Override
-              public Buffer payload() {
-                return decoded;
-              }
-            };
+            message = GrpcMessage.message("identity", decoded);
           }
           break;
       }
     }
 
     if (end) {
-      return httpRequest.end(BaseGrpcMessage.encode(message));
+      return httpRequest.end(GrpcMessageImpl.encode(message));
     } else {
-      return httpRequest.write(BaseGrpcMessage.encode(message));
+      return httpRequest.write(GrpcMessageImpl.encode(message));
     }
   }
 

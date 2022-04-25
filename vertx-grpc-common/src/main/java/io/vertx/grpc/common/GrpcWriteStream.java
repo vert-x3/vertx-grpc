@@ -18,6 +18,12 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
    */
   MultiMap headers();
 
+  /**
+   * Set the stream encoding, it must be called before sending any message.
+   *
+   * @param encoding the target message encoding
+   * @return a reference to this, so the API can be used fluently
+   */
   @Fluent
   GrpcWriteStream<T> encoding(String encoding);
 
@@ -41,7 +47,19 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
 
   Future<Void> end(T message);
 
+  /**
+   * Write an encoded gRPC message.
+   *
+   * @param message the message
+   * @return a future completed with the result
+   */
   Future<Void> writeMessage(GrpcMessage message);
 
+  /**
+   * End the stream with an encoded gRPC message.
+   *
+   * @param message the message
+   * @return a future completed with the result
+   */
   Future<Void> endMessage(GrpcMessage message);
 }

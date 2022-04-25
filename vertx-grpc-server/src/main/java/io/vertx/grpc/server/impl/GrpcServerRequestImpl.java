@@ -12,7 +12,6 @@ package io.vertx.grpc.server.impl;
 
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.grpc.common.GrpcError;
@@ -24,8 +23,6 @@ import io.vertx.grpc.common.impl.GrpcMessageDecoder;
 import io.vertx.grpc.common.impl.GrpcMethodCall;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServerResponse;
-
-import java.util.function.Function;
 
 import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
 
@@ -118,16 +115,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageDecoder impleme
             abc = msg;
             break;
           case "gzip": {
-            abc = new GrpcMessage() {
-              @Override
-              public String encoding() {
-                return "identity";
-              }
-              @Override
-              public Buffer payload() {
-                return MessageDecoder.GZIP.decode(msg);
-              }
-            };
+            abc = GrpcMessage.message("identity", MessageDecoder.GZIP.decode(msg));
             break;
           }
           default:
