@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -84,7 +85,41 @@ public class ClientMessageEncodingTest extends ClientTestBase {
   }
 
   @Test
-  public void testDecode(TestContext should) throws Exception {
+  public void testDecodeMessageHandler(TestContext should) throws Exception {
+    Async done = should.async();
+    testDecode(should, callResponse -> {
+      AtomicInteger count = new AtomicInteger();
+      callResponse.messageHandler(msg -> {
+        should.assertEquals("gzip", msg.encoding());
+        should.assertEquals(Buffer.buffer("Hello World"), unzip(msg.payload()));
+        count.incrementAndGet();
+      });
+      callResponse.endHandler(v -> {
+        should.assertEquals(GrpcStatus.OK, callResponse.status());
+        should.assertEquals(1, count.get());
+        done.complete();
+      });
+    });
+  }
+
+  @Test
+  public void testDecodeHandler(TestContext should) throws Exception {
+    Async done = should.async();
+    testDecode(should, callResponse -> {
+      AtomicInteger count = new AtomicInteger();
+      callResponse.handler(msg -> {
+        should.assertEquals(Buffer.buffer("Hello World"), msg);
+        count.incrementAndGet();
+      });
+      callResponse.endHandler(v -> {
+        should.assertEquals(GrpcStatus.OK, callResponse.status());
+        should.assertEquals(1, count.get());
+        done.complete();
+      });
+    });
+  }
+
+  private void testDecode(TestContext should, Consumer<GrpcClientResponse<Buffer, Buffer>> check) throws Exception {
 
     Buffer expected = Buffer.buffer("Hello World");
 
@@ -106,22 +141,13 @@ public class ClientMessageEncodingTest extends ClientTestBase {
       .toCompletableFuture()
       .get(20, TimeUnit.SECONDS);
 
-    Async test = should.async();
     GrpcClient client = GrpcClient.client(vertx);
     client.request(SocketAddress.inetSocketAddress(port, "localhost"))
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.fullMethodName(GreeterGrpc.getSayHelloMethod().getFullMethodName());
         callRequest.response().onComplete(should.asyncAssertSuccess(callResponse -> {
-          AtomicInteger count = new AtomicInteger();
-          callResponse.messageHandler(msg -> {
-            should.assertEquals("gzip", msg.encoding());
-            count.incrementAndGet();
-          });
-          callResponse.endHandler(v -> {
-            should.assertEquals(GrpcStatus.OK, callResponse.status());
-            should.assertEquals(1, count.get());
-            test.complete();
-          });
+          should.assertEquals("gzip", callResponse.encoding());
+          check.accept(callResponse);
         }));
         callRequest.end(Buffer.buffer());
       }));
