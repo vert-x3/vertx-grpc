@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.MessageDecoder;
 import io.vertx.grpc.common.MessageEncoder;
@@ -41,12 +42,14 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   private boolean headersSent;
   private Future<GrpcClientResponse<Req, Resp>> response;
   private MultiMap headers;
+  boolean ended;
 
   public GrpcClientRequestImpl(HttpClientRequest httpRequest, MessageEncoder<Req> messageEncoder, MessageDecoder<Resp> messageDecoder) {
+
     this.httpRequest = httpRequest;
     this.messageEncoder = messageEncoder;
     this.response = httpRequest.response().map(httpResponse -> {
-      GrpcClientResponseImpl<Req, Resp> grpcResponse = new GrpcClientResponseImpl<>(httpResponse, messageDecoder);
+      GrpcClientResponseImpl<Req, Resp> grpcResponse = new GrpcClientResponseImpl<>(this, httpResponse, messageDecoder);
       grpcResponse.init();
       return grpcResponse;
     });
@@ -127,9 +130,10 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override public Future<Void> end() {
-    if (!headersSent) {
+    if (!headersSent || ended) {
       throw new IllegalStateException();
     }
+    ended = true;
     return httpRequest.end();
   }
 
@@ -214,7 +218,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override
-  public void reset() {
-    httpRequest.reset();
+  public void cancel() {
+    httpRequest.reset(GrpcError.CANCELLED.http2ResetCode);
   }
 }

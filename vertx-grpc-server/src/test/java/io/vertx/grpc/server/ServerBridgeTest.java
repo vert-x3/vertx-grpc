@@ -11,11 +11,13 @@
 package io.vertx.grpc.server;
 
 import io.grpc.ForwardingServerCall;
+import io.grpc.ForwardingServerCallListener;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.ServerInterceptors;
+import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.examples.helloworld.GreeterGrpc;
@@ -28,7 +30,10 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.common.GrpcError;
 import org.junit.Test;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -57,6 +62,74 @@ public class ServerBridgeTest extends ServerTestBase {
     startServer(server);
 
     super.testUnary(should, requestEncoding, responseEncoding);
+  }
+
+  @Test
+  public void testUnaryInterceptor(TestContext should) {
+
+    GreeterGrpc.GreeterImplBase impl = new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        responseObserver.onCompleted();
+      }
+    };
+
+    AtomicInteger count = new AtomicInteger();
+    ServerServiceDefinition def = ServerInterceptors.intercept(impl, new ServerInterceptor() {
+      @Override
+      public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+        should.assertEquals(0, count.getAndIncrement());
+        call = new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
+          @Override
+          public void sendHeaders(Metadata headers) {
+            should.assertEquals(4, count.getAndIncrement());
+            super.sendHeaders(headers);
+          }
+          @Override
+          public void sendMessage(RespT message) {
+            should.assertEquals(5, count.getAndIncrement());
+            super.sendMessage(message);
+          }
+          @Override
+          public void close(Status status, Metadata trailers) {
+            should.assertEquals(6, count.getAndIncrement());
+            super.close(status, trailers);
+          }
+        };
+        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(next.startCall(call, headers)) {
+          @Override
+          public void onReady() {
+            should.assertEquals(1, count.getAndIncrement());
+            super.onReady();
+          }
+          @Override
+          public void onMessage(ReqT message) {
+            should.assertEquals(2, count.getAndIncrement());
+            super.onMessage(message);
+          }
+          @Override
+          public void onHalfClose() {
+            should.assertEquals(3, count.getAndIncrement());
+            super.onHalfClose();
+          }
+          @Override
+          public void onComplete() {
+            should.assertEquals(7, count.getAndIncrement());
+            super.onComplete();
+          }
+        };
+      }
+    });
+
+    GrpcServer server = GrpcServer.server();
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(def);
+    serverStub.bind(server);
+    startServer(server);
+
+    super.testUnary(should, "identity", "identity");
+
+    should.assertEquals(8, count.getAndIncrement());
   }
 
   @Override
@@ -134,6 +207,38 @@ public class ServerBridgeTest extends ServerTestBase {
   }
 
   @Override
+  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) {
+
+    StreamingGrpc.StreamingImplBase impl = new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item value) {
+            responseObserver.onCompleted();
+          }
+          @Override
+          public void onError(Throwable t) {
+            should.fail();
+          }
+          @Override
+          public void onCompleted() {
+            should.fail();
+          }
+        };
+      }
+    };
+
+    GrpcServer server = GrpcServer.server();
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
+    serverStub.bind(server);
+    startServer(server);
+
+    super.testClientStreamingCompletedBeforeHalfClose(should);
+
+  }
+
+  @Override
   public void testBidiStreaming(TestContext should) throws Exception {
 
     StreamingGrpc.StreamingImplBase impl = new StreamingGrpc.StreamingImplBase() {
@@ -162,6 +267,37 @@ public class ServerBridgeTest extends ServerTestBase {
     startServer(server);
 
     super.testBidiStreaming(should);
+  }
+
+  @Override
+  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+
+    StreamingGrpc.StreamingImplBase impl = new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> pipe(StreamObserver<Item> responseObserver) {
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item value) {
+            responseObserver.onCompleted();
+          }
+          @Override
+          public void onError(Throwable t) {
+            // should.fail(t);
+          }
+          @Override
+          public void onCompleted() {
+            // should.fail();
+          }
+        };
+      }
+    };
+
+    GrpcServer server = GrpcServer.server();
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
+    serverStub.bind(server);
+    startServer(server);
+
+    super.testBidiStreamingCompletedBeforeHalfClose(should);
   }
 
   @Override

@@ -33,7 +33,6 @@ import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -163,6 +162,31 @@ public abstract class ServerTestBase extends GrpcTestBase {
   }
 
   @Test
+  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) {
+    channel = ManagedChannelBuilder.forAddress("localhost", port)
+      .usePlaintext()
+      .build();
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+
+    Async test = should.async();
+    StreamObserver<Item> items = stub.sink(new StreamObserver<Empty>() {
+      @Override
+      public void onNext(Empty value) {
+        should.fail();
+      }
+      @Override
+      public void onError(Throwable t) {
+        test.complete();
+      }
+      @Override
+      public void onCompleted() {
+        should.fail();
+      }
+    });
+    items.onNext(Item.newBuilder().setValue("the-value").build());
+  }
+
+  @Test
   public void testBidiStreaming(TestContext should) throws Exception {
     channel = ManagedChannelBuilder.forAddress("localhost", port)
       .usePlaintext()
@@ -193,6 +217,31 @@ public abstract class ServerTestBase extends GrpcTestBase {
     test.awaitSuccess(20_000);
     List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
     should.assertEquals(expected, items);
+  }
+
+  @Test
+  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+    channel = ManagedChannelBuilder.forAddress("localhost", port)
+      .usePlaintext()
+      .build();
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+
+    Async test = should.async();
+    StreamObserver<Item> writer = stub.pipe(new StreamObserver<Item>() {
+      @Override
+      public void onNext(Item item) {
+        should.fail();
+      }
+      @Override
+      public void onError(Throwable t) {
+        should.fail(t);
+      }
+      @Override
+      public void onCompleted() {
+        test.complete();
+      }
+    });
+    writer.onNext(Item.newBuilder().setValue("the-value").build());
   }
 
   protected AtomicInteger testMetadataStep;

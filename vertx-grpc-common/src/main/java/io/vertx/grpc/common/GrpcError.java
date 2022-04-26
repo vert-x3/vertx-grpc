@@ -18,15 +18,23 @@ import io.vertx.codegen.annotations.VertxGen;
 @VertxGen
 public enum GrpcError {
 
-  INTERNAL,
+  INTERNAL(GrpcStatus.INTERNAL, 0x02),
 
-  UNAVAILABLE,
+  UNAVAILABLE(GrpcStatus.UNAVAILABLE, 0x07),
 
-  CANCELLED,
+  CANCELLED(GrpcStatus.CANCELLED, 0x08),
 
-  RESOURCE_EXHAUSTED,
+  RESOURCE_EXHAUSTED(GrpcStatus.RESOURCE_EXHAUSTED, 0x0B),
 
-  PERMISSION_DENIED;
+  PERMISSION_DENIED(GrpcStatus.PERMISSION_DENIED, 0x0C);
+
+  public final GrpcStatus status;
+  public final long http2ResetCode;
+
+  GrpcError(GrpcStatus status, long http2ResetCode) {
+    this.status = status;
+    this.http2ResetCode = http2ResetCode;
+  }
 
   /**
    * Map the HTTP/2 code to the gRPC error.
@@ -35,32 +43,33 @@ public enum GrpcError {
    */
   public static GrpcError mapHttp2ErrorCode(long code) {
     switch ((int)code) {
-      case 0:
+      case 0x00:
         // NO_ERROR
-      case 1:
+      case 0x01:
         // PROTOCOL_ERROR
-      case 2:
+      case 0x02:
         // INTERNAL_ERROR
-      case 3:
+      case 0x03:
         // FLOW_CONTROL_ERROR
-      case 4:
+      case 0x04:
         // FRAME_SIZE_ERROR
-      case 6:
+      case 0x06:
         // FRAME_SIZE_ERROR
-      case 7:
-        // REFUSED_STREAM
-      case 9:
+      case 0x09:
         // COMPRESSION_ERROR
         return GrpcError.INTERNAL;
-      case 10:
+      case 0x07:
+        // REFUSED_STREAM
+        return GrpcError.UNAVAILABLE;
+      case 0x0A:
         // CONNECT_ERROR
-      case 8:
+      case 0x08:
         // CANCEL
         return GrpcError.CANCELLED;
-      case 11:
+      case 0x0B:
         // ENHANCE_YOUR_CALM
         return GrpcError.RESOURCE_EXHAUSTED;
-      case 12:
+      case 0x0C:
         // INADEQUATE_SECURITY
         return GrpcError.PERMISSION_DENIED;
       default:

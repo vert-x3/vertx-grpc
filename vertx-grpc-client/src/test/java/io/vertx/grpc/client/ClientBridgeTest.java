@@ -33,11 +33,13 @@ import io.grpc.stub.StreamObserver;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -57,6 +59,42 @@ public class ClientBridgeTest extends ClientTestBase {
     HelloReply reply = stub.sayHello(HelloRequest.newBuilder().setName("Julien").build());
     // Todo : assert response encoding
     should.assertEquals("Hello Julien", reply.getMessage());
+  }
+
+  @Test
+  public void testUnaryInterceptor(TestContext should) throws IOException {
+
+    super.testUnary(should, "identity", "identity");
+
+    GrpcClient client = GrpcClient.client(vertx);
+    GrpcClientChannel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));
+
+    AtomicInteger status = new AtomicInteger();
+
+    Channel ch = ClientInterceptors.intercept(channel, new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
+        should.assertEquals(0, status.getAndIncrement());
+        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
+          @Override
+          public void start(Listener<RespT> responseListener, Metadata headers) {
+            should.assertEquals(1, status.getAndIncrement());
+            super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
+              @Override
+              public void onClose(Status st, Metadata trailers) {
+                should.assertEquals(2, status.getAndIncrement());
+                super.onClose(st, trailers);
+              }
+            }, headers);
+          }
+        };
+      }
+    });
+
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(ch).withCompression("identity");
+    HelloReply reply = stub.sayHello(HelloRequest.newBuilder().setName("Julien").build());
+
+    should.assertEquals(3, status.getAndIncrement());
   }
 
   @Override
@@ -178,6 +216,37 @@ public class ClientBridgeTest extends ClientTestBase {
   }
 
   @Override
+  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+
+    super.testClientStreamingCompletedBeforeHalfClose(should);
+
+    GrpcClient client = GrpcClient.client(vertx);
+    GrpcClientChannel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));
+
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+
+    Async test = should.async();
+    StreamObserver<Item> items = stub.sink(new StreamObserver<Empty>() {
+      @Override
+      public void onNext(Empty value) {
+        should.fail();
+      }
+      @Override
+      public void onError(Throwable t) {
+        should.assertEquals(StatusRuntimeException.class, t.getClass());
+        StatusRuntimeException err = (StatusRuntimeException) t;
+        should.assertEquals(Status.CANCELLED.getCode(), err.getStatus().getCode());
+        test.complete();
+      }
+      @Override
+      public void onCompleted() {
+        should.fail();
+      }
+    });
+    items.onNext(Item.newBuilder().setValue("the-value").build());
+  }
+
+  @Override
   public void testBidiStreaming(TestContext should) throws Exception {
 
     super.testBidiStreaming(should);
@@ -213,6 +282,34 @@ public class ClientBridgeTest extends ClientTestBase {
     should.assertEquals(expected, items);
   }
 
+  @Test
+  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+
+    super.testBidiStreamingCompletedBeforeHalfClose(should);
+
+    GrpcClient client = GrpcClient.client(vertx);
+    GrpcClientChannel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));
+
+    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
+
+    Async test = should.async();
+    StreamObserver<Item> writer = stub.pipe(new StreamObserver<Item>() {
+      @Override
+      public void onNext(Item item) {
+        should.fail();
+      }
+      @Override
+      public void onError(Throwable t) {
+        should.fail(t);
+      }
+      @Override
+      public void onCompleted() {
+        test.complete();
+      }
+    });
+    writer.onNext(Item.newBuilder().setValue("the-value").build());
+  }
+
   @Override
   public void testStatus(TestContext should) throws IOException {
 
@@ -231,8 +328,8 @@ public class ClientBridgeTest extends ClientTestBase {
   }
 
   @Override
-  public void testReset(TestContext should) throws Exception {
-    super.testReset(should);
+  public void testFail(TestContext should) throws Exception {
+    super.testFail(should);
 
     GrpcClient client = GrpcClient.client(vertx);
     GrpcClientChannel channel = new GrpcClientChannel(client, SocketAddress.inetSocketAddress(port, "localhost"));

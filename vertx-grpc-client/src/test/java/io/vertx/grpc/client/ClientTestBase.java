@@ -205,11 +205,58 @@ public abstract class ClientTestBase extends GrpcTestBase {
   }
 
   @Test
+  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+    Async latch = should.async();
+    startServer(new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item item) {
+            responseObserver.onCompleted();
+          }
+          @Override
+          public void onError(Throwable t) {
+            latch.complete();
+          }
+          @Override
+          public void onCompleted() {
+            should.fail();
+          }
+        };
+      }
+    });
+  }
+
+  @Test
   public void testBidiStreaming(TestContext should) throws Exception {
     startServer(new StreamingGrpc.StreamingImplBase() {
       @Override
       public StreamObserver<Item> pipe(StreamObserver<Item> responseObserver) {
         return responseObserver;
+      }
+    });
+  }
+
+  @Test
+  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+    startServer(new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> pipe(StreamObserver<Item> responseObserver) {
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item value) {
+            responseObserver.onCompleted();
+          }
+          @Override
+          public void onError(Throwable t) {
+            should.fail(t);
+          }
+          @Override
+          public void onCompleted() {
+            should.fail();
+          }
+        };
       }
     });
   }
@@ -228,7 +275,7 @@ public abstract class ClientTestBase extends GrpcTestBase {
   }
 
   @Test
-  public void testReset(TestContext should) throws Exception {
+  public void testFail(TestContext should) throws Exception {
 
     Async done = should.async();
     startServer(new StreamingGrpc.StreamingImplBase() {

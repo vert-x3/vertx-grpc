@@ -92,5 +92,10 @@ public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
   @Override
   GrpcClientRequest<Req, Resp> drainHandler(Handler<Void> handler);
 
+  /**
+   * Cancel the stream.
+   */
+  void cancel();
+
 
 }

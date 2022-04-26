@@ -21,6 +21,7 @@ import io.grpc.ServerCallHandler;
 import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.Status;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.impl.BridgeMessageEncoder;
 import io.vertx.grpc.common.impl.BridgeMessageDecoder;
@@ -60,9 +61,6 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
       ServerCallImpl<Req, Resp> call = new ServerCallImpl<>(req, methodDef);
       ServerCall.Listener<Req> listener = callHandler.startCall(call, Utils.readMetadata(req.headers()));
       call.init(listener);
-      req.errorHandler(error -> {
-        listener.onCancel();
-      });
     });
   }
 
@@ -75,6 +73,9 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
     private ServerCall.Listener<Req> listener;
     private final Decompressor decompressor;
     private Compressor compressor;
+    private boolean halfClosed;
+    private boolean closed;
+    private int messagesSent;
 
     public ServerCallImpl(GrpcServerRequest<Req, Resp> req, ServerMethodDefinition<Req, Resp> methodDef) {
 
@@ -88,6 +89,7 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
       this.readAdapter = new ReadStreamAdapter<Req>() {
         @Override
         protected void handleClose() {
+          halfClosed = true;
           listener.onHalfClose();
         }
         @Override
@@ -95,7 +97,6 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
           listener.onMessage(msg);
         }
       };
-      Compressor compressor = null;
       this.writeAdapter = new WriteStreamAdapter<Resp>() {
         @Override
         protected void handleReady() {
@@ -106,6 +107,11 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
 
     void init(ServerCall.Listener<Req> listener) {
       this.listener = listener;
+      req.errorHandler(error -> {
+        if (error == GrpcError.CANCELLED && !closed) {
+          listener.onCancel();
+        }
+      });
       readAdapter.init(req, new BridgeMessageDecoder<>(methodDef.getMethodDescriptor().getRequestMarshaller(), decompressor));
       writeAdapter.init(req.response(), new BridgeMessageEncoder<>(methodDef.getMethodDescriptor().getResponseMarshaller(), compressor));
     }
@@ -127,15 +133,25 @@ public class GrpcServiceBridgeImpl implements GrpcServiceBridge {
 
     @Override
     public void sendMessage(Resp message) {
+      messagesSent++;
       writeAdapter.write(message);
     }
 
     @Override
     public void close(Status status, Metadata trailers) {
+      if (closed) {
+        throw new IllegalStateException("Already closed");
+      }
+      closed = true;
       GrpcServerResponse<Req, Resp> response = req.response();
-      Utils.writeMetadata(trailers, response.trailers());
-      response.status(GrpcStatus.valueOf(status.getCode().value()));
-      response.end();
+      if (status == Status.OK && methodDef.getMethodDescriptor().getType().serverSendsOneMessage() && messagesSent == 0) {
+        response.status(GrpcStatus.UNAVAILABLE).end();
+      } else {
+        Utils.writeMetadata(trailers, response.trailers());
+        response.status(GrpcStatus.valueOf(status.getCode().value()));
+        response.end();
+      }
+      listener.onComplete();
     }
 
     @Override

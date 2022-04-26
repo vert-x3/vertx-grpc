@@ -131,6 +131,21 @@ public class ServerRequestTest extends ServerTestBase {
   }
 
   @Override
+  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) {
+
+    startServer(GrpcServer.server().callHandler(StreamingGrpc.getSinkMethod(), call -> {
+      call.handler(item -> {
+        call.response().status(GrpcStatus.CANCELLED).end();
+      });
+      call.endHandler(v -> {
+        should.fail();
+      });
+    }));
+
+    super.testClientStreamingCompletedBeforeHalfClose(should);
+  }
+
+  @Override
   public void testBidiStreaming(TestContext should) throws Exception {
 
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
@@ -143,6 +158,23 @@ public class ServerRequestTest extends ServerTestBase {
     }));
 
     super.testBidiStreaming(should);
+  }
+
+  @Override
+  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+
+    Async done = should.async();
+    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+      call.handler(item -> {
+        call.response().end();
+        call.errorHandler(err -> {
+          should.assertEquals(GrpcError.CANCELLED, err);
+          done.complete();
+        });
+      });
+    }));
+
+    super.testBidiStreamingCompletedBeforeHalfClose(should);
   }
 
   @Test
@@ -166,18 +198,22 @@ public class ServerRequestTest extends ServerTestBase {
   }
 
   @Test
-  public void testReset(TestContext should) {
+  public void testFailInHeaders(TestContext should) {
+    testFail(should, 0);
+  }
+
+  @Test
+  public void testFailInTrailers(TestContext should) {
+    testFail(should, 1);
+  }
+
+  private void testFail(TestContext should, int numMsg) {
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
-      AtomicInteger count = new AtomicInteger();
       call.handler(item -> {
-        switch (count.getAndIncrement()) {
-          case 0:
-            call.response().write(item);
-            break;
-          case 1:
-            call.response().reset();
-            break;
+        for (int i = 0;i < numMsg;i++) {
+          call.response().write(item);
         }
+        call.response().status(GrpcStatus.UNAVAILABLE).end();
       });
     }));
 
@@ -186,30 +222,26 @@ public class ServerRequestTest extends ServerTestBase {
       .build();
     StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
 
-    Async latch = should.async();
     Async done = should.async();
     ClientCallStreamObserver<Item> items = (ClientCallStreamObserver<Item>) stub.pipe(new StreamObserver<Item>() {
       AtomicInteger count = new AtomicInteger();
       @Override
       public void onNext(Item value) {
-        if (count.getAndIncrement() == 0) {
-          latch.complete();
-        }
+        count.getAndIncrement();
       }
       @Override
       public void onError(Throwable t) {
         should.assertEquals(StatusRuntimeException.class, t.getClass());
         StatusRuntimeException sre = (StatusRuntimeException) t;
         should.assertEquals(Status.UNAVAILABLE.getCode(), sre.getStatus().getCode());
+        should.assertEquals(numMsg, count.get());
         done.complete();
       }
       @Override
       public void onCompleted() {
       }
     });
-    items.onNext(Item.newBuilder().setValue("the-value-1").build());
-    latch.awaitSuccess(20_000);
-    items.onNext(Item.newBuilder().setValue("the-value-2").build());
+    items.onNext(Item.newBuilder().setValue("the-value").build());
   }
 
   @Test

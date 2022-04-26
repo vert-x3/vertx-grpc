@@ -16,6 +16,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.MessageDecoder;
@@ -48,11 +49,6 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
     Objects.requireNonNull(status);
     this.status = status;
     return this;
-  }
-
-  @Override
-  public void reset() {
-    httpResponse.reset();
   }
 
   public GrpcServerResponse<Req, Resp> encoding(String encoding) {

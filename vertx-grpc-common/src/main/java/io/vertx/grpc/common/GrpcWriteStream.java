@@ -3,11 +3,9 @@ package io.vertx.grpc.common;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.WriteStream;
 
 @VertxGen
@@ -26,13 +24,6 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
    */
   @Fluent
   GrpcWriteStream<T> encoding(String encoding);
-
-  /**
-   * Reset the stream.
-   *
-   * This is an HTTP/2 operation.
-   */
-  void reset();
 
   @Override
   GrpcWriteStream<T> exceptionHandler(Handler<Throwable> handler);

@@ -20,6 +20,7 @@ import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
 import io.grpc.Status;
 import io.vertx.core.Future;
+import io.vertx.core.http.StreamResetException;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.common.impl.BridgeMessageEncoder;
 import io.vertx.grpc.common.impl.BridgeMessageDecoder;
@@ -73,14 +74,7 @@ public class GrpcClientChannel extends io.grpc.Channel {
         protected void handleClose() {
           Status status = Status.fromCodeValue(grpcResponse.status().code);
           Metadata trailers = Utils.readMetadata(grpcResponse.trailers());
-          Runnable cmd = () -> {
-            listener.onClose(status, trailers);
-          };
-          if (exec == null) {
-            cmd.run();
-          } else {
-            exec.execute(cmd);
-          }
+          doClose(status, trailers);
         }
         @Override
         protected void handleMessage(ResponseT msg) {
@@ -131,13 +125,37 @@ public class GrpcClientChannel extends io.grpc.Channel {
                   });
                 }
                 readAdapter.init(grpcResponse, decoder);
+              } else {
+                Throwable err = ar2.cause();
+                if (err instanceof StreamResetException) {
+                  StreamResetException reset = (StreamResetException) err;
+                  switch ((int)reset.getCode()) {
+                    case 8:
+                      doClose(Status.CANCELLED, new Metadata());
+                      break;
+                    default:
+                      System.out.println("handle me");
+                      break;
+                  }
+                } else {
+                  System.out.println("handle me");
+                }
               }
             });
             writeAdapter.init(request, new BridgeMessageEncoder<>(methodDescriptor.getRequestMarshaller(), compressor));
-          } else {
-
           }
         });
+      }
+
+      public void doClose(Status status, Metadata trailers) {
+        Runnable cmd = () -> {
+          listener.onClose(status, trailers);
+        };
+        if (exec == null) {
+          cmd.run();
+        } else {
+          exec.execute(cmd);
+        }
       }
 
       @Override
@@ -148,7 +166,7 @@ public class GrpcClientChannel extends io.grpc.Channel {
       @Override
       public void cancel(@Nullable String message, @Nullable Throwable cause) {
         fut.onSuccess(req -> {
-          req.reset();
+          req.cancel();
         });
       }
 

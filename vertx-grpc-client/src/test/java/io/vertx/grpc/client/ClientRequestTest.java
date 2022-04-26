@@ -21,15 +21,18 @@ import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.StreamResetException;
 import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcStatus;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -264,6 +267,25 @@ public class ClientRequestTest extends ClientTestBase {
       }));
   }
 
+  @Override
+  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
+
+    super.testClientStreamingCompletedBeforeHalfClose(should);
+
+    Async done = should.async();
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getSinkMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.response().onComplete(should.asyncAssertFailure(failure -> {
+          should.assertEquals(StreamResetException.class, failure.getClass());
+          StreamResetException reset = (StreamResetException) failure;
+          should.assertEquals(8L, reset.getCode());
+          done.complete();
+        }));
+        callRequest.write(Item.newBuilder().setValue("the-value").build());
+      }));
+  }
+
   @Test
   public void testBidiStreaming(TestContext should) throws Exception {
 
@@ -299,9 +321,27 @@ public class ClientRequestTest extends ClientTestBase {
   }
 
   @Test
-  public void testReset(TestContext should) throws Exception {
+  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
 
-    super.testReset(should);
+    super.testBidiStreamingCompletedBeforeHalfClose(should);
+
+    Async done = should.async();
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getPipeMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.write(Item.newBuilder().setValue("the-value").build());
+        callRequest.response().onComplete(should.asyncAssertSuccess(resp -> {
+          resp.endHandler(v -> {
+            done.complete();
+          });
+        }));
+      }));
+  }
+
+  @Test
+  public void testFail(TestContext should) throws Exception {
+
+    super.testFail(should);
 
     GrpcClient client = GrpcClient.client(vertx);
     client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getPipeMethod())
@@ -311,7 +351,7 @@ public class ClientRequestTest extends ClientTestBase {
           AtomicInteger count = new AtomicInteger();
           resp.handler(item -> {
             if (count.getAndIncrement() == 0) {
-              callRequest.reset();
+              callRequest.cancel();
             }
           });
         }));
@@ -345,6 +385,30 @@ public class ClientRequestTest extends ClientTestBase {
           });
         }));
         callRequest.end(HelloRequest.newBuilder().setName("Julien").build());
+      }));
+  }
+
+  @Test
+  public void testSendResetWhenCompletedBeforeHalfClosed(TestContext should) throws Exception {
+    Async test = should.async();
+    vertx.createHttpServer().requestHandler(req -> {
+      req.response()
+        .putHeader("grpc-status", "" + GrpcStatus.OK.code)
+        .end();
+      req.exceptionHandler(err -> {
+        if (err instanceof StreamResetException) {
+          test.complete();
+        }
+      });
+    }).listen(8080, "localhost")
+      .toCompletionStage()
+      .toCompletableFuture()
+      .get(20, TimeUnit.SECONDS);
+
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), GreeterGrpc.getSayHelloMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.write(HelloRequest.newBuilder().setName("Julien").build());
       }));
   }
 }
