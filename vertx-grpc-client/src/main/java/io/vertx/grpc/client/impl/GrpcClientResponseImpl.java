@@ -16,6 +16,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientResponse;
 
 import io.vertx.grpc.client.GrpcClientResponse;
+import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.MessageDecoder;
@@ -131,7 +132,12 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
             abc = msg;
             break;
           case "gzip": {
-            abc = GrpcMessage.message("identity", MessageDecoder.GZIP.decode(msg));
+            try {
+              abc = GrpcMessage.message("identity", MessageDecoder.GZIP.decode(msg));
+            } catch (CodecException e) {
+              request.cancel();
+              return ;
+            }
             break;
           }
           default:

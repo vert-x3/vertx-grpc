@@ -10,6 +10,7 @@
  */
 package io.vertx.grpc.server;
 
+import io.grpc.ManagedChannel;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.unit.TestContext;
@@ -30,6 +31,16 @@ import java.util.concurrent.TimeoutException;
  */
 @RunWith(VertxUnitRunner.class)
 public abstract class ServerTestBase extends GrpcTestBase {
+
+  protected volatile ManagedChannel channel;
+
+  @Override
+  public void tearDown(TestContext should) {
+    if (channel != null) {
+      channel.shutdown();
+    }
+    super.tearDown(should);
+  }
 
   protected void startServer(GrpcServer server) {
     startServer(new HttpServerOptions().setPort(8080).setHost("localhost"), server);

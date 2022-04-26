@@ -49,16 +49,6 @@ public abstract class ServerTest extends ServerTestBase {
 
   static final int NUM_ITEMS = 128;
 
-  protected volatile ManagedChannel channel;
-
-  @Override
-  public void tearDown(TestContext should) {
-    if (channel != null) {
-      channel.shutdown();
-    }
-    super.tearDown(should);
-  }
-
   @Test
   public void testUnary(TestContext should) {
     testUnary(should, "identity", "identity");

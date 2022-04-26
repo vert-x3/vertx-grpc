@@ -47,4 +47,9 @@ public interface GrpcServerResponse<Req, Resp> extends GrpcWriteStream<Resp> {
   @Override
   GrpcServerResponse<Req, Resp> drainHandler(@Nullable Handler<Void> handler);
 
+  /**
+   * Cancel the stream.
+   */
+  void cancel();
+
 }

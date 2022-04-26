@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
+import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.MessageDecoder;
@@ -138,6 +139,29 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   private Future<Void> writeMessage(GrpcMessage message, boolean end) {
+
+    if (encoding != null && !encoding.equals(message.encoding())) {
+      switch (encoding) {
+        case "gzip":
+          message = MessageEncoder.GZIP.encode(message.payload());
+          break;
+        case "identity":
+          if (!message.encoding().equals("identity")) {
+            if (!message.encoding().equals("gzip")) {
+              return Future.failedFuture("Encoding " + message.encoding() + " is not supported");
+            }
+            Buffer decoded;
+            try {
+              decoded = MessageDecoder.GZIP.decode(message);
+            } catch (CodecException e) {
+              return Future.failedFuture(e);
+            }
+            message = GrpcMessage.message("identity", decoded);
+          }
+          break;
+      }
+    }
+
     if (!headersSent) {
       ServiceName serviceName = this.serviceName;
       String methodName = this.methodName;
@@ -167,23 +191,6 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
       httpRequest.setChunked(true);
       httpRequest.setURI(uri);
       headersSent = true;
-    }
-
-    if (encoding != null && !encoding.equals(message.encoding())) {
-      switch (encoding) {
-        case "gzip":
-          message = MessageEncoder.GZIP.encode(message.payload());
-          break;
-        case "identity":
-          if (!message.encoding().equals("identity")) {
-            if (!message.encoding().equals("gzip")) {
-              throw new UnsupportedOperationException("Not implemented");
-            }
-            Buffer decoded = MessageDecoder.GZIP.decode(message);
-            message = GrpcMessage.message("identity", decoded);
-          }
-          break;
-      }
     }
 
     if (end) {

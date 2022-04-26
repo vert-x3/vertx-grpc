@@ -16,6 +16,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
@@ -125,6 +126,11 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
     return this;
   }
 
+  @Override
+  public void cancel() {
+    httpResponse.reset(GrpcError.CANCELLED.http2ResetCode);
+  }
+
   private Future<Void> writeMessage(GrpcMessage message, boolean end) {
     MultiMap responseHeaders = httpResponse.headers();
     if (!headersSent) {
@@ -154,9 +160,14 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
         case "identity":
           if (!message.encoding().equals("identity")) {
             if (!message.encoding().equals("gzip")) {
-              throw new UnsupportedOperationException("Not implemented");
+              return Future.failedFuture("Encoding " + message.encoding() + " is not supported");
             }
-            Buffer decoded = MessageDecoder.GZIP.decode(message);
+            Buffer decoded;
+            try {
+              decoded = MessageDecoder.GZIP.decode(message);
+            } catch (CodecException e) {
+              return Future.failedFuture(e);
+            }
             message = GrpcMessage.message("identity", decoded);
           }
           break;
