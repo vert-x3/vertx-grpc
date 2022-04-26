@@ -84,6 +84,13 @@
 
     <dependency>
       <groupId>io.vertx</groupId>
+      <artifactId>vertx-grpc-common</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <version>4.3.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
       <artifactId>vertx-unit</artifactId>
       <scope>test</scope>
     </dependency>

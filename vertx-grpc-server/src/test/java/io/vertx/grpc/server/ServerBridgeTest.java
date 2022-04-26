@@ -30,7 +30,6 @@ import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.common.GrpcError;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ServerBridgeTest extends ServerTestBase {
+public class ServerBridgeTest extends ServerTest {
 
   @Override
   protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) {

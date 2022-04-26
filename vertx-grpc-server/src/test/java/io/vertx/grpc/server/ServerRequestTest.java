@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ServerRequestTest extends ServerTestBase {
+public class ServerRequestTest extends ServerTest {
 
   @Override
   protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) {

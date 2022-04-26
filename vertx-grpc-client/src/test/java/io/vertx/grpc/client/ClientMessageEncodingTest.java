@@ -18,48 +18,15 @@ import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcStatus;
-import io.vertx.grpc.common.MessageDecoder;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ClientMessageEncodingTest extends GrpcTestBase {
-
-  private static Buffer unzip(Buffer buffer) {
-    Buffer ret = Buffer.buffer();
-    try {
-    GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(buffer.getBytes()));
-    byte[] tmp = new byte[256];
-    for (int l = 0;l != -1;l = in.read(tmp)) {
-      ret.appendBytes(tmp, 0, l);
-    }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return ret;
-  }
-
-  private static Buffer zip(Buffer buffer) {
-    ByteArrayOutputStream ret = new ByteArrayOutputStream();
-    try {
-      GZIPOutputStream in = new GZIPOutputStream(ret);
-      in.write(buffer.getBytes());
-      in.flush();
-      in.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return Buffer.buffer(ret.toByteArray());
-  }
+public class ClientMessageEncodingTest extends ClientTestBase {
 
   @Test
   public void testZipRequestCompress(TestContext should) throws Exception {

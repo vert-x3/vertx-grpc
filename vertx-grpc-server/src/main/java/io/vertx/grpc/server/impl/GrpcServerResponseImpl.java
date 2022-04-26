@@ -146,7 +146,7 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
       }
     }
 
-    if (encoding != null && message != null && encoding.equals(message.encoding())) {
+    if (encoding != null && message != null && !encoding.equals(message.encoding())) {
       switch (encoding) {
         case "gzip":
           message = MessageEncoder.GZIP.encode(message.payload());

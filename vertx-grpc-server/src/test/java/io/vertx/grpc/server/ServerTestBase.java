@@ -10,310 +10,56 @@
  */
 package io.vertx.grpc.server;
 
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ClientInterceptors;
-import io.grpc.ForwardingClientCall;
-import io.grpc.ForwardingClientCallListener;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import io.grpc.Metadata;
-import io.grpc.MethodDescriptor;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.grpc.examples.helloworld.GreeterGrpc;
-import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.examples.streaming.Empty;
-import io.grpc.examples.streaming.Item;
-import io.grpc.examples.streaming.StreamingGrpc;
-import io.grpc.stub.ClientCallStreamObserver;
-import io.grpc.stub.StreamObserver;
-import io.vertx.ext.unit.Async;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.unit.TestContext;
-import org.junit.Test;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.grpc.common.GrpcTestBase;
+import junit.framework.AssertionFailedError;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
+@RunWith(VertxUnitRunner.class)
 public abstract class ServerTestBase extends GrpcTestBase {
 
-  static final int NUM_ITEMS = 128;
-
-  protected volatile ManagedChannel channel;
-
-  @Override
-  public void tearDown(TestContext should) {
-    if (channel != null) {
-      channel.shutdown();
-    }
-    super.tearDown(should);
+  protected void startServer(GrpcServer server) {
+    startServer(new HttpServerOptions().setPort(8080).setHost("localhost"), server);
   }
 
-  @Test
-  public void testUnary(TestContext should) {
-    testUnary(should, "identity", "identity");
-  }
-
-  @Test
-  public void testUnaryDecompression(TestContext should) {
-    testUnary(should, "gzip", "identity");
-  }
-
-  @Test
-  public void testUnaryCompression(TestContext should) {
-    testUnary(should, "identity", "gzip");
-  }
-
-  protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-
-    AtomicReference<String> responseGrpcEncoding = new AtomicReference<>();
-    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(ClientInterceptors.intercept(channel, new ClientInterceptor() {
-        @Override
-        public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
-          return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
-            @Override
-            public void start(Listener<RespT> responseListener, Metadata headers) {
-              super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
-                @Override
-                public void onHeaders(Metadata headers) {
-                  responseGrpcEncoding.set(headers.get(Metadata.Key.of("grpc-encoding", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
-                  super.onHeaders(headers);
-                }
-              }, headers);
-            }
-          };
+  protected void startServer(HttpServerOptions options, GrpcServer server) {
+    CompletableFuture<Void> res = new CompletableFuture<>();
+    vertx.createHttpServer(options).requestHandler(server).listen()
+      .onComplete(ar -> {
+        if (ar.succeeded()) {
+          res.complete(null);
+        } else {
+          res.completeExceptionally(ar.cause());
         }
-      }))
-      .withCompression(requestEncoding);
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    HelloReply res = stub.sayHello(request);
-    should.assertEquals("Hello Julien", res.getMessage());
-    if (!responseEncoding.equals("identity")) {
-      should.assertEquals(responseEncoding, responseGrpcEncoding.get());
-    }
-  }
-
-  @Test
-  public void testStatus(TestContext should) {
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    channel = ManagedChannelBuilder.forAddress( "localhost", port)
-      .usePlaintext()
-      .build();
-    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
+      });
     try {
-      stub.sayHello(request);
-    } catch (StatusRuntimeException e) {
-      should.assertEquals(Status.UNAVAILABLE, e.getStatus());
+      res.get(20, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      AssertionFailedError afe = new AssertionFailedError();
+      afe.initCause(e);
+      throw afe;
+    } catch (ExecutionException e) {
+      AssertionFailedError afe = new AssertionFailedError();
+      afe.initCause(e.getCause());
+      throw afe;
+    } catch (TimeoutException e) {
+      AssertionFailedError afe = new AssertionFailedError();
+      afe.initCause(e);
+      throw afe;
     }
-  }
-
-  @Test
-  public void testServerStreaming(TestContext should) {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingBlockingStub stub = StreamingGrpc.newBlockingStub(channel);
-
-    List<String> items = new ArrayList<>();
-    stub.source(Empty.newBuilder().build()).forEachRemaining(item -> items.add(item.getValue()));
-    List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-    should.assertEquals(expected, items);
-  }
-
-  @Test
-  public void testClientStreaming(TestContext should) throws Exception {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async test = should.async();
-    StreamObserver<Item> items = stub.sink(new StreamObserver<Empty>() {
-      @Override
-      public void onNext(Empty value) {
-      }
-      @Override
-      public void onError(Throwable t) {
-        should.fail(t);
-      }
-      @Override
-      public void onCompleted() {
-        test.complete();
-      }
-    });
-    for (int i = 0; i < NUM_ITEMS; i++) {
-      items.onNext(Item.newBuilder().setValue("the-value-" + i).build());
-      Thread.sleep(10);
-    }
-    items.onCompleted();
-  }
-
-  @Test
-  public void testClientStreamingCompletedBeforeHalfClose(TestContext should) {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async test = should.async();
-    StreamObserver<Item> items = stub.sink(new StreamObserver<Empty>() {
-      @Override
-      public void onNext(Empty value) {
-        should.fail();
-      }
-      @Override
-      public void onError(Throwable t) {
-        test.complete();
-      }
-      @Override
-      public void onCompleted() {
-        should.fail();
-      }
-    });
-    items.onNext(Item.newBuilder().setValue("the-value").build());
-  }
-
-  @Test
-  public void testBidiStreaming(TestContext should) throws Exception {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async test = should.async();
-    List<String> items = new ArrayList<>();
-    StreamObserver<Item> writer = stub.pipe(new StreamObserver<Item>() {
-      @Override
-      public void onNext(Item item) {
-        items.add(item.getValue());
-      }
-      @Override
-      public void onError(Throwable t) {
-        should.fail(t);
-      }
-      @Override
-      public void onCompleted() {
-        test.complete();
-      }
-    });
-    for (int i = 0; i < NUM_ITEMS; i++) {
-      writer.onNext(Item.newBuilder().setValue("the-value-" + i).build());
-      Thread.sleep(10);
-    }
-    writer.onCompleted();
-    test.awaitSuccess(20_000);
-    List<String> expected = IntStream.rangeClosed(0, NUM_ITEMS - 1).mapToObj(val -> "the-value-" + val).collect(Collectors.toList());
-    should.assertEquals(expected, items);
-  }
-
-  @Test
-  public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async test = should.async();
-    StreamObserver<Item> writer = stub.pipe(new StreamObserver<Item>() {
-      @Override
-      public void onNext(Item item) {
-        should.fail();
-      }
-      @Override
-      public void onError(Throwable t) {
-        should.fail(t);
-      }
-      @Override
-      public void onCompleted() {
-        test.complete();
-      }
-    });
-    writer.onNext(Item.newBuilder().setValue("the-value").build());
-  }
-
-  protected AtomicInteger testMetadataStep;
-
-  @Test
-  public void testMetadata(TestContext should) {
-
-    testMetadataStep = new AtomicInteger();
-
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-
-    ClientInterceptor interceptor = new ClientInterceptor() {
-      @Override
-      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
-        return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
-          @Override
-          public void start(Listener<RespT> responseListener, Metadata headers) {
-            headers.put(Metadata.Key.of("custom_request_header", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_request_header_value");
-            super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
-              @Override
-              public void onHeaders(Metadata headers) {
-                should.assertEquals("custom_response_header_value", headers.get(Metadata.Key.of("custom_response_header", Metadata.ASCII_STRING_MARSHALLER)));
-                should.assertEquals(3, testMetadataStep.getAndIncrement());
-                super.onHeaders(headers);
-              }
-              @Override
-              public void onClose(Status status, Metadata trailers) {
-                // should.assertEquals("custom_response_trailer_value", trailers.get(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER)));
-                should.assertEquals(4, testMetadataStep.getAndIncrement());
-                super.onClose(status, trailers);
-              }
-            }, headers);
-          }
-        };
-      }
-    };
-
-    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(ClientInterceptors.intercept(channel, interceptor));
-    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
-    HelloReply res = stub.sayHello(request);
-    should.assertEquals("Hello Julien", res.getMessage());
-
-    should.assertEquals(5, testMetadataStep.get());
-  }
-
-  @Test
-  public void testHandleReset(TestContext should) {
-    channel = ManagedChannelBuilder.forAddress("localhost", port)
-      .usePlaintext()
-      .build();
-    StreamingGrpc.StreamingStub stub = StreamingGrpc.newStub(channel);
-
-    Async latch = should.async();
-    ClientCallStreamObserver<Item> items = (ClientCallStreamObserver<Item>) stub.pipe(new StreamObserver<Item>() {
-      AtomicInteger count = new AtomicInteger();
-      @Override
-      public void onNext(Item value) {
-        if (count.getAndIncrement() == 0) {
-          latch.complete();
-        }
-      }
-      @Override
-      public void onError(Throwable t) {
-      }
-      @Override
-      public void onCompleted() {
-      }
-    });
-    items.onNext(Item.newBuilder().setValue("the-value").build());
-    latch.awaitSuccess(10_000);
-    items.cancel("cancelled", new Exception());
   }
 }

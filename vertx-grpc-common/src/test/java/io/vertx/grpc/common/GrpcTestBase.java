@@ -8,20 +8,21 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-package io.vertx.grpc.client;
+package io.vertx.grpc.common;
 
-import io.grpc.BindableService;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import io.grpc.ServerServiceDefinition;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -30,9 +31,8 @@ import java.io.IOException;
 public abstract class GrpcTestBase {
 
   /* The port on which the server should run */
-  Vertx vertx;
-  int port;
-  protected Server server;
+  protected Vertx vertx;
+  protected int port;
 
   @Before
   public void setUp() {
@@ -42,34 +42,33 @@ public abstract class GrpcTestBase {
 
   @After
   public void tearDown(TestContext should) {
-    Server s = server;
-    if (s != null) {
-      server = null;
-      s.shutdown();
-    }
     vertx.close(should.asyncAssertSuccess());
   }
 
-  void startServer(BindableService service) throws IOException {
-    startServer(service, ServerBuilder.forPort(port));
+  public static Buffer unzip(Buffer buffer) {
+    Buffer ret = Buffer.buffer();
+    try {
+      GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(buffer.getBytes()));
+      byte[] tmp = new byte[256];
+      for (int l = 0;l != -1;l = in.read(tmp)) {
+        ret.appendBytes(tmp, 0, l);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return ret;
   }
 
-  void startServer(BindableService service, ServerBuilder builder) throws IOException {
-    server = builder
-        .addService(service)
-        .build()
-        .start();
-  }
-
-
-  void startServer(ServerServiceDefinition service) throws IOException {
-    startServer(service, ServerBuilder.forPort(port));
-  }
-
-  void startServer(ServerServiceDefinition service, ServerBuilder builder) throws IOException {
-    server = builder
-      .addService(service)
-      .build()
-      .start();
+  public static Buffer zip(Buffer buffer) {
+    ByteArrayOutputStream ret = new ByteArrayOutputStream();
+    try {
+      GZIPOutputStream in = new GZIPOutputStream(ret);
+      in.write(buffer.getBytes());
+      in.flush();
+      in.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return Buffer.buffer(ret.toByteArray());
   }
 }

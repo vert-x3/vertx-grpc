@@ -26,7 +26,6 @@ import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcStatus;
 import org.junit.Test;
 
@@ -38,7 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ClientRequestTest extends ClientTestBase {
+public class ClientRequestTest extends ClientTest {
 
   protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) throws IOException {
 
