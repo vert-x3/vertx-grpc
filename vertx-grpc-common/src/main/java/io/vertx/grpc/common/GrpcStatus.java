@@ -15,6 +15,8 @@ import io.netty.util.collection.IntObjectMap;
 import io.vertx.codegen.annotations.VertxGen;
 
 /**
+ * gRPC statuses.
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 @VertxGen

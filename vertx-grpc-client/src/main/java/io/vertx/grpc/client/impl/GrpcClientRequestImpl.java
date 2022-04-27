@@ -25,8 +25,8 @@ import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
-import io.vertx.grpc.common.MessageDecoder;
-import io.vertx.grpc.common.MessageEncoder;
+import io.vertx.grpc.common.GrpcMessageDecoder;
+import io.vertx.grpc.common.GrpcMessageEncoder;
 import io.vertx.grpc.common.ServiceName;
 import io.vertx.grpc.common.impl.GrpcMessageImpl;
 
@@ -36,7 +36,7 @@ import io.vertx.grpc.common.impl.GrpcMessageImpl;
 public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, Resp> {
 
   private final HttpClientRequest httpRequest;
-  private final MessageEncoder<Req> messageEncoder;
+  private final GrpcMessageEncoder<Req> messageEncoder;
   private ServiceName serviceName;
   private String methodName;
   private String encoding = null;
@@ -46,7 +46,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   private Future<GrpcClientResponse<Req, Resp>> response;
   private MultiMap headers;
 
-  public GrpcClientRequestImpl(HttpClientRequest httpRequest, MessageEncoder<Req> messageEncoder, MessageDecoder<Resp> messageDecoder) {
+  public GrpcClientRequestImpl(HttpClientRequest httpRequest, GrpcMessageEncoder<Req> messageEncoder, GrpcMessageDecoder<Resp> messageDecoder) {
 
     this.httpRequest = httpRequest;
     this.messageEncoder = messageEncoder;
@@ -146,7 +146,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
     if (encoding != null && !encoding.equals(message.encoding())) {
       switch (encoding) {
         case "gzip":
-          message = MessageEncoder.GZIP.encode(message.payload());
+          message = GrpcMessageEncoder.GZIP.encode(message.payload());
           break;
         case "identity":
           if (!message.encoding().equals("identity")) {
@@ -155,7 +155,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
             }
             Buffer decoded;
             try {
-              decoded = MessageDecoder.GZIP.decode(message);
+              decoded = GrpcMessageDecoder.GZIP.decode(message);
             } catch (CodecException e) {
               return Future.failedFuture(e);
             }

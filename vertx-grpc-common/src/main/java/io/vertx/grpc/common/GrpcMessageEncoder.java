@@ -20,16 +20,16 @@ import java.io.InputStream;
 import java.util.Queue;
 
 @VertxGen
-public interface MessageEncoder<T> {
+public interface GrpcMessageEncoder<T> {
 
-  MessageEncoder<Buffer> IDENTITY = new MessageEncoder<Buffer>() {
+  GrpcMessageEncoder<Buffer> IDENTITY = new GrpcMessageEncoder<Buffer>() {
     @Override
     public GrpcMessage encode(Buffer payload) {
       return GrpcMessage.message("identity", payload);
     }
   };
 
-  MessageEncoder<Buffer> GZIP = new MessageEncoder<Buffer>() {
+  GrpcMessageEncoder<Buffer> GZIP = new GrpcMessageEncoder<Buffer>() {
     @Override
     public GrpcMessage encode(Buffer payload) {
       CompositeByteBuf composite = Unpooled.compositeBuffer();
@@ -49,8 +49,8 @@ public interface MessageEncoder<T> {
   };
 
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  static <T> MessageEncoder<T> marshaller(MethodDescriptor.Marshaller<T> desc) {
-    return new MessageEncoder<T>() {
+  static <T> GrpcMessageEncoder<T> marshaller(MethodDescriptor.Marshaller<T> desc) {
+    return new GrpcMessageEncoder<T>() {
       @Override
       public GrpcMessage encode(T msg) {
         Buffer encoded = Buffer.buffer();

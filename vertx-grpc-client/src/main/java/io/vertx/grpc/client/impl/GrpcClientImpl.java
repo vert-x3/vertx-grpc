@@ -22,8 +22,8 @@ import io.vertx.core.http.RequestOptions;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.grpc.client.GrpcClient;
 import io.vertx.grpc.client.GrpcClientRequest;
-import io.vertx.grpc.common.MessageDecoder;
-import io.vertx.grpc.common.MessageEncoder;
+import io.vertx.grpc.common.GrpcMessageDecoder;
+import io.vertx.grpc.common.GrpcMessageEncoder;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -48,15 +48,15 @@ public class GrpcClientImpl implements GrpcClient {
       .setMethod(HttpMethod.POST)
       .setServer(server);
     return client.request(options)
-      .map(request -> new GrpcClientRequestImpl<>(request, MessageEncoder.IDENTITY, MessageDecoder.IDENTITY));
+      .map(request -> new GrpcClientRequestImpl<>(request, GrpcMessageEncoder.IDENTITY, GrpcMessageDecoder.IDENTITY));
   }
 
   @Override public <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> method) {
     RequestOptions options = new RequestOptions()
       .setMethod(HttpMethod.POST)
       .setServer(server);
-    MessageDecoder<Resp> messageDecoder = MessageDecoder.unmarshaller(method.getResponseMarshaller());
-    MessageEncoder<Req> messageEncoder = MessageEncoder.marshaller(method.getRequestMarshaller());
+    GrpcMessageDecoder<Resp> messageDecoder = GrpcMessageDecoder.unmarshaller(method.getResponseMarshaller());
+    GrpcMessageEncoder<Req> messageEncoder = GrpcMessageEncoder.marshaller(method.getRequestMarshaller());
     return client.request(options)
       .map(request -> {
         GrpcClientRequestImpl<Req, Resp> call = new GrpcClientRequestImpl<>(request, messageEncoder, messageDecoder);

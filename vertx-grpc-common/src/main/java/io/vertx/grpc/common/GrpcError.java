@@ -13,7 +13,7 @@ package io.vertx.grpc.common;
 import io.vertx.codegen.annotations.VertxGen;
 
 /**
- * gRPC error.
+ * gRPC error, a subset of {@link GrpcStatus} elements.
  */
 @VertxGen
 public enum GrpcError {

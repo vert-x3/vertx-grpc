@@ -12,14 +12,13 @@ package io.vertx.grpc.common.impl;
 
 import io.grpc.Decompressor;
 import io.grpc.MethodDescriptor;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.grpc.common.GrpcMessage;
-import io.vertx.grpc.common.MessageDecoder;
+import io.vertx.grpc.common.GrpcMessageDecoder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-public class BridgeMessageDecoder<T> implements MessageDecoder<T> {
+public class BridgeMessageDecoder<T> implements GrpcMessageDecoder<T> {
 
   private MethodDescriptor.Marshaller<T> marshaller;
   private Decompressor decompressor;

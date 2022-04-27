@@ -21,11 +21,12 @@ import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.buffer.Buffer;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 
 @VertxGen
-public interface MessageDecoder<T> {
+public interface GrpcMessageDecoder<T> {
 
-  MessageDecoder<Buffer> IDENTITY = new MessageDecoder<Buffer>() {
+  GrpcMessageDecoder<Buffer> IDENTITY = new GrpcMessageDecoder<Buffer>() {
     @Override
     public Buffer decode(GrpcMessage msg) {
       return msg.payload();
@@ -33,7 +34,7 @@ public interface MessageDecoder<T> {
   };
 
 
-  MessageDecoder<Buffer> GZIP = new MessageDecoder<Buffer>() {
+  GrpcMessageDecoder<Buffer> GZIP = new GrpcMessageDecoder<Buffer>() {
     @Override
     public Buffer decode(GrpcMessage msg) throws CodecException {
       EmbeddedChannel channel = new EmbeddedChannel(ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
@@ -66,13 +67,19 @@ public interface MessageDecoder<T> {
   };
 
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
-  static <T> MessageDecoder<T> unmarshaller(MethodDescriptor.Marshaller<T> desc) {
-    return new MessageDecoder<T>() {
+  static <T> GrpcMessageDecoder<T> unmarshaller(MethodDescriptor.Marshaller<T> desc) {
+    return new GrpcMessageDecoder<T>() {
       @Override
       public T decode(GrpcMessage msg) {
         ByteArrayInputStream in = new ByteArrayInputStream(msg.payload().getBytes());
-        T data = desc.parse(in);
-        return data;
+        try {
+          return desc.parse(in);
+        } finally {
+          try {
+            in.close();
+          } catch (IOException ignore) {
+          }
+        }
       }
     };
   }

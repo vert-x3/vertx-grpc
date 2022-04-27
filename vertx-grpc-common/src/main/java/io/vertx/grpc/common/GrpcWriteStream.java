@@ -17,7 +17,9 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
   MultiMap headers();
 
   /**
-   * Set the stream encoding, it must be called before sending any message.
+   * Set the stream encoding, e.g {@code identity} or {@code gzip}.
+   *
+   * It must be called before sending any message, otherwise {@code identity will be used.
    *
    * @param encoding the target message encoding
    * @return a reference to this, so the API can be used fluently
@@ -34,10 +36,6 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
   @Override
   GrpcWriteStream<T> drainHandler(@Nullable Handler<Void> handler);
 
-  Future<Void> write(T message);
-
-  Future<Void> end(T message);
-
   /**
    * Write an encoded gRPC message.
    *
@@ -53,4 +51,9 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
    * @return a future completed with the result
    */
   Future<Void> endMessage(GrpcMessage message);
+
+  /**
+   * Cancel the stream.
+   */
+  void cancel();
 }

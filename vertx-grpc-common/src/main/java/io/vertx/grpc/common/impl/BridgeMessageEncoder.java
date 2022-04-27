@@ -15,13 +15,13 @@ import io.grpc.Drainable;
 import io.grpc.MethodDescriptor;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.grpc.common.GrpcMessage;
-import io.vertx.grpc.common.MessageEncoder;
+import io.vertx.grpc.common.GrpcMessageEncoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class BridgeMessageEncoder<T> implements MessageEncoder<T> {
+public class BridgeMessageEncoder<T> implements GrpcMessageEncoder<T> {
 
   private MethodDescriptor.Marshaller<T> marshaller;
   private Compressor compressor;

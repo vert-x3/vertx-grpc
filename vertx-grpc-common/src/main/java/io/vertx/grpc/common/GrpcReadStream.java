@@ -17,13 +17,13 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
   MultiMap headers();
 
   /**
-   * @return the stream encoding
+   * @return the stream encoding, e.g {@code identity} or {@code gzip}
    */
   String encoding();
 
   /**
    * Set a handler to be notified with incoming encoded messages. The {@code handler} is
-   * responsible for fully decoding incoming messages.
+   * responsible for fully decoding incoming messages, including compression.
    *
    * @param handler the message handler
    * @return a reference to this, so the API can be used fluently

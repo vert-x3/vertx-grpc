@@ -19,9 +19,11 @@ import io.vertx.core.streams.impl.InboundBuffer;
 import io.vertx.grpc.common.GrpcMessage;
 
 /**
+ * Transforms {@code Buffer} into a stream of {@link GrpcMessage}
+ *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public abstract class GrpcMessageDecoder implements Handler<Buffer> {
+public abstract class GrpcMessageAdapter implements Handler<Buffer> {
 
   static final GrpcMessage END_SENTINEL = new GrpcMessage() {
     @Override
@@ -34,13 +36,13 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
     }
   };
 
-  private final String compression;
+  private final String encoding;
   private final ReadStream<Buffer> stream;
   private final InboundBuffer<GrpcMessage> queue;
   private Buffer buffer;
 
-  protected GrpcMessageDecoder(Context context, ReadStream<Buffer> stream, String compression) {
-    this.compression = compression;
+  protected GrpcMessageAdapter(Context context, ReadStream<Buffer> stream, String encoding) {
+    this.encoding = encoding;
     this.stream = stream;
     this.queue = new InboundBuffer<>(context);
   }
@@ -65,18 +67,6 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
     });
   }
 
-  protected void handleReset(long code) {
-  }
-
-  protected void handleException(Throwable err) {
-  }
-
-  protected void handleEnd() {
-  }
-
-  protected void handleMessage(GrpcMessage msg) {
-  }
-
   @Override
   public void handle(Buffer chunk) {
     if (buffer == null) {
@@ -89,11 +79,11 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
     int len;
     while (idx + 5 <= buffer.length() && (idx + 5 + (len = buffer.getInt(idx + 1)))<= buffer.length()) {
       boolean compressed = buffer.getByte(idx) == 1;
-      if (compressed && compression == null) {
+      if (compressed && encoding == null) {
         throw new UnsupportedOperationException("Handle me");
       }
       Buffer payload = buffer.slice(idx + 5, idx + 5 + len);
-      GrpcMessage message = GrpcMessage.message(compressed ? compression : "identity", payload);
+      GrpcMessage message = GrpcMessage.message(compressed ? encoding : "identity", payload);
       pause |= !queue.write(message);
       idx += 5 + len;
     }
@@ -107,18 +97,30 @@ public abstract class GrpcMessageDecoder implements Handler<Buffer> {
     }
   }
 
-  public GrpcMessageDecoder pause() {
+  public GrpcMessageAdapter pause() {
     queue.pause();
     return this;
   }
 
-  public GrpcMessageDecoder resume() {
+  public GrpcMessageAdapter resume() {
     queue.resume();
     return this;
   }
 
-  public GrpcMessageDecoder fetch(long amount) {
+  public GrpcMessageAdapter fetch(long amount) {
     queue.fetch(amount);
     return this;
+  }
+
+  protected void handleReset(long code) {
+  }
+
+  protected void handleException(Throwable err) {
+  }
+
+  protected void handleEnd() {
+  }
+
+  protected void handleMessage(GrpcMessage msg) {
   }
 }

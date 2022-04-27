@@ -19,8 +19,8 @@ import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
-import io.vertx.grpc.common.MessageDecoder;
-import io.vertx.grpc.common.impl.GrpcMessageDecoder;
+import io.vertx.grpc.common.GrpcMessageDecoder;
+import io.vertx.grpc.common.impl.GrpcMessageAdapter;
 import io.vertx.grpc.common.GrpcStatus;
 
 import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
@@ -28,18 +28,18 @@ import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implements GrpcClientResponse<Req, Resp> {
+public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageAdapter implements GrpcClientResponse<Req, Resp> {
 
   private final GrpcClientRequestImpl<Req, Resp> request;
   private final HttpClientResponse httpResponse;
-  private MessageDecoder<Resp> messageDecoder;
+  private GrpcMessageDecoder<Resp> messageDecoder;
   private GrpcStatus status;
   private Handler<GrpcMessage> messageHandler;
   private Handler<GrpcError> errorHandler;
   private Handler<Void> endHandler;
   private String encoding;
 
-  public GrpcClientResponseImpl(GrpcClientRequestImpl<Req, Resp> request, HttpClientResponse httpResponse, MessageDecoder<Resp> messageDecoder) {
+  public GrpcClientResponseImpl(GrpcClientRequestImpl<Req, Resp> request, HttpClientResponse httpResponse, GrpcMessageDecoder<Resp> messageDecoder) {
     super(Vertx.currentContext(), httpResponse, httpResponse.headers().get("grpc-encoding")); // A bit ugly
     this.request = request;
     this.encoding = httpResponse.headers().get("grpc-encoding");
@@ -133,7 +133,7 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
             break;
           case "gzip": {
             try {
-              abc = GrpcMessage.message("identity", MessageDecoder.GZIP.decode(msg));
+              abc = GrpcMessage.message("identity", GrpcMessageDecoder.GZIP.decode(msg));
             } catch (CodecException e) {
               request.cancel();
               return ;

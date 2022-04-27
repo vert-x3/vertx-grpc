@@ -31,7 +31,7 @@ public class ServiceNameImpl implements ServiceName {
   public String name() {
     if (name == null) {
       int idx = fullyQualifiedName.lastIndexOf('.');
-      name = fullyQualifiedName.substring(idx);
+      name = fullyQualifiedName.substring(idx + 1);
     }
     return name;
   }
@@ -50,15 +50,15 @@ public class ServiceNameImpl implements ServiceName {
     if (fullyQualifiedName == null) {
       fullyQualifiedName = packageName + '.' + name;
     }
-    return packageName;
+    return fullyQualifiedName;
   }
 
   @Override
-  public String pathOf(String methodName) {
+  public String pathOf(String method) {
     if (fullyQualifiedName != null) {
-      return '/' + fullyQualifiedName + '/' + methodName;
+      return '/' + fullyQualifiedName + '/' + method;
     } else {
-      return '/' + packageName + '.' + name + '/' + methodName;
+      return '/' + packageName + '.' + name + '/' + method;
     }
   }
 }

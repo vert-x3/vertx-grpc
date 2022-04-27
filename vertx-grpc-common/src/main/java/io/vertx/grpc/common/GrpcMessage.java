@@ -22,6 +22,9 @@ import io.vertx.grpc.common.impl.GrpcMessageImpl;
 @VertxGen
 public interface GrpcMessage {
 
+  /**
+   * @return a new message
+   */
   static GrpcMessage message(String encoding, Buffer payload) {
     return new GrpcMessageImpl(encoding, payload);
   }
@@ -32,7 +35,7 @@ public interface GrpcMessage {
   String encoding();
 
   /**
-   * @return the message payload
+   * @return the message payload, usually in Protobuf format encoded in the {@link #encoding()} format
    */
   Buffer payload();
 

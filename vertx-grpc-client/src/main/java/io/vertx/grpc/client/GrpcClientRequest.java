@@ -13,19 +13,15 @@ package io.vertx.grpc.client;
 import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.MultiMap;
-import io.vertx.core.streams.WriteStream;
-import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcWriteStream;
 import io.vertx.grpc.common.ServiceName;
 
 /**
  * A request to a gRPC server.
  *
- * <p>You interact with the remote service with Protobuf encoded messages.
+ * <p>You interact with the remote service with gRPC generated messages or protobuf encoded messages.
  *
  * <p>Before sending a request you need to set {@link #serviceName)} and {@link #methodName)} or
  * alternatively the service {@link #fullMethodName}.
@@ -78,7 +74,7 @@ public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
   GrpcClientRequest<Req, Resp> methodName(String methodName);
 
   /**
-   * @return the grpc response
+   * @return the gRPC response
    */
   @CacheReturn
   Future<GrpcClientResponse<Req, Resp>> response();
@@ -91,11 +87,5 @@ public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
 
   @Override
   GrpcClientRequest<Req, Resp> drainHandler(Handler<Void> handler);
-
-  /**
-   * Cancel the stream.
-   */
-  void cancel();
-
 
 }

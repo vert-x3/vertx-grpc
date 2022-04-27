@@ -14,26 +14,56 @@ import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.grpc.common.impl.ServiceNameImpl;
 
+/**
+ * A gRPC service name.
+ */
 @VertxGen
 public interface ServiceName {
 
+  /**
+   * Create a service name from its fully qualified name, e.g {@code com.examples.MyService}
+   *
+   * @param fqn the fully qualified service name
+   * @return the service name
+   */
   static ServiceName create(String fqn) {
     return new ServiceNameImpl(fqn);
   }
 
+  /**
+   * Create a service name from its package name and name
+   *
+   * @param packageName the package name
+   * @param name the name
+   * @return the service name
+   */
   static ServiceName create(String packageName, String name) {
     return new ServiceNameImpl(packageName, name);
   }
 
+  /**
+   * @return the name
+   */
   @CacheReturn
   String name();
 
+  /**
+   * @return the package name
+   */
   @CacheReturn
   String packageName();
 
+  /**
+   * @return the fully qualified name
+   */
   @CacheReturn
   String fullyQualifiedName();
 
-  String pathOf(String methodName);
+  /**
+   * Create the path of a given {@code method} to call.
+   * @param method the method
+   * @return the path, e.g {@code /com.examples.MyService/MyMethod}
+   */
+  String pathOf(String method);
 
 }
