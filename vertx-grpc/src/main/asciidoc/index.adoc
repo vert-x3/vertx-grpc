@@ -319,7 +319,7 @@ And then on the server side an interceptor can be added as:
 
 === gRPC Client
 
-A server without a client is of no use, so lets create a client. In order to do this some steps overlap with the
+A server without a client is of no use, so let's create a client. In order to do this some steps overlap with the
 server. First we need to have the RPC definition, which should already done otherwise there would be no server and
 the same definition should have been compiled.
 
