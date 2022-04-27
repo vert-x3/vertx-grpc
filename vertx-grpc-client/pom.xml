@@ -67,6 +67,17 @@
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>com.google.errorprone</groupId>
+          <artifactId>error_prone_annotations</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
       <version>${grpc.version}</version>
       <exclusions>
@@ -104,18 +115,6 @@
       <artifactId>bcpkix-jdk15on</artifactId>
       <version>1.65</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.grpc</groupId>
-      <artifactId>grpc-stub</artifactId>
-      <version>${grpc.version}</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>com.google.errorprone</groupId>
-          <artifactId>error_prone_annotations</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.grpc</groupId>
@@ -176,6 +175,17 @@
           <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
         </configuration>
         <executions>
+          <execution>
+            <id>compile</id>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/src/main/java</outputDirectory>
+              <clearOutputDirectory>false</clearOutputDirectory>
+            </configuration>
+          </execution>
           <execution>
             <id>test-compile</id>
             <goals>
