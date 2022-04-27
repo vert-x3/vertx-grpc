@@ -41,9 +41,10 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   private String methodName;
   private String encoding = null;
   private boolean headersSent;
+  private boolean cancelled;
+  boolean trailersSent;
   private Future<GrpcClientResponse<Req, Resp>> response;
   private MultiMap headers;
-  boolean ended;
 
   public GrpcClientRequestImpl(HttpClientRequest httpRequest, MessageEncoder<Req> messageEncoder, MessageDecoder<Resp> messageDecoder) {
 
@@ -131,14 +132,16 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override public Future<Void> end() {
-    if (!headersSent || ended) {
+    if (!headersSent || trailersSent) {
       throw new IllegalStateException();
     }
-    ended = true;
+    trailersSent = true;
     return httpRequest.end();
   }
 
   private Future<Void> writeMessage(GrpcMessage message, boolean end) {
+
+    checkState();
 
     if (encoding != null && !encoding.equals(message.encoding())) {
       switch (encoding) {
@@ -200,6 +203,15 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
     }
   }
 
+  private void checkState() {
+    if (cancelled) {
+      throw new IllegalStateException("The stream has been cancelled");
+    }
+    if (trailersSent) {
+      throw new IllegalStateException("The stream has been closed");
+    }
+  }
+
   @Override
   public Future<Void> write(Req message) {
     return writeMessage(messageEncoder.encode(message));
@@ -226,6 +238,8 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
 
   @Override
   public void cancel() {
+    checkState();
+    cancelled = true;
     httpRequest.reset(GrpcError.CANCELLED.http2ResetCode);
   }
 }

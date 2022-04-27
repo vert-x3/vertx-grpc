@@ -91,7 +91,7 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageDecoder implem
     if (responseStatus != null) {
       status = GrpcStatus.valueOf(Integer.parseInt(responseStatus));
     }
-    if (!request.ended) {
+    if (!request.trailersSent) {
       request.cancel();
     }
     Handler<Void> handler = endHandler;

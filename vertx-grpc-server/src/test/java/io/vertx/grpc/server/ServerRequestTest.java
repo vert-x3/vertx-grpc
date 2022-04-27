@@ -11,6 +11,8 @@
 package io.vertx.grpc.server;
 
 import io.grpc.ChannelCredentials;
+import io.grpc.ClientInterceptor;
+import io.grpc.ClientInterceptors;
 import io.grpc.Grpc;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -35,6 +37,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -245,7 +248,7 @@ public class ServerRequestTest extends ServerTest {
   }
 
   @Test
-  public void testHandleReset(TestContext should) {
+  public void testHandleCancel(TestContext should) {
 
     Async test = should.async();
     startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
@@ -258,6 +261,35 @@ public class ServerRequestTest extends ServerTest {
       });
     }));
 
-    super.testHandleReset(should);
+    super.testHandleCancel(should);
+  }
+
+  @Test
+  public void testCancel(TestContext should) {
+
+    Async test = should.async();
+
+    startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+      GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
+      response.cancel();
+      try {
+        response.write(HelloReply.newBuilder().build());
+      } catch (IllegalStateException e) {
+        test.complete();
+      }
+    }));
+
+    channel = ManagedChannelBuilder.forAddress("localhost", port)
+      .usePlaintext()
+      .build();
+
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
+
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    try {
+      stub.sayHello(request);
+    } catch (StatusRuntimeException ignore) {
+      should.assertEquals(Status.CANCELLED.getCode(), ignore.getStatus().getCode());
+    }
   }
 }

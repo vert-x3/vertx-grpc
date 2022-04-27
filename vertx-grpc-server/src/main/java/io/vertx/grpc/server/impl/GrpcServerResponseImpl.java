@@ -39,6 +39,7 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   private GrpcStatus status = GrpcStatus.OK;
   private boolean headersSent;
   private boolean trailersSent;
+  private boolean cancelled;
   private MultiMap headers, trailers;
 
   public GrpcServerResponseImpl(HttpServerResponse httpResponse, MessageEncoder<Resp> encoder) {
@@ -128,28 +129,26 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
 
   @Override
   public void cancel() {
+    checkState();
+    cancelled = true;
     httpResponse.reset(GrpcError.CANCELLED.http2ResetCode);
   }
 
+  private void checkState() {
+    if (cancelled) {
+      throw new IllegalStateException("The stream has been cancelled");
+    }
+    if (trailersSent) {
+      throw new IllegalStateException("The stream has been closed");
+    }
+  }
+
   private Future<Void> writeMessage(GrpcMessage message, boolean end) {
-    MultiMap responseHeaders = httpResponse.headers();
-    if (!headersSent) {
-      headersSent = true;
-      if (headers != null && headers.size() > 0) {
-        for (Map.Entry<String, String> header : headers) {
-          if (!header.getKey().startsWith("grpc-")) {
-            responseHeaders.add(header.getKey(), header.getValue());
-          } else {
-            // Log ?
-          }
-        }
-      }
-      responseHeaders.set("content-type", "application/grpc");
-      responseHeaders.set("grpc-encoding", encoding);
-      responseHeaders.set("grpc-accept-encoding", "gzip");
-      if (message == null && end) {
-        responseHeaders.set("grpc-status", status.toString());
-      }
+
+    checkState();
+
+    if (message == null && !end) {
+      throw new IllegalStateException();
     }
 
     if (encoding != null && message != null && !encoding.equals(message.encoding())) {
@@ -171,6 +170,26 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
             message = GrpcMessage.message("identity", decoded);
           }
           break;
+      }
+    }
+
+    MultiMap responseHeaders = httpResponse.headers();
+    if (!headersSent) {
+      headersSent = true;
+      if (headers != null && headers.size() > 0) {
+        for (Map.Entry<String, String> header : headers) {
+          if (!header.getKey().startsWith("grpc-")) {
+            responseHeaders.add(header.getKey(), header.getValue());
+          } else {
+            // Log ?
+          }
+        }
+      }
+      responseHeaders.set("content-type", "application/grpc");
+      responseHeaders.set("grpc-encoding", encoding);
+      responseHeaders.set("grpc-accept-encoding", "gzip");
+      if (message == null && end) {
+        responseHeaders.set("grpc-status", status.toString());
       }
     }
 

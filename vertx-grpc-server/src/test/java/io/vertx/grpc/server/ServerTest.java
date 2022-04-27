@@ -17,7 +17,6 @@ import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
 import io.grpc.ForwardingClientCall;
 import io.grpc.ForwardingClientCallListener;
-import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.MethodDescriptor;
@@ -280,7 +279,7 @@ public abstract class ServerTest extends ServerTestBase {
   }
 
   @Test
-  public void testHandleReset(TestContext should) {
+  public void testHandleCancel(TestContext should) {
     channel = ManagedChannelBuilder.forAddress("localhost", port)
       .usePlaintext()
       .build();

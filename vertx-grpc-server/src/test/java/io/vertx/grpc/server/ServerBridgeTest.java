@@ -341,7 +341,7 @@ public class ServerBridgeTest extends ServerTest {
   }
 
   @Test
-  public void testHandleReset(TestContext should) {
+  public void testHandleCancel(TestContext should) {
 
     Async test = should.async();
     StreamingGrpc.StreamingImplBase impl = new StreamingGrpc.StreamingImplBase() {
@@ -370,6 +370,6 @@ public class ServerBridgeTest extends ServerTest {
     serverStub.bind(server);
     startServer(server);
 
-    super.testHandleReset(should);
+    super.testHandleCancel(should);
   }
 }

@@ -12,6 +12,8 @@ package io.vertx.grpc.client;
 
 import io.grpc.Grpc;
 import io.grpc.ServerCredentials;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.TlsServerCredentials;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
@@ -31,8 +33,13 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -408,6 +415,48 @@ public class ClientRequestTest extends ClientTest {
     client.request(SocketAddress.inetSocketAddress(port, "localhost"), GreeterGrpc.getSayHelloMethod())
       .onComplete(should.asyncAssertSuccess(callRequest -> {
         callRequest.write(HelloRequest.newBuilder().setName("Julien").build());
+      }));
+  }
+
+  @Test
+  public void testCancel(TestContext should) throws Exception {
+
+    CompletableFuture<Void> cf = new CompletableFuture<>();
+
+    Async done = should.async();
+    startServer(new StreamingGrpc.StreamingImplBase() {
+      @Override
+      public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
+        return new StreamObserver<Item>() {
+          @Override
+          public void onNext(Item item) {
+            cf.complete(null);
+          }
+          @Override
+          public void onError(Throwable t) {
+            should.assertEquals(StatusRuntimeException.class, t.getClass());
+            StatusRuntimeException sre = (StatusRuntimeException) t;
+            should.assertEquals(Status.CANCELLED.getCode(), sre.getStatus().getCode());
+            done.complete();
+          }
+          @Override
+          public void onCompleted() {
+          }
+        };
+      }
+    });
+
+    GrpcClient client = GrpcClient.client(vertx);
+    client.request(SocketAddress.inetSocketAddress(port, "localhost"), StreamingGrpc.getSinkMethod())
+      .onComplete(should.asyncAssertSuccess(callRequest -> {
+        callRequest.write(Item.getDefaultInstance());
+        cf.whenComplete((v, t) -> {
+          callRequest.cancel();
+          try {
+            callRequest.write(Item.getDefaultInstance());
+          } catch (IllegalStateException ignore) {
+          }
+        });
       }));
   }
 }
