@@ -42,28 +42,18 @@ public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
   String fullMethodName();
 
   /**
-   * Set a handler to be notified with incoming messages.
-   *
-   * @param handler the message handler
-   * @return a reference to this, so the API can be used fluently
-   */
-  @Fluent
-  GrpcServerRequest<Req, Resp> messageHandler(@Nullable Handler<GrpcMessage> handler);
-
-  /**
-   * Set a handler to be notified with gRPC errors.
-   *
-   * @param handler the error handler
-   * @return a reference to this, so the API can be used fluently
-   */
-  @Fluent
-  GrpcServerRequest<Req, Resp> errorHandler(@Nullable Handler<GrpcError> handler);
-
-  /**
    * @return the response
    */
   @CacheReturn
   GrpcServerResponse<Req, Resp> response();
+
+  @Override
+  @Fluent
+  GrpcServerRequest<Req, Resp> messageHandler(@Nullable Handler<GrpcMessage> handler);
+
+  @Override
+  @Fluent
+  GrpcServerRequest<Req, Resp> errorHandler(@Nullable Handler<GrpcError> handler);
 
   @Override
   GrpcServerRequest<Req, Resp> exceptionHandler(@Nullable Handler<Throwable> handler);

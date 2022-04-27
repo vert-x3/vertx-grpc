@@ -19,11 +19,14 @@ import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcReadStream;
 
 import java.util.function.BiConsumer;
 import java.util.stream.Collector;
+
+import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
 
 /**
  * Transforms {@code Buffer} into a stream of {@link GrpcMessage}
@@ -48,6 +51,10 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   private final ReadStream<Buffer> stream;
   private final InboundBuffer<GrpcMessage> queue;
   private Buffer buffer;
+  private Handler<GrpcError> errorHandler;
+  private Handler<Throwable> exceptionHandler;
+  private Handler<GrpcMessage> messageHandler;
+  private Handler<Void> endHandler;
 
   protected GrpcReadStreamBase(Context context, ReadStream<Buffer> stream, String encoding) {
     this.context = (ContextInternal) context;
@@ -120,16 +127,59 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
     return (S) this;
   }
 
+  @Override
+  public S errorHandler(Handler<GrpcError> handler) {
+    errorHandler = handler;
+    return (S) this;
+  }
+
+  @Override
+  public S exceptionHandler(Handler<Throwable> handler) {
+    exceptionHandler = handler;
+    return (S) this;
+  }
+
+  @Override
+  public S messageHandler(Handler<GrpcMessage> handler) {
+    messageHandler = handler;
+    return (S) this;
+  }
+
+  @Override
+  public S endHandler(Handler<Void> endHandler) {
+    this.endHandler = endHandler;
+    return (S) this;
+  }
+
   protected void handleReset(long code) {
+    Handler<GrpcError> handler = errorHandler;
+    if (handler != null) {
+      GrpcError error = mapHttp2ErrorCode(code);
+      if (error != null) {
+        handler.handle(error);
+      }
+    }
   }
 
   protected void handleException(Throwable err) {
+    Handler<Throwable> handler = exceptionHandler;
+    if (handler != null) {
+      handler.handle(err);
+    }
   }
 
   protected void handleEnd() {
+    Handler<Void> handler = endHandler;
+    if (handler != null) {
+      handler.handle(null);
+    }
   }
 
   protected void handleMessage(GrpcMessage msg) {
+    Handler<GrpcMessage> handler = messageHandler;
+    if (handler != null) {
+      handler.handle(msg);
+    }
   }
 
   @Override

@@ -34,6 +34,15 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
   @Fluent
   GrpcReadStream<T> messageHandler(@Nullable Handler<GrpcMessage> handler);
 
+  /**
+   * Set a handler to be notified with gRPC errors.
+   *
+   * @param handler the error handler
+   * @return a reference to this, so the API can be used fluently
+   */
+  @Fluent
+  GrpcReadStream<T> errorHandler(@Nullable Handler<GrpcError> handler);
+
   @Override
   GrpcReadStream<T> exceptionHandler(@Nullable Handler<Throwable> handler);
 

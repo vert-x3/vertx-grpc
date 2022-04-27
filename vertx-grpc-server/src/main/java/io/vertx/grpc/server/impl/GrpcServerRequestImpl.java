@@ -15,7 +15,6 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.grpc.common.CodecException;
-import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
@@ -25,8 +24,6 @@ import io.vertx.grpc.common.impl.GrpcMethodCall;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServerResponse;
 
-import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
-
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
@@ -34,11 +31,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
 
   final HttpServerRequest httpRequest;
   final GrpcServerResponse<Req, Resp> response;
-  private Handler<GrpcMessage> messageHandler;
-  private Handler<GrpcError> errorHandler;
-  private Handler<Throwable> exceptionHandler;
   private GrpcMessageDecoder<Req> messageDecoder;
-  private Handler<Void> endHandler;
   private GrpcMethodCall methodCall;
 
   public GrpcServerRequestImpl(HttpServerRequest httpRequest, GrpcMessageDecoder<Req> messageDecoder, GrpcMessageEncoder<Resp> messageEncoder, GrpcMethodCall methodCall) {
@@ -73,39 +66,6 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
     return methodCall.methodName();
   }
 
-  protected void handleMessage(GrpcMessage message) {
-    Handler<GrpcMessage> msgHandler = messageHandler;
-    if (msgHandler != null) {
-      msgHandler.handle(message);
-    }
-  }
-
-  protected void handleEnd() {
-    Handler<Void> handler = endHandler;
-    if (handler != null) {
-      handler.handle(null);
-    }
-  }
-
-  @Override
-  protected void handleReset(long code) {
-    Handler<GrpcError> handler = errorHandler;
-    if (handler != null) {
-      GrpcError error = mapHttp2ErrorCode(code);
-      if (error != null) {
-        handler.handle(error);
-      }
-    }
-  }
-
-  @Override
-  protected void handleException(Throwable err) {
-    Handler<Throwable> handler = exceptionHandler;
-    if (handler != null) {
-      handler.handle(err);
-    }
-  }
-
   @Override
   public GrpcServerRequest<Req, Resp> handler(Handler<Req> handler) {
     if (handler != null) {
@@ -135,44 +95,8 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
     }
   }
 
-  @Override
-  public GrpcServerRequest<Req, Resp> errorHandler(Handler<GrpcError> handler) {
-    this.errorHandler = handler;
-    return this;
-  }
-
-  public GrpcServerRequest<Req, Resp> messageHandler(Handler<GrpcMessage> handler) {
-    this.messageHandler = handler;
-    return this;
-  }
-
-  public GrpcServerRequest<Req, Resp> endHandler(Handler<Void> endHandler) {
-    this.endHandler = endHandler;
-    return this;
-  }
-
-  @Override
-  public GrpcServerRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler) {
-    exceptionHandler = handler;
-    return this;
-  }
-
   public GrpcServerResponse<Req, Resp> response() {
     return response;
   }
 
-  @Override
-  public GrpcServerRequestImpl pause() {
-    return (GrpcServerRequestImpl) super.pause();
-  }
-
-  @Override
-  public GrpcServerRequestImpl resume() {
-    return (GrpcServerRequestImpl) super.resume();
-  }
-
-  @Override
-  public GrpcServerRequestImpl fetch(long amount) {
-    return (GrpcServerRequestImpl) super.fetch(amount);
-  }
 }

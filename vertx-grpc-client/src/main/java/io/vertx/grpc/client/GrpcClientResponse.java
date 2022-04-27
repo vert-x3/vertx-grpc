@@ -42,15 +42,11 @@ public interface GrpcClientResponse<Req, Resp> extends GrpcReadStream<Resp> {
    */
   MultiMap trailers();
 
+  @Override
   @Fluent
   GrpcClientResponse<Req, Resp> messageHandler(@Nullable Handler<GrpcMessage> handler);
 
-  /**
-   * Set a handler to be notified with gRPC errors.
-   *
-   * @param handler the error handler
-   * @return a reference to this, so the API can be used fluently
-   */
+  @Override
   @Fluent
   GrpcClientResponse<Req, Resp> errorHandler(@Nullable Handler<GrpcError> handler);
 
@@ -60,6 +56,7 @@ public interface GrpcClientResponse<Req, Resp> extends GrpcReadStream<Resp> {
   @Override
   GrpcClientResponse<Req, Resp> handler(@Nullable Handler<Resp> handler);
 
+  @Override
   GrpcClientResponse<Req, Resp> endHandler(@Nullable Handler<Void> handler);
 
   @Override
