@@ -32,10 +32,10 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
    * @return a reference to this, so the API can be used fluently
    */
   @Fluent
-  GrpcReadStream<T> messageHandler(Handler<GrpcMessage> handler);
+  GrpcReadStream<T> messageHandler(@Nullable Handler<GrpcMessage> handler);
 
   @Override
-  GrpcReadStream<T> exceptionHandler(Handler<Throwable> handler);
+  GrpcReadStream<T> exceptionHandler(@Nullable Handler<Throwable> handler);
 
   @Override
   GrpcReadStream<T> handler(@Nullable Handler<T> handler);

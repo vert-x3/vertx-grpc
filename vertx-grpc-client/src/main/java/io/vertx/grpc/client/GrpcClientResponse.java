@@ -12,6 +12,7 @@ package io.vertx.grpc.client;
 
 import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -42,7 +43,7 @@ public interface GrpcClientResponse<Req, Resp> extends GrpcReadStream<Resp> {
   MultiMap trailers();
 
   @Fluent
-  GrpcClientResponse<Req, Resp> messageHandler(Handler<GrpcMessage> handler);
+  GrpcClientResponse<Req, Resp> messageHandler(@Nullable Handler<GrpcMessage> handler);
 
   /**
    * Set a handler to be notified with gRPC errors.
@@ -51,15 +52,15 @@ public interface GrpcClientResponse<Req, Resp> extends GrpcReadStream<Resp> {
    * @return a reference to this, so the API can be used fluently
    */
   @Fluent
-  GrpcClientResponse<Req, Resp> errorHandler(Handler<GrpcError> handler);
+  GrpcClientResponse<Req, Resp> errorHandler(@Nullable Handler<GrpcError> handler);
 
   @Override
-  GrpcClientResponse<Req, Resp> exceptionHandler(Handler<Throwable> handler);
+  GrpcClientResponse<Req, Resp> exceptionHandler(@Nullable Handler<Throwable> handler);
 
   @Override
-  GrpcClientResponse<Req, Resp> handler(Handler<Resp> handler);
+  GrpcClientResponse<Req, Resp> handler(@Nullable Handler<Resp> handler);
 
-  GrpcClientResponse<Req, Resp> endHandler(Handler<Void> handler);
+  GrpcClientResponse<Req, Resp> endHandler(@Nullable Handler<Void> handler);
 
   @Override
   GrpcClientResponse<Req, Resp> pause();

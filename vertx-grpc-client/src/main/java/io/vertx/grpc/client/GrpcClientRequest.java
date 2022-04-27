@@ -12,6 +12,7 @@ package io.vertx.grpc.client;
 
 import io.vertx.codegen.annotations.CacheReturn;
 import io.vertx.codegen.annotations.Fluent;
+import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -80,12 +81,12 @@ public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
   Future<GrpcClientResponse<Req, Resp>> response();
 
   @Override
-  GrpcClientRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler);
+  GrpcClientRequest<Req, Resp> exceptionHandler(@Nullable Handler<Throwable> handler);
 
   @Override
   GrpcClientRequest<Req, Resp> setWriteQueueMaxSize(int maxSize);
 
   @Override
-  GrpcClientRequest<Req, Resp> drainHandler(Handler<Void> handler);
+  GrpcClientRequest<Req, Resp> drainHandler(@Nullable Handler<Void> handler);
 
 }

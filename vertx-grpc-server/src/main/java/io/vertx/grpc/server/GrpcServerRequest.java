@@ -15,7 +15,6 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcReadStream;
@@ -49,7 +48,7 @@ public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
    * @return a reference to this, so the API can be used fluently
    */
   @Fluent
-  GrpcServerRequest<Req, Resp> messageHandler(Handler<GrpcMessage> handler);
+  GrpcServerRequest<Req, Resp> messageHandler(@Nullable Handler<GrpcMessage> handler);
 
   /**
    * Set a handler to be notified with gRPC errors.
@@ -58,7 +57,7 @@ public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
    * @return a reference to this, so the API can be used fluently
    */
   @Fluent
-  GrpcServerRequest<Req, Resp> errorHandler(Handler<GrpcError> handler);
+  GrpcServerRequest<Req, Resp> errorHandler(@Nullable Handler<GrpcError> handler);
 
   /**
    * @return the response
@@ -67,7 +66,7 @@ public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
   GrpcServerResponse<Req, Resp> response();
 
   @Override
-  GrpcServerRequest<Req, Resp> exceptionHandler(Handler<Throwable> handler);
+  GrpcServerRequest<Req, Resp> exceptionHandler(@Nullable Handler<Throwable> handler);
 
   @Override
   GrpcServerRequest<Req, Resp> handler(@Nullable Handler<Req> handler);
@@ -82,5 +81,5 @@ public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
   GrpcServerRequest<Req, Resp> fetch(long amount);
 
   @Override
-  GrpcServerRequest<Req, Resp> endHandler(Handler<Void> endHandler);
+  GrpcServerRequest<Req, Resp> endHandler(@Nullable Handler<Void> endHandler);
 }

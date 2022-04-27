@@ -30,7 +30,7 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
   GrpcWriteStream<T> encoding(String encoding);
 
   @Override
-  GrpcWriteStream<T> exceptionHandler(Handler<Throwable> handler);
+  GrpcWriteStream<T> exceptionHandler(@Nullable Handler<Throwable> handler);
 
   @Override
   GrpcWriteStream<T> setWriteQueueMaxSize(int i);

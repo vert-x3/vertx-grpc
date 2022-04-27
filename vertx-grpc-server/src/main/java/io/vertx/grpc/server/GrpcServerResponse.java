@@ -39,7 +39,7 @@ public interface GrpcServerResponse<Req, Resp> extends GrpcWriteStream<Resp> {
   MultiMap trailers();
 
   @Override
-  GrpcServerResponse<Req, Resp> exceptionHandler(Handler<Throwable> handler);
+  GrpcServerResponse<Req, Resp> exceptionHandler(@Nullable Handler<Throwable> handler);
 
   @Override
   GrpcServerResponse<Req, Resp> setWriteQueueMaxSize(int maxSize);
