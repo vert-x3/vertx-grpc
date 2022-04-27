@@ -12,6 +12,7 @@ package io.vertx.grpc.server.impl;
 
 import io.grpc.MethodDescriptor;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.grpc.common.GrpcMessageDecoder;
@@ -28,8 +29,13 @@ import java.util.Map;
  */
 public class GrpcServerImpl implements GrpcServer {
 
+  private final Vertx vertx;
   private Handler<GrpcServerRequest<Buffer, Buffer>> requestHandler;
   private Map<String, MethodCallHandler<?, ?>> methodCallHandlers = new HashMap<>();
+
+  public GrpcServerImpl(Vertx vertx) {
+    this.vertx = vertx;
+  }
 
   @Override
   public void handle(HttpServerRequest httpRequest) {

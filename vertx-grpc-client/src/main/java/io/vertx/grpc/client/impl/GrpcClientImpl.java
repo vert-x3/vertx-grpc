@@ -64,4 +64,9 @@ public class GrpcClientImpl implements GrpcClient {
         return call;
       });
   }
+
+  @Override
+  public Future<Void> close() {
+    return client.close();
+  }
 }

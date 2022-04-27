@@ -70,7 +70,7 @@ public class ServerMessageEncodingTest extends ServerTestBase {
 
     Buffer expected = Buffer.buffer("Hello World");
 
-    startServer(GrpcServer.server().callHandler(call -> {
+    startServer(GrpcServer.server(vertx).callHandler(call -> {
       call.handler(request -> {
         GrpcServerResponse<Buffer, Buffer> response = call.response();
         response
@@ -110,7 +110,7 @@ public class ServerMessageEncodingTest extends ServerTestBase {
   @Test
   public void testEncodeError(TestContext should) {
 
-    startServer(GrpcServer.server().callHandler(call -> {
+    startServer(GrpcServer.server(vertx).callHandler(call -> {
       call.handler(request -> {
         GrpcServerResponse<Buffer, Buffer> response = call.response();
         List<GrpcMessage> messages = Arrays.asList(
@@ -186,7 +186,7 @@ public class ServerMessageEncodingTest extends ServerTestBase {
 
   private void testDecode(TestContext should, Buffer payload, Consumer<GrpcServerRequest<Buffer, Buffer>> impl, Consumer<HttpClientRequest> checker) {
 
-    startServer(GrpcServer.server().callHandler(call -> {
+    startServer(GrpcServer.server(vertx).callHandler(call -> {
       should.assertEquals("gzip", call.encoding());
       impl.accept(call);
     }));

@@ -29,21 +29,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class ProxyTest extends GrpcTestBase {
+public class ProxyTest extends ProxyTestBase {
 
   @Test
   public void testUnary(TestContext should) {
 
     GrpcClient client = GrpcClient.client(vertx);
 
-    Future<HttpServer> server = vertx.createHttpServer().requestHandler(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    Future<HttpServer> server = vertx.createHttpServer().requestHandler(GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         call.response().end(helloReply);
       });
     })).listen(8080, "localhost");
 
-    Future<HttpServer> proxy = vertx.createHttpServer().requestHandler(GrpcServer.server().callHandler(clientReq -> {
+    Future<HttpServer> proxy = vertx.createHttpServer().requestHandler(GrpcServer.server(vertx).callHandler(clientReq -> {
       clientReq.pause();
       client.request(SocketAddress.inetSocketAddress(8080, "localhost")).onComplete(should.asyncAssertSuccess(proxyReq -> {
         proxyReq.response().onSuccess(resp -> {

@@ -55,7 +55,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -121,7 +121,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     });
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(def);
     serverStub.bind(server);
     startServer(server);
@@ -141,7 +141,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -163,7 +163,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -197,7 +197,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -228,7 +228,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -260,7 +260,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -291,7 +291,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);
@@ -332,7 +332,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(ServerInterceptors.intercept(impl, interceptor));
     serverStub.bind(server);
     startServer(server);
@@ -365,7 +365,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
-    GrpcServer server = GrpcServer.server();
+    GrpcServer server = GrpcServer.server(vertx);
     GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
     serverStub.bind(server);
     startServer(server);

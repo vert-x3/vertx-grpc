@@ -76,4 +76,9 @@ public interface GrpcClient {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> method);
 
+  /**
+   * Close this client.
+   */
+  Future<Void> close();
+
 }

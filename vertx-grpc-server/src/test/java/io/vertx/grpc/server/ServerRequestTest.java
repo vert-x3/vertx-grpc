@@ -11,8 +11,6 @@
 package io.vertx.grpc.server;
 
 import io.grpc.ChannelCredentials;
-import io.grpc.ClientInterceptor;
-import io.grpc.ClientInterceptors;
 import io.grpc.Grpc;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
@@ -46,7 +44,7 @@ public class ServerRequestTest extends ServerTest {
 
   @Override
   protected void testUnary(TestContext should, String requestEncoding, String responseEncoding) {
-    startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         if (!requestEncoding.equals("identity")) {
@@ -72,7 +70,7 @@ public class ServerRequestTest extends ServerTest {
       .setUseAlpn(true)
       .setPort(8443)
       .setHost("localhost")
-      .setPemKeyCertOptions(cert.keyCertOptions()), GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+      .setPemKeyCertOptions(cert.keyCertOptions()), GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         HelloReply helloReply = HelloReply.newBuilder().setMessage("Hello " + helloRequest.getName()).build();
         GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
@@ -92,7 +90,7 @@ public class ServerRequestTest extends ServerTest {
   @Override
   public void testStatus(TestContext should) {
 
-    startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       call.handler(helloRequest -> {
         GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
         response
@@ -107,7 +105,7 @@ public class ServerRequestTest extends ServerTest {
   @Override
   public void testServerStreaming(TestContext should) {
 
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getSourceMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getSourceMethod(), call -> {
       for (int i = 0; i < NUM_ITEMS; i++) {
         Item item = Item.newBuilder().setValue("the-value-" + i).build();
         call.response().write(item);
@@ -121,7 +119,7 @@ public class ServerRequestTest extends ServerTest {
   @Override
   public void testClientStreaming(TestContext should) throws Exception {
 
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getSinkMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getSinkMethod(), call -> {
       call.handler(item -> {
         // Should assert item
       });
@@ -136,7 +134,7 @@ public class ServerRequestTest extends ServerTest {
   @Override
   public void testClientStreamingCompletedBeforeHalfClose(TestContext should) {
 
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getSinkMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getSinkMethod(), call -> {
       call.handler(item -> {
         call.response().status(GrpcStatus.CANCELLED).end();
       });
@@ -151,7 +149,7 @@ public class ServerRequestTest extends ServerTest {
   @Override
   public void testBidiStreaming(TestContext should) throws Exception {
 
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
         call.response().write(item);
       });
@@ -167,7 +165,7 @@ public class ServerRequestTest extends ServerTest {
   public void testBidiStreamingCompletedBeforeHalfClose(TestContext should) throws Exception {
 
     Async done = should.async();
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
         call.response().end();
         call.errorHandler(err -> {
@@ -183,7 +181,7 @@ public class ServerRequestTest extends ServerTest {
   @Test
   public void testMetadata(TestContext should) {
 
-    startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       should.assertEquals(0, testMetadataStep.getAndIncrement());
       should.assertEquals("custom_request_header_value", call.headers().get("custom_request_header"));
       call.handler(helloRequest -> {
@@ -211,7 +209,7 @@ public class ServerRequestTest extends ServerTest {
   }
 
   private void testFail(TestContext should, int numMsg) {
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.handler(item -> {
         for (int i = 0;i < numMsg;i++) {
           call.response().write(item);
@@ -251,7 +249,7 @@ public class ServerRequestTest extends ServerTest {
   public void testHandleCancel(TestContext should) {
 
     Async test = should.async();
-    startServer(GrpcServer.server().callHandler(StreamingGrpc.getPipeMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(StreamingGrpc.getPipeMethod(), call -> {
       call.errorHandler(error -> {
         should.assertEquals(GrpcError.CANCELLED, error);
         test.complete();
@@ -269,7 +267,7 @@ public class ServerRequestTest extends ServerTest {
 
     Async test = should.async();
 
-    startServer(GrpcServer.server().callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+    startServer(GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
       GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
       response.cancel();
       try {

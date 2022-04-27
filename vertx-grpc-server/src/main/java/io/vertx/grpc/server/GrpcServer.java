@@ -15,6 +15,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.grpc.server.impl.GrpcServerImpl;
@@ -45,8 +46,8 @@ public interface GrpcServer extends Handler<HttpServerRequest> {
    *
    * @return the created server
    */
-  static GrpcServer server() {
-    return new GrpcServerImpl();
+  static GrpcServer server(Vertx vertx) {
+    return new GrpcServerImpl(vertx);
   }
 
   /**
