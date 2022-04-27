@@ -20,7 +20,7 @@ import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
 import io.vertx.grpc.common.ServiceName;
-import io.vertx.grpc.common.impl.GrpcMessageAdapter;
+import io.vertx.grpc.common.impl.GrpcReadStreamBase;
 import io.vertx.grpc.common.impl.GrpcMethodCall;
 import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServerResponse;
@@ -30,7 +30,7 @@ import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class GrpcServerRequestImpl<Req, Resp> extends GrpcMessageAdapter implements GrpcServerRequest<Req, Resp> {
+public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcServerRequestImpl<Req, Resp>, Req> implements GrpcServerRequest<Req, Resp> {
 
   final HttpServerRequest httpRequest;
   final GrpcServerResponse<Req, Resp> response;

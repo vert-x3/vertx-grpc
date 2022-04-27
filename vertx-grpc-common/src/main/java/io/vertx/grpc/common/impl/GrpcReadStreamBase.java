@@ -11,19 +11,26 @@
 package io.vertx.grpc.common.impl;
 
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.StreamResetException;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
 import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.GrpcReadStream;
+
+import java.util.function.BiConsumer;
+import java.util.stream.Collector;
 
 /**
  * Transforms {@code Buffer} into a stream of {@link GrpcMessage}
  *
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public abstract class GrpcMessageAdapter implements Handler<Buffer> {
+public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> implements GrpcReadStream<T>, Handler<Buffer> {
 
   static final GrpcMessage END_SENTINEL = new GrpcMessage() {
     @Override
@@ -36,12 +43,14 @@ public abstract class GrpcMessageAdapter implements Handler<Buffer> {
     }
   };
 
+  protected final ContextInternal context;
   private final String encoding;
   private final ReadStream<Buffer> stream;
   private final InboundBuffer<GrpcMessage> queue;
   private Buffer buffer;
 
-  protected GrpcMessageAdapter(Context context, ReadStream<Buffer> stream, String encoding) {
+  protected GrpcReadStreamBase(Context context, ReadStream<Buffer> stream, String encoding) {
+    this.context = (ContextInternal) context;
     this.encoding = encoding;
     this.stream = stream;
     this.queue = new InboundBuffer<>(context);
@@ -67,7 +76,6 @@ public abstract class GrpcMessageAdapter implements Handler<Buffer> {
     });
   }
 
-  @Override
   public void handle(Buffer chunk) {
     if (buffer == null) {
       buffer = chunk;
@@ -97,19 +105,19 @@ public abstract class GrpcMessageAdapter implements Handler<Buffer> {
     }
   }
 
-  public GrpcMessageAdapter pause() {
+  public S pause() {
     queue.pause();
-    return this;
+    return (S) this;
   }
 
-  public GrpcMessageAdapter resume() {
+  public S resume() {
     queue.resume();
-    return this;
+    return (S) this;
   }
 
-  public GrpcMessageAdapter fetch(long amount) {
+  public S fetch(long amount) {
     queue.fetch(amount);
-    return this;
+    return (S) this;
   }
 
   protected void handleReset(long code) {
@@ -122,5 +130,29 @@ public abstract class GrpcMessageAdapter implements Handler<Buffer> {
   }
 
   protected void handleMessage(GrpcMessage msg) {
+  }
+
+  @Override
+  public Future<T> last() {
+    PromiseInternal<T> promise = context.promise();
+    Object[] last = new Object[1];
+    handler(elt -> last[0] = elt);
+    endHandler(v -> promise.tryComplete((T) last[0]));
+    exceptionHandler(err -> promise.tryFail(err));
+    return promise.future();
+  }
+
+  @Override
+  public <R, C> Future<R> collecting(Collector<T, C, R> collector) {
+    PromiseInternal<R> promise = context.promise();
+    C cumulation = collector.supplier().get();
+    BiConsumer<C, T> accumulator = collector.accumulator();
+    handler(elt -> accumulator.accept(cumulation, elt));
+    endHandler(v -> {
+      R result = collector.finisher().apply(cumulation);
+      promise.tryComplete(result);
+    });
+    exceptionHandler(promise::tryFail);
+    return promise.future();
   }
 }

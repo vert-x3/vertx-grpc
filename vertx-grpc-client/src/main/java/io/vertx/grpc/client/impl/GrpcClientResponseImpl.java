@@ -10,6 +10,7 @@
  */
 package io.vertx.grpc.client.impl;
 
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
@@ -20,7 +21,7 @@ import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcMessageDecoder;
-import io.vertx.grpc.common.impl.GrpcMessageAdapter;
+import io.vertx.grpc.common.impl.GrpcReadStreamBase;
 import io.vertx.grpc.common.GrpcStatus;
 
 import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
@@ -28,7 +29,7 @@ import static io.vertx.grpc.common.GrpcError.mapHttp2ErrorCode;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageAdapter implements GrpcClientResponse<Req, Resp> {
+public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcClientResponseImpl<Req, Resp>, Resp> implements GrpcClientResponse<Req, Resp> {
 
   private final GrpcClientRequestImpl<Req, Resp> request;
   private final HttpClientResponse httpResponse;
@@ -105,7 +106,7 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageAdapter implem
   }
 
   @Override
-  public GrpcClientResponse<Req, Resp> messageHandler(Handler<GrpcMessage> handler) {
+  public GrpcClientResponseImpl<Req, Resp> messageHandler(Handler<GrpcMessage> handler) {
     messageHandler = handler;
     return this;
   }
@@ -117,13 +118,22 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcMessageAdapter implem
   }
 
   @Override
-  public GrpcClientResponse<Req, Resp> exceptionHandler(Handler<Throwable> handler) {
+  public GrpcClientResponseImpl<Req, Resp> exceptionHandler(Handler<Throwable> handler) {
     httpResponse.exceptionHandler(handler);
     return this;
   }
 
   @Override
-  public GrpcClientResponse<Req, Resp> handler(Handler<Resp> handler) {
+  public Future<Resp> last() {
+    if (status == GrpcStatus.OK) {
+      return super.last();
+    } else {
+      return context.failedFuture("");
+    }
+  }
+
+  @Override
+  public GrpcClientResponseImpl<Req, Resp> handler(Handler<Resp> handler) {
     if (handler != null) {
       return messageHandler(msg -> {
         GrpcMessage abc;

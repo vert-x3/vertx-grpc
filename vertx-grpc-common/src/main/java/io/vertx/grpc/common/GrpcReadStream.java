@@ -5,9 +5,9 @@ import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.WriteStream;
 
@@ -51,6 +51,17 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
 
   @Override
   GrpcReadStream<T> endHandler(@Nullable Handler<Void> handler);
+
+  /**
+   * @return the last element of the stream
+   */
+  Future<T> last();
+
+  /**
+   * @return the result of applying a collector on the stream
+   */
+  @GenIgnore(GenIgnore.PERMITTED_TYPE)
+  <R, A> Future<R> collecting(java.util.stream.Collector<T , A , R> collector);
 
   @GenIgnore
   default void pipeTo(WriteStream<T> dst, Handler<AsyncResult<Void>> handler) {
