@@ -8,7 +8,7 @@
  *
  * SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
  */
-@ModuleGen(name = "vertx-grpc-server", groupPackage = "io.vertx")
+@ModuleGen(name = "vertx-grpc-server", groupPackage = "io.vertx", useFutures = true)
 package io.vertx.grpc.server;
 
 import io.vertx.codegen.annotations.ModuleGen;
