@@ -1,4 +1,4 @@
-=== Vert.x gRPC Server
+== Vert.x gRPC Server
 
 Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server superseding the integrated Netty based gRPC client.
 
@@ -6,7 +6,7 @@ This server provides a gRPC request/response client API as well as a the generat
 
 WARNING: This module has _Tech Preview_ status, this means the API can change between versions.
 
-==== Using Vert.x gRPC Server
+=== Using Vert.x gRPC Server
 
 To use Vert.x gRPC Server, add the following dependency to the _dependencies_ section of your build descriptor:
 
@@ -30,7 +30,7 @@ dependencies {
 }
 ----
 
-==== gRPC request/response server API
+=== gRPC request/response server API
 
 The gRPC request/response server API provides an alternative way to interact with a client without the need of a generated stub.
 
@@ -43,7 +43,7 @@ A `{@link io.vertx.grpc.server.GrpcServer}` is a `Handler<HttpServerRequest>` an
 
 TIP: a `GrpcServer` can be mounted in a Vert.x Web router
 
-===== Request/response
+==== Request/response
 
 Each service method is processed by a handler
 
@@ -52,7 +52,7 @@ Each service method is processed by a handler
 {@link examples.GrpcServerExamples#requestResponse}
 ----
 
-===== Streaming request
+==== Streaming request
 
 You can set handlers to process request events
 
@@ -61,7 +61,7 @@ You can set handlers to process request events
 {@link examples.GrpcServerExamples#streamingRequest}
 ----
 
-===== Streaming response
+==== Streaming response
 
 A streaming response involves calling `{@link io.vertx.grpc.server.GrpcServerResponse#write}` for each element of the stream
 and using `{@link io.vertx.grpc.server.GrpcServerResponse#end()}` to end the stream
@@ -71,7 +71,7 @@ and using `{@link io.vertx.grpc.server.GrpcServerResponse#end()}` to end the str
 {@link examples.GrpcServerExamples#streamingResponse}
 ----
 
-===== Bidi request/response
+==== Bidi request/response
 
 A bidi request/response is simply the combination of a streaming request and a streaming response
 
@@ -80,7 +80,7 @@ A bidi request/response is simply the combination of a streaming request and a s
 {@link examples.GrpcServerExamples#bidi}
 ----
 
-==== Flow control
+=== Flow control
 
 Request and response are back pressured Vert.x streams.
 
@@ -98,7 +98,7 @@ You can check the writability of a response and set a drain handler
 {@link examples.GrpcServerExamples#responseFlowControl}
 ----
 
-==== Compression
+=== Compression
 
 You can compress response messages by setting the response encoding *prior* before sending any message
 
@@ -107,11 +107,11 @@ You can compress response messages by setting the response encoding *prior* befo
 {@link examples.GrpcServerExamples#responseCompression}
 ----
 
-==== Decompression
+=== Decompression
 
 Decompression is done transparently by the server when the client send encoded requests.
 
-==== Stub API
+=== Stub API
 
 The Vert.x gRPC Server can bridge a gRPC service to use with a generated server stub in a more traditional fashion
 
@@ -120,7 +120,7 @@ The Vert.x gRPC Server can bridge a gRPC service to use with a generated server 
 {@link examples.GrpcServerExamples#stubExample}
 ----
 
-==== Message level API
+=== Message level API
 
 The server provides a message level API to interact directly with protobuf encoded gRPC messages.
 
