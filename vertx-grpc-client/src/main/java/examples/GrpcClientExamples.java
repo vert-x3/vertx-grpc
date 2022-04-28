@@ -11,6 +11,7 @@ import io.vertx.grpc.client.GrpcClient;
 import io.vertx.grpc.client.GrpcClientChannel;
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
+import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.ServiceName;
 
 @Source
@@ -143,7 +144,7 @@ public class GrpcClientExamples {
     });
   }
 
-  public void messageLevelAPI(GrpcClient client, Buffer protoRequest, SocketAddress server) {
+  public void protobufLevelAPI(GrpcClient client, Buffer protoHello, SocketAddress server) {
 
     Future<GrpcClientRequest<Buffer, Buffer>> requestFut = client.request(server);
 
@@ -154,13 +155,36 @@ public class GrpcClientExamples {
       request.methodName("SayHello");
 
       // Send the protobuf request
-      request.end(protoRequest);
+      request.end(protoHello);
 
       // Handle the response
       Future<GrpcClientResponse<Buffer, Buffer>> responseFut = request.response();
       responseFut.onSuccess(response -> {
         response.handler(protoReply -> {
           // Handle the protobuf reply
+        });
+      });
+    });
+  }
+
+  public void messageLevelAPI(GrpcClient client, Buffer protoHello, SocketAddress server) {
+
+    Future<GrpcClientRequest<Buffer, Buffer>> requestFut = client.request(server);
+
+    requestFut.onSuccess(request -> {
+
+      // Set the service name and the method to call
+      request.serviceName(ServiceName.create("helloworld", "Greeter"));
+      request.methodName("SayHello");
+
+      // Send the protobuf request
+      request.endMessage(GrpcMessage.message("identity", protoHello));
+
+      // Handle the response
+      Future<GrpcClientResponse<Buffer, Buffer>> responseFut = request.response();
+      responseFut.onSuccess(response -> {
+        response.messageHandler(replyMessage -> {
+          System.out.println("Got reply message encoded as " + replyMessage.encoding());
         });
       });
     });

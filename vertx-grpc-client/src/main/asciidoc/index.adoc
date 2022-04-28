@@ -77,7 +77,7 @@ and using `{@link io.vertx.grpc.client.GrpcClientRequest#end()}` to end the stre
 
 ===== Streaming response
 
-You can set handlers to process the response events
+You can set handlers to process response events
 
 [source,java]
 ----
@@ -141,12 +141,27 @@ The Vert.x gRPC Client provides a gRPC channel to use with a generated client st
 
 ==== Message level API
 
-The client provides a message level API to interact directly with gRPC messages.
+The client provides a message level API to interact directly with protobuf encoded gRPC messages.
+
+TIP: the client message level API can be used with the server message level API to write a gRPC reverse proxy
 
 Such API is useful when you are not interested in the content of the messages, and instead you want to forward them to
-another service, e.g you are writing a proxy.
+another service, e.g. you are writing a proxy.
+
+[source,java]
+----
+{@link examples.GrpcClientExamples#protobufLevelAPI}
+----
+
+You can also set a `messageHandler` to handle `{@link io.vertx.grpc.common.GrpcMessage}`, such messages preserve the server encoding.
 
 [source,java]
 ----
 {@link examples.GrpcClientExamples#messageLevelAPI}
 ----
+
+The `{@link io.vertx.grpc.client.GrpcClientRequest#writeMessage}` and `{@link io.vertx.grpc.client.GrpcClientRequest#endMessage}` will
+handle the message encoding:
+
+- when the message uses the response encoding, the message is sent as is
+- when the message uses a different encoding, it will be encoded, e.g. compressed or uncompressed
