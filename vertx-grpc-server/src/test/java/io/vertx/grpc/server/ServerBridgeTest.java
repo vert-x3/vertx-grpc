@@ -74,6 +74,7 @@ public class ServerBridgeTest extends ServerTest {
       }
     };
 
+    Async done = should.async();
     AtomicInteger count = new AtomicInteger();
     ServerServiceDefinition def = ServerInterceptors.intercept(impl, new ServerInterceptor() {
       @Override
@@ -116,6 +117,7 @@ public class ServerBridgeTest extends ServerTest {
           public void onComplete() {
             should.assertEquals(7, count.getAndIncrement());
             super.onComplete();
+            done.complete();
           }
         };
       }
@@ -127,8 +129,6 @@ public class ServerBridgeTest extends ServerTest {
     startServer(server);
 
     super.testUnary(should, "identity", "identity");
-
-    should.assertEquals(8, count.getAndIncrement());
   }
 
   @Override
