@@ -45,7 +45,7 @@ import java.util.stream.IntStream;
 public abstract class ClientTest extends ClientTestBase {
 
   static final int NUM_ITEMS = 128;
-  static final int NUM_BATCHES = 10;
+  static final int NUM_BATCHES = 5;
 
   @Test
   public void testUnary(TestContext should) throws IOException {
