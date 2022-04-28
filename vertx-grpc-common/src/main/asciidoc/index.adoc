@@ -20,3 +20,7 @@ Vert.x gRPC is split in two parts
 
 - Vert.x gRPC Server
 - Vert.x gRPC Client
+
+include::server.adoc[]
+
+include::client.adoc[]
