@@ -14,6 +14,7 @@ import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.VertxException;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,6 +37,7 @@ public interface GrpcMessageEncoder<T> {
       GzipOptions options = StandardCompressionOptions.gzip();
       ZlibEncoder encoder = ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP, options.compressionLevel(), options.windowBits(), options.memLevel());
       EmbeddedChannel channel = new EmbeddedChannel(encoder);
+      channel.config().setAllocator(VertxByteBufAllocator.UNPOOLED_ALLOCATOR);
       channel.writeOutbound(payload.getByteBuf());
       channel.finish();
       Queue<Object> messages = channel.outboundMessages();
