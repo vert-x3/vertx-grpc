@@ -4,8 +4,6 @@ Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server supersedin
 
 This server provides a gRPC request/response client API as well as a the generated stub approach with a service bridge.
 
-WARNING: This module has _Tech Preview_ status, this means the API can change between versions.
-
 === Using Vert.x gRPC Server
 
 To use Vert.x gRPC Server, add the following dependency to the _dependencies_ section of your build descriptor:

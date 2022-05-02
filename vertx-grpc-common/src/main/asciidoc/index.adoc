@@ -16,6 +16,10 @@ benefits of gRPC.
 
 For more information related to gRPC please consult the official documentation site http://www.grpc.io/.
 
+WARNING: Since Vert.x 4.3, this module is the new support for gRPC in the Vert.x stack, the previous implementation based
+on gRPC Netty is still available and has been renamed Vert.x gRPC Netty, it can be found at https://vertx.io/docs/vertx-grpc-netty/java/ .
+This module has _Tech Preview_ status, this means the API can change between versions.
+
 Vert.x gRPC is split in two parts
 
 - Vert.x gRPC Server
