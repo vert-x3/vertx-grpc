@@ -125,17 +125,6 @@
       </plugins>
     </pluginManagement>
     <plugins>
-      <!-- No jar for this project -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-jar</id>
-            <phase/>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
         <artifactId>protobuf-maven-plugin</artifactId>
