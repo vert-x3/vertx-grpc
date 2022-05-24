@@ -18,7 +18,6 @@ import io.vertx.core.http.HttpClientResponse;
 
 import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.CodecException;
-import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.impl.GrpcReadStreamBase;
 import io.vertx.grpc.common.GrpcStatus;
@@ -30,16 +29,14 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcCl
 
   private final GrpcClientRequestImpl<Req, Resp> request;
   private final HttpClientResponse httpResponse;
-  private GrpcMessageDecoder<Resp> messageDecoder;
   private GrpcStatus status;
   private String encoding;
 
   public GrpcClientResponseImpl(GrpcClientRequestImpl<Req, Resp> request, HttpClientResponse httpResponse, GrpcMessageDecoder<Resp> messageDecoder) {
-    super(Vertx.currentContext(), httpResponse, httpResponse.headers().get("grpc-encoding")); // A bit ugly
+    super(Vertx.currentContext(), httpResponse, httpResponse.headers().get("grpc-encoding"), messageDecoder); // A bit ugly
     this.request = request;
     this.encoding = httpResponse.headers().get("grpc-encoding");
     this.httpResponse = httpResponse;
-    this.messageDecoder = messageDecoder;
 
     String responseStatus = httpResponse.getHeader("grpc-status");
     if (responseStatus != null) {
@@ -79,9 +76,9 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcCl
   }
 
   @Override
-  public Future<Resp> last() {
+  public Future<Void> end() {
     if (status == GrpcStatus.OK) {
-      return super.last();
+      return httpResponse.end();
     } else {
       return context.failedFuture("");
     }
@@ -91,24 +88,13 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcCl
   public GrpcClientResponseImpl<Req, Resp> handler(Handler<Resp> handler) {
     if (handler != null) {
       return messageHandler(msg -> {
-        GrpcMessage abc;
-        switch (msg.encoding()) {
-          case "identity":
-            abc = msg;
-            break;
-          case "gzip": {
-            try {
-              abc = GrpcMessage.message("identity", GrpcMessageDecoder.GZIP.decode(msg));
-            } catch (CodecException e) {
-              request.cancel();
-              return ;
-            }
-            break;
-          }
-          default:
-            throw new UnsupportedOperationException();
+        Resp decoded;
+        try {
+          decoded = decodeMessage(msg);
+        } catch (CodecException e) {
+          request.cancel();
+          return;
         }
-        Resp decoded = messageDecoder.decode(abc);
         handler.handle(decoded);
       });
     } else {

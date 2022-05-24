@@ -19,8 +19,10 @@ import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.streams.ReadStream;
 import io.vertx.core.streams.impl.InboundBuffer;
+import io.vertx.grpc.common.CodecException;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
+import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcReadStream;
 
 import java.util.function.BiConsumer;
@@ -55,12 +57,15 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   private Handler<Throwable> exceptionHandler;
   private Handler<GrpcMessage> messageHandler;
   private Handler<Void> endHandler;
+  private GrpcMessage last;
+  private final GrpcMessageDecoder<T> messageDecoder;
 
-  protected GrpcReadStreamBase(Context context, ReadStream<Buffer> stream, String encoding) {
+  protected GrpcReadStreamBase(Context context, ReadStream<Buffer> stream, String encoding, GrpcMessageDecoder<T> messageDecoder) {
     this.context = (ContextInternal) context;
     this.encoding = encoding;
     this.stream = stream;
     this.queue = new InboundBuffer<>(context);
+    this.messageDecoder = messageDecoder;
   }
 
   public void init() {
@@ -81,6 +86,21 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
         handleMessage(msg);
       }
     });
+  }
+
+  protected T decodeMessage(GrpcMessage msg) throws CodecException {
+    switch (msg.encoding()) {
+      case "identity":
+        // Nothing to do
+        break;
+      case "gzip": {
+        msg = GrpcMessage.message("identity", GrpcMessageDecoder.GZIP.decode(msg));
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException();
+    }
+    return messageDecoder.decode(msg);
   }
 
   public void handle(Buffer chunk) {
@@ -176,6 +196,7 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   }
 
   protected void handleMessage(GrpcMessage msg) {
+    last = msg;
     Handler<GrpcMessage> handler = messageHandler;
     if (handler != null) {
       handler.handle(msg);
@@ -184,12 +205,8 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
 
   @Override
   public Future<T> last() {
-    PromiseInternal<T> promise = context.promise();
-    Object[] last = new Object[1];
-    handler(elt -> last[0] = elt);
-    endHandler(v -> promise.tryComplete((T) last[0]));
-    exceptionHandler(err -> promise.tryFail(err));
-    return promise.future();
+    return end()
+      .map(v -> decodeMessage(last));
   }
 
   @Override

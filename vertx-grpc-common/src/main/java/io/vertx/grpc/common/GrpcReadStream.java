@@ -67,6 +67,11 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
   Future<T> last();
 
   /**
+   * @return a future signaling when the response has been fully received successfully or failed
+   */
+  Future<Void> end();
+
+  /**
    * @return the result of applying a collector on the stream
    */
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
