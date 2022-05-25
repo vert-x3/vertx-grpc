@@ -48,7 +48,7 @@ public class ClientRequestTest extends ClientTest {
 
     super.testUnary(should, requestEncoding, responseEncoding);
 
-    Async test = should.async();
+    Async test = should.async(2);
     GrpcClient client = GrpcClient.client(vertx);
     client.request(SocketAddress.inetSocketAddress(port, "localhost"), GreeterGrpc.getSayHelloMethod())
       .onComplete(should.asyncAssertSuccess(callRequest -> {
@@ -63,8 +63,13 @@ public class ClientRequestTest extends ClientTest {
           callResponse.endHandler(v2 -> {
             should.assertEquals(GrpcStatus.OK, callResponse.status());
             should.assertEquals(1, count.get());
-            test.complete();
+            test.countDown();
           });
+          callResponse.last()
+            .onComplete(should.asyncAssertSuccess(reply -> {
+              should.assertEquals("Hello Julien", reply.getMessage());
+              test.countDown();
+          }));
         }));
         callRequest.end(HelloRequest.newBuilder().setName("Julien").build());
       }));

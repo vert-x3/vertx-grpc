@@ -77,11 +77,15 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcCl
 
   @Override
   public Future<Void> end() {
-    if (status == GrpcStatus.OK) {
-      return httpResponse.end();
-    } else {
-      return context.failedFuture("");
-    }
+    return httpResponse
+      .end()
+      .compose(v -> {
+      if (status == GrpcStatus.OK) {
+        return Future.succeededFuture();
+      } else {
+        return Future.failedFuture("Invalid gRPC status " + status);
+      }
+    });
   }
 
   @Override
