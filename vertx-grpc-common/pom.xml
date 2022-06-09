@@ -115,15 +115,6 @@
         <version>1.4.1.Final</version>
       </extension>
     </extensions>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>io.vertx</groupId>
-          <artifactId>vertx-grpc-protoc-plugin</artifactId>
-          <version>${project.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
@@ -138,15 +129,6 @@
           <protocArtifact>com.google.protobuf:protoc:${protoc.version}:exe:${os.detected.classifier}</protocArtifact>
           <pluginId>grpc-java</pluginId>
           <pluginArtifact>io.grpc:protoc-gen-grpc-java:${grpc.version}:exe:${os.detected.classifier}</pluginArtifact>
-          <protocPlugins>
-            <protocPlugin>
-              <id>vertx-grpc-protoc-plugin</id>
-              <groupId>io.vertx</groupId>
-              <artifactId>vertx-grpc-protoc-plugin</artifactId>
-              <version>${project.version}</version>
-              <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
-            </protocPlugin>
-          </protocPlugins>
         </configuration>
         <executions>
           <execution>

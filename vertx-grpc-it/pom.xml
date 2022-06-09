@@ -115,15 +115,6 @@
         <version>1.4.1.Final</version>
       </extension>
     </extensions>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>io.vertx</groupId>
-          <artifactId>vertx-grpc-protoc-plugin</artifactId>
-          <version>${project.version}</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.xolstice.maven.plugins</groupId>
