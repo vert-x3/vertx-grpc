@@ -2,7 +2,7 @@
 
 Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server superseding the integrated Netty based gRPC client.
 
-This server provides a gRPC request/response client API as well as a the generated stub approach with a service bridge.
+This server provides a gRPC request/response oriented API as well as a the generated stub approach with a service bridge.
 
 === Using Vert.x gRPC Server
 

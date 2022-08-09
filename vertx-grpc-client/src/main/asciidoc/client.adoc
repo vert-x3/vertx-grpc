@@ -2,7 +2,7 @@
 
 Vert.x gRPC Client is a new gRPC client powered by Vert.x HTTP client superseding the integrated Netty based gRPC client.
 
-This client provides a gRPC request/response client API as well as a the generated stub approach with a gRPC Channel
+This client provides a gRPC request/response oriented API as well as a the generated stub approach with a gRPC Channel
 
 === Using Vert.x gRPC Client
 
@@ -110,7 +110,7 @@ You can call `{@link io.vertx.grpc.client.GrpcClientRequest#cancel}` to cancel a
 
 [source,java]
 ----
-{@link examples.GrpcClientExamples#streamingResponse}
+{@link examples.GrpcClientExamples#requestCancellation}
 ----
 
 NOTE: cancellation sends an HTTP/2 reset frame to the server
