@@ -18,27 +18,29 @@ package io.vertx.grpc;
 import io.grpc.*;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.netty.NettyChannelBuilder;
-import io.netty.handler.ssl.DelegatingSslContext;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxException;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.transport.Transport;
 
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLEngine;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -279,15 +281,19 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   public ManagedChannel build() {
     // SSL
     if (options.isSsl()) {
-      SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
-      helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
-      SslContext ctx = helper.getContext((VertxInternal) vertx);
-      builder.sslContext(new DelegatingSslContext(ctx) {
-        @Override
-        protected void initEngine(SSLEngine engine) {
-          helper.configureEngine(engine, null);
-        }
-      });
+      EventLoopContext other = ((VertxInternal) vertx).createEventLoopContext();
+      SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
+      try {
+        helper.init(other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+      } catch (InterruptedException e) {
+        throw new VertxException(e);
+      } catch (ExecutionException e) {
+        throw new VertxException(e.getCause());
+      } catch (TimeoutException e) {
+        throw new VertxException(e);
+      }
+      SslContext ctx = helper.sslContext((VertxInternal) vertx, null, true);
+      builder.sslContext(ctx);
     }
     Transport transport = ((VertxInternal) vertx).transport();
     return builder
