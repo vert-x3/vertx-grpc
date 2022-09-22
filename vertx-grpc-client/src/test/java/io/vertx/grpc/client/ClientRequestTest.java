@@ -254,10 +254,11 @@ public class ClientRequestTest extends ClientTest {
         Runnable[] write = new Runnable[1];
         AtomicInteger written = new AtomicInteger();
         write[0] = () -> {
+          written.incrementAndGet();
+          callRequest.write(Item.newBuilder().setValue("the-value-" + batchCount).build());
           if (callRequest.writeQueueFull()) {
-            batchQueue.add(written.get());
+            batchQueue.add(written.getAndSet(0));
             callRequest.drainHandler(v -> {
-              written.set(0);
               if (batchCount.incrementAndGet() < NUM_BATCHES) {
                 write[0].run();
               } else {
@@ -265,8 +266,6 @@ public class ClientRequestTest extends ClientTest {
               }
             });
           } else {
-            callRequest.write(Item.newBuilder().setValue("the-value-" + batchCount).build());
-            written.incrementAndGet();
             vertx.runOnContext(v -> {
               write[0].run();
             });
