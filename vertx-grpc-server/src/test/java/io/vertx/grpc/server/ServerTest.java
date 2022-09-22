@@ -255,7 +255,8 @@ public abstract class ServerTest extends ServerTestBase {
               @Override
               public void onHeaders(Metadata headers) {
                 should.assertEquals("custom_response_header_value", headers.get(Metadata.Key.of("custom_response_header", Metadata.ASCII_STRING_MARSHALLER)));
-                should.assertEquals(3, testMetadataStep.getAndIncrement());
+                int step = testMetadataStep.getAndIncrement();
+                should.assertTrue(step == 2 || step == 3, "Was expected " + step + " 3 or " + step + " == 4");
                 super.onHeaders(headers);
               }
               @Override

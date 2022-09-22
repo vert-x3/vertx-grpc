@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -159,6 +160,7 @@ public abstract class ClientTest extends ClientTestBase {
       public StreamObserver<Item> sink(StreamObserver<Empty> responseObserver) {
         return sink((ServerCallStreamObserver<Empty>) responseObserver);
       }
+      private AtomicBoolean completed = new AtomicBoolean();
       private AtomicInteger toRead = new AtomicInteger();
       final AtomicInteger batchCount = new AtomicInteger();
       private void waitForBatch(ServerCallStreamObserver<Empty> responseObserver) {
@@ -173,9 +175,12 @@ public abstract class ClientTest extends ClientTestBase {
               }
             }
             Integer num = batchQueue.poll();
-            responseObserver.request(num);
             toRead.addAndGet(num);
+            responseObserver.request(num);
           }).start();
+        } else if (completed.get()) {
+          responseObserver.onNext(Empty.getDefaultInstance());
+          responseObserver.onCompleted();
         }
       }
       private StreamObserver<Item> sink(ServerCallStreamObserver<Empty> responseObserver) {
@@ -195,9 +200,11 @@ public abstract class ClientTest extends ClientTestBase {
           }
           @Override
           public void onCompleted() {
-            should.assertEquals(NUM_BATCHES, batchCount.get());
-            responseObserver.onNext(Empty.getDefaultInstance());
-            responseObserver.onCompleted();
+            completed.set(true);
+            if (batchCount.get() == NUM_BATCHES) {
+              responseObserver.onNext(Empty.getDefaultInstance());
+              responseObserver.onCompleted();
+            }
           }
         };
       }

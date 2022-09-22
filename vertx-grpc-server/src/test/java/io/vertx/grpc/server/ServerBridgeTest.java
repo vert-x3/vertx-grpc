@@ -325,7 +325,8 @@ public class ServerBridgeTest extends ServerTest {
           @Override
           public void close(Status status, Metadata trailers) {
             trailers.put(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_trailer_value");
-            should.assertEquals(2, testMetadataStep.getAndIncrement());
+            int step = testMetadataStep.getAndIncrement();
+            should.assertTrue(step == 2 || step == 3, "Was expected " + step + " 3 or " + step + " == 4");
             super.close(status, trailers);
           }
         },headers);

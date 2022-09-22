@@ -10,24 +10,11 @@
  */
 package io.vertx.grpc.client;
 
-import io.grpc.Metadata;
-import io.grpc.ServerBuilder;
-import io.grpc.ServerCall;
-import io.grpc.ServerCallHandler;
-import io.grpc.ServerInterceptor;
 import io.grpc.examples.helloworld.GreeterGrpc;
-import io.grpc.examples.helloworld.HelloReply;
-import io.grpc.examples.helloworld.HelloRequest;
-import io.grpc.stub.ServerCallStreamObserver;
-import io.grpc.stub.StreamObserver;
 import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.StreamResetException;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
@@ -199,44 +186,5 @@ public class ClientMessageEncodingTest extends ClientTestBase {
         }));
         callRequest.end(Buffer.buffer());
       }));
-  }
-
-  // A test to check, gRPC implementation behavior
-  @Test
-  public void testServerDecodingError(TestContext should) throws Exception {
-
-    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
-      @Override
-      public void sayHello(HelloRequest request, StreamObserver<HelloReply> plainResponseObserver) {
-        ServerCallStreamObserver<HelloReply> responseObserver =
-          (ServerCallStreamObserver<HelloReply>) plainResponseObserver;
-      }
-    };
-    startServer(called, ServerBuilder.forPort(port).intercept(new ServerInterceptor() {
-      @Override
-      public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-        return next.startCall(call, headers);
-      }
-    }));
-
-    HttpClient client = vertx.createHttpClient(new HttpClientOptions()
-      .setProtocolVersion(HttpVersion.HTTP_2)
-      .setHttp2ClearTextUpgrade(false)
-    );
-
-    Async async = should.async();
-
-    client.request(HttpMethod.POST, 8080, "localhost", "/" + GreeterGrpc.getSayHelloMethod().getFullMethodName(), should.asyncAssertSuccess(request -> {
-      request.putHeader("content-type", "application/grpc");
-      request.putHeader("grpc-encoding", "gzip");
-      request.sendHead();
-      request.send(Buffer.buffer().appendByte((byte)1).appendInt(11).appendString("Hello World"))
-        .onComplete(should.asyncAssertFailure(err -> {
-          should.assertEquals(StreamResetException.class, err.getClass());
-          StreamResetException reset = (StreamResetException) err;
-          should.assertEquals(GrpcError.CANCELLED.http2ResetCode, reset.getCode());
-          async.complete();
-        }));
-    }));
   }
 }
