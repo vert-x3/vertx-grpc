@@ -13,6 +13,7 @@ package io.vertx.grpc.client.impl;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientResponse;
 
@@ -77,8 +78,7 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcCl
 
   @Override
   public Future<Void> end() {
-    return httpResponse
-      .end()
+    return super.end()
       .compose(v -> {
       if (status == GrpcStatus.OK) {
         return Future.succeededFuture();

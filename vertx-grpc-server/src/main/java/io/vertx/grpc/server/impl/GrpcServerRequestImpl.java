@@ -86,8 +86,4 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
     return response;
   }
 
-  @Override
-  public Future<Void> end() {
-    return httpRequest.end();
-  }
 }

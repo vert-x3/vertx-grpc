@@ -13,6 +13,7 @@ package io.vertx.grpc.common.impl;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.StreamResetException;
 import io.vertx.core.impl.ContextInternal;
@@ -59,6 +60,7 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   private Handler<Void> endHandler;
   private GrpcMessage last;
   private final GrpcMessageDecoder<T> messageDecoder;
+  private final Promise<Void> end;
 
   protected GrpcReadStreamBase(Context context, ReadStream<Buffer> stream, String encoding, GrpcMessageDecoder<T> messageDecoder) {
     this.context = (ContextInternal) context;
@@ -66,6 +68,7 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
     this.stream = stream;
     this.queue = new InboundBuffer<>(context);
     this.messageDecoder = messageDecoder;
+    this.end = ((ContextInternal) context).promise();
   }
 
   public void init() {
@@ -182,6 +185,7 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   }
 
   protected void handleException(Throwable err) {
+    end.tryFail(err);
     Handler<Throwable> handler = exceptionHandler;
     if (handler != null) {
       handler.handle(err);
@@ -189,6 +193,7 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   }
 
   protected void handleEnd() {
+    end.tryComplete();
     Handler<Void> handler = endHandler;
     if (handler != null) {
       handler.handle(null);
@@ -207,6 +212,11 @@ public abstract class GrpcReadStreamBase<S extends GrpcReadStreamBase<S, T>, T> 
   public Future<T> last() {
     return end()
       .map(v -> decodeMessage(last));
+  }
+
+  @Override
+  public Future<Void> end() {
+    return end.future();
   }
 
   @Override
