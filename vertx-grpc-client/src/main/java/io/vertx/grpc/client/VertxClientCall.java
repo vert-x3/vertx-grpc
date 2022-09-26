@@ -10,6 +10,7 @@ import io.grpc.Status;
 import io.vertx.core.Future;
 import io.vertx.core.http.StreamResetException;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.impl.BridgeMessageDecoder;
 import io.vertx.grpc.common.impl.BridgeMessageEncoder;
 import io.vertx.grpc.common.impl.ReadStreamAdapter;
@@ -49,13 +50,6 @@ class VertxClientCall<RequestT, ResponseT> extends ClientCall<RequestT, Response
     };
     readAdapter = new ReadStreamAdapter<ResponseT>() {
       @Override
-      protected void handleClose() {
-        Status status = Status.fromCodeValue(grpcResponse.status().code);
-        Metadata trailers = Utils.readMetadata(grpcResponse.trailers());
-        doClose(status, trailers);
-      }
-
-      @Override
       protected void handleMessage(ResponseT msg) {
         if (exec == null) {
           listener.onMessage(msg);
@@ -91,7 +85,6 @@ class VertxClientCall<RequestT, ResponseT> extends ClientCall<RequestT, Response
             String respEncoding = grpcResponse.encoding();
             Decompressor decompressor = DecompressorRegistry.getDefaultInstance().lookupDecompressor(respEncoding);
 
-
             BridgeMessageDecoder<ResponseT> decoder = new BridgeMessageDecoder<>(methodDescriptor.getResponseMarshaller(), decompressor);
 
             Metadata responseHeaders = Utils.readMetadata(grpcResponse.headers());
@@ -103,29 +96,41 @@ class VertxClientCall<RequestT, ResponseT> extends ClientCall<RequestT, Response
               });
             }
             readAdapter.init(grpcResponse, decoder);
+            grpcResponse.end().onComplete(ar -> {
+              Status status;
+              Metadata trailers;
+              if (grpcResponse.status() != null) {
+                status = Status.fromCodeValue(grpcResponse.status().code);
+                trailers = Utils.readMetadata(grpcResponse.trailers());
+              } else {
+                status = Status.fromThrowable(ar.cause());
+                trailers = new Metadata();
+              }
+              doClose(status, trailers);
+            });
           } else {
             Throwable err = ar2.cause();
             if (err instanceof StreamResetException) {
               StreamResetException reset = (StreamResetException) err;
-              switch ((int) reset.getCode()) {
-                case 8:
-                  doClose(Status.CANCELLED, new Metadata());
-                  break;
-                default:
-                  System.out.println("handle me");
-                  break;
+              GrpcError grpcError = GrpcError.mapHttp2ErrorCode(reset.getCode());
+              if (grpcError != null) {
+                doClose(Status.fromCodeValue(grpcError.status.code), new Metadata());
+              } else {
+                doClose(Status.UNKNOWN, new Metadata());
               }
             } else {
-              System.out.println("handle me");
+              doClose(Status.fromThrowable(err), new Metadata());
             }
           }
         });
         writeAdapter.init(request, new BridgeMessageEncoder<>(methodDescriptor.getRequestMarshaller(), compressor));
+      } else {
+        doClose(Status.UNAVAILABLE, new Metadata());
       }
     });
   }
 
-  public void doClose(Status status, Metadata trailers) {
+  private void doClose(Status status, Metadata trailers) {
     Runnable cmd = () -> {
       listener.onClose(status, trailers);
     };

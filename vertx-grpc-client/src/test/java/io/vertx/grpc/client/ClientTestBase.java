@@ -34,16 +34,20 @@ public abstract class ClientTestBase extends GrpcTestBase {
 
   @After
   public void tearDown(TestContext should) {
-    Server s = server;
-    if (s != null) {
-      server = null;
-      s.shutdown();
-    }
+    stopServer(false);
     super.tearDown(should);
   }
 
   void startServer(BindableService service) throws IOException {
     startServer(service, ServerBuilder.forPort(port));
+  }
+
+  void stopServer(boolean now) {
+    Server s = server;
+    if (s != null) {
+      server = null;
+      s.shutdownNow();
+    }
   }
 
   void startServer(BindableService service, ServerBuilder builder) throws IOException {

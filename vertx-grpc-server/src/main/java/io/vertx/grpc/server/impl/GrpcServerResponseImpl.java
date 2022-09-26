@@ -128,24 +128,23 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   }
 
   @Override
-  public void cancel() {
-    checkState();
+  public boolean cancel() {
+    if (cancelled || trailersSent) {
+      return false;
+    }
     cancelled = true;
     httpResponse.reset(GrpcError.CANCELLED.http2ResetCode);
+    return true;
   }
 
-  private void checkState() {
+  private Future<Void> writeMessage(GrpcMessage message, boolean end) {
+
     if (cancelled) {
       throw new IllegalStateException("The stream has been cancelled");
     }
     if (trailersSent) {
       throw new IllegalStateException("The stream has been closed");
     }
-  }
-
-  private Future<Void> writeMessage(GrpcMessage message, boolean end) {
-
-    checkState();
 
     if (message == null && !end) {
       throw new IllegalStateException();
