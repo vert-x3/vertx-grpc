@@ -20,6 +20,7 @@ import io.vertx.core.http.HttpClientRequest;
 import java.util.Map;
 import java.util.Objects;
 
+import io.vertx.core.http.HttpConnection;
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.CodecException;
@@ -240,5 +241,10 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
     cancelled = true;
     httpRequest.reset(GrpcError.CANCELLED.http2ResetCode);
     return true;
+  }
+
+  @Override
+  public HttpConnection connection() {
+    return httpRequest.connection();
   }
 }

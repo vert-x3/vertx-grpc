@@ -15,6 +15,7 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.grpc.common.GrpcError;
 import io.vertx.grpc.common.GrpcMessage;
 import io.vertx.grpc.common.GrpcReadStream;
@@ -72,4 +73,9 @@ public interface GrpcServerRequest<Req, Resp> extends GrpcReadStream<Req> {
 
   @Override
   GrpcServerRequest<Req, Resp> endHandler(@Nullable Handler<Void> endHandler);
+
+  /**
+   * @return the underlying HTTP connection
+   */
+  HttpConnection connection();
 }

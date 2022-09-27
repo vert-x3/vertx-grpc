@@ -13,6 +13,7 @@ package io.vertx.grpc.server.impl;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.impl.HttpServerRequestInternal;
 import io.vertx.grpc.common.CodecException;
@@ -86,4 +87,8 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
     return response;
   }
 
+  @Override
+  public HttpConnection connection() {
+    return httpRequest.connection();
+  }
 }

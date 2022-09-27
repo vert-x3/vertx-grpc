@@ -16,6 +16,7 @@ import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpConnection;
 import io.vertx.grpc.common.GrpcWriteStream;
 import io.vertx.grpc.common.ServiceName;
 
@@ -89,4 +90,8 @@ public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
   @Override
   GrpcClientRequest<Req, Resp> drainHandler(@Nullable Handler<Void> handler);
 
+  /**
+   * @return the underlying HTTP connection
+   */
+  HttpConnection connection();
 }
