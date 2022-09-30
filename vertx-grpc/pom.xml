@@ -31,7 +31,7 @@
 
   <properties>
     <grpc.version>1.47.0</grpc.version>
-    <protoc.version>3.21.6</protoc.version>
+    <protoc.version>3.21.7</protoc.version>
     <doc.skip>false</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
   </properties>
