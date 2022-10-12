@@ -30,7 +30,7 @@
   <name>Vert.x gRPC</name>
 
   <properties>
-    <grpc.version>1.47.0</grpc.version>
+    <grpc.version>1.50.0</grpc.version>
     <protoc.version>3.19.2</protoc.version>
     <doc.skip>false</doc.skip>
     <jar.manifest>${project.basedir}/src/main/resources/META-INF/MANIFEST.MF</jar.manifest>
