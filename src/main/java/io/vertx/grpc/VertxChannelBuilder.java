@@ -16,10 +16,12 @@ import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.transport.Transport;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 import java.net.SocketAddress;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -103,9 +105,38 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   }
 
   @Override
-  public VertxChannelBuilder usePlaintext(boolean skipNegotiation) {
-    builder.usePlaintext(skipNegotiation);
+  public VertxChannelBuilder offloadExecutor(Executor executor) {
+    builder.offloadExecutor(executor);
     return this;
+  }
+
+  @Override
+  public VertxChannelBuilder defaultLoadBalancingPolicy(String policy) {
+    builder.defaultLoadBalancingPolicy(policy);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder maxInboundMetadataSize(int bytes) {
+    builder.maxInboundMetadataSize(bytes);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder proxyDetector(ProxyDetector proxyDetector) {
+    builder.proxyDetector(proxyDetector);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder defaultServiceConfig(@Nullable Map<String, ?> serviceConfig) {
+    builder.defaultServiceConfig(serviceConfig);
+    return this;
+  }
+
+  @Override
+  public VertxChannelBuilder disableServiceConfigLookUp() {
+    return super.disableServiceConfigLookUp();
   }
 
   @Override

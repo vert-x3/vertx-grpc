@@ -26,7 +26,7 @@
     <name>Vert.x gRPC</name>
     <properties>
         <stack.version>3.9.14-SNAPSHOT</stack.version>
-        <vertx.grpc.version>1.25.0</vertx.grpc.version>
+        <vertx.grpc.version>1.50.2</vertx.grpc.version>
         <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
         <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
     </properties>

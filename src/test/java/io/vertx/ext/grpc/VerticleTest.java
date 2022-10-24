@@ -92,7 +92,7 @@ public class VerticleTest {
     Async async = ctx.async(num);
     for (int i = 0;i < num;i++) {
       ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
-          .usePlaintext(true)
+          .usePlaintext()
           .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
@@ -130,7 +130,7 @@ public class VerticleTest {
     started.awaitSuccess(10000);
     Async async = ctx.async();
     ManagedChannel channel= VertxChannelBuilder.forAddress(vertx, "localhost", 50051)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
     GreeterGrpc.GreeterVertxStub blockingStub = GreeterGrpc.newVertxStub(channel);
     HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();

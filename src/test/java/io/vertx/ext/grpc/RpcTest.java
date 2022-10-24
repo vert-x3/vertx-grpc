@@ -48,7 +48,7 @@ public class RpcTest extends GrpcTestBase {
     Context clientCtx = vertx.getOrCreateContext();
     clientCtx.runOnContext(v -> {
       ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-        .usePlaintext(true)
+        .usePlaintext()
         .build();
       GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
       HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
@@ -103,7 +103,7 @@ public class RpcTest extends GrpcTestBase {
     started.awaitSuccess(10000);
     Async async = ctx.async(2);
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext(true)
+      .usePlaintext()
       .build();
     GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
     stub.sayHello(HelloRequest.newBuilder().setName("Julien").build(), ar -> {
@@ -157,7 +157,7 @@ public class RpcTest extends GrpcTestBase {
     started.awaitSuccess(10000);
     Async async = ctx.async();
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext(true)
+      .usePlaintext()
       .build();
     GreeterGrpc.GreeterVertxStub stub = GreeterGrpc.newVertxStub(channel);
     stub.sayHello(HelloRequest.newBuilder().setName("Julien").build(), ar -> {
@@ -190,7 +190,7 @@ public class RpcTest extends GrpcTestBase {
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext(true)
+      .usePlaintext()
       .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
@@ -227,7 +227,7 @@ public class RpcTest extends GrpcTestBase {
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext(true)
+      .usePlaintext()
       .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     stub.sink(exchange -> {
@@ -266,7 +266,7 @@ public class RpcTest extends GrpcTestBase {
       }
     });
     ManagedChannel channel = VertxChannelBuilder.forAddress(vertx, "localhost", port)
-      .usePlaintext(true)
+      .usePlaintext()
       .build();
     StreamingGrpc.StreamingVertxStub stub = StreamingGrpc.newVertxStub(channel);
     final List<String> items = new ArrayList<>();
