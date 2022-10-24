@@ -15,6 +15,8 @@
 
   <properties>
     <stack.version>4.3.5-SNAPSHOT</stack.version>
+    <grpc.version>1.44.0</grpc.version>
+    <protoc.version>3.19.2</protoc.version>
     <doc.skip>true</doc.skip>
   </properties>
 
