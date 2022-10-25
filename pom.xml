@@ -13,8 +13,7 @@
   ~      http://www.opensource.org/licenses/apache2.0.php
   ~
   ~  You may elect to redistribute this code under either of these licenses.
-  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.vertx</groupId>
@@ -22,10 +21,10 @@
         <version>38</version>
     </parent>
     <artifactId>vertx-grpc</artifactId>
-    <version>3.9.14-SNAPSHOT</version>
+    <version>3.9.14</version>
     <name>Vert.x gRPC</name>
     <properties>
-        <stack.version>3.9.14-SNAPSHOT</stack.version>
+        <stack.version>3.9.14</stack.version>
         <vertx.grpc.version>1.50.2</vertx.grpc.version>
         <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
         <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
