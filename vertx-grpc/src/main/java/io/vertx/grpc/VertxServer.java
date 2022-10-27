@@ -72,7 +72,7 @@ public class VertxServer extends Server {
 
       // SSL
       if (options.isSsl()) {
-        EventLoopContext other = vertx.createEventLoopContext();
+        ContextInternal other = vertx.createWorkerContext();
         SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
         try {
           helper.init(other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);

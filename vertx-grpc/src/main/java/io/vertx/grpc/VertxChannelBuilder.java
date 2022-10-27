@@ -281,7 +281,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   public ManagedChannel build() {
     // SSL
     if (options.isSsl()) {
-      EventLoopContext other = ((VertxInternal) vertx).createEventLoopContext();
+      ContextInternal other = ((VertxInternal) vertx).createWorkerContext();
       SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
       try {
         helper.init(other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
