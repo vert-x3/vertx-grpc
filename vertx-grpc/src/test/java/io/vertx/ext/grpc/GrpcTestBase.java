@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 public abstract class GrpcTestBase {
 
   @Rule
-  public RunTestOnContext rule = new RunTestOnContext();
+  public RunTestOnContext rule = new RunTestOnContext(new VertxOptions().setEventLoopPoolSize(1));
 
   /* The port on which the server should run */
   Vertx vertx;
@@ -59,7 +59,7 @@ public abstract class GrpcTestBase {
   }
 
   Future<Void> startServer(BindableService service, VertxServerBuilder builder) {
-    Promise<Void> promise = ((VertxInternal) rule.vertx()).promise();
+    Promise<Void> promise = Promise.promise();
     server = builder
         .addService(service)
         .build()
@@ -69,7 +69,7 @@ public abstract class GrpcTestBase {
   }
 
   Future<Void> startServer(ServerServiceDefinition service) {
-    Promise<Void> promise = ((VertxInternal) rule.vertx()).promise();
+    Promise<Void> promise = Promise.promise();
     startServer(service, ar -> {
       if (ar.succeeded()) {
         promise.complete();
