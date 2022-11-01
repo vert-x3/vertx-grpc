@@ -17,17 +17,17 @@ package io.vertx.grpc;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
-import io.netty.handler.ssl.DelegatingSslContext;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Closeable;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
+import io.vertx.core.VertxException;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.SSLHelper;
@@ -35,15 +35,16 @@ import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.net.impl.transport.Transport;
 
-import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -71,18 +72,22 @@ public class VertxServer extends Server {
 
       // SSL
       if (options.isSsl()) {
-        SSLHelper helper = new SSLHelper(options, options.getKeyCertOptions(), options.getTrustOptions());
-        helper.setApplicationProtocols(Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
-        SslContext ctx = helper.getContext((VertxInternal) vertx);
-        builder.sslContext(new DelegatingSslContext(ctx) {
-          @Override
-          protected void initEngine(SSLEngine engine) {
-            helper.configureEngine(engine, null);
-          }
-        });
+        ContextInternal other = vertx.createWorkerContext();
+        SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
+        try {
+          helper.init(other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+          throw new VertxException(e);
+        } catch (ExecutionException e) {
+          throw new VertxException(e.getCause());
+        } catch (TimeoutException e) {
+          throw new VertxException(e);
+        }
+        SslContext ctx = helper.sslContext(vertx, null, true);
+        builder.sslContext(ctx);
       }
 
-      Transport transport = ((VertxInternal) vertx).transport();
+      Transport transport = vertx.transport();
 
       this.id = id;
       this.options = options;
