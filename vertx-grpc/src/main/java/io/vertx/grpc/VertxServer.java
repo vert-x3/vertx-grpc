@@ -32,6 +32,7 @@ import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.ServerID;
+import io.vertx.core.net.impl.SslContextProvider;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.net.impl.transport.Transport;
 
@@ -73,9 +74,10 @@ public class VertxServer extends Server {
       // SSL
       if (options.isSsl()) {
         ContextInternal other = vertx.createWorkerContext();
-        SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
+        SslContextProvider provider;
         try {
-          helper.init(other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+          SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
+          provider = helper.init(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
           throw new VertxException(e);
         } catch (ExecutionException e) {
@@ -83,7 +85,7 @@ public class VertxServer extends Server {
         } catch (TimeoutException e) {
           throw new VertxException(e);
         }
-        SslContext ctx = helper.sslContext(vertx, null, true);
+        SslContext ctx = provider.sslContext(vertx, null, true);
         builder.sslContext(ctx);
       }
 
