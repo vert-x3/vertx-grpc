@@ -30,6 +30,7 @@ import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.impl.SSLHelper;
+import io.vertx.core.net.impl.SslContextProvider;
 import io.vertx.core.net.impl.transport.Transport;
 
 import javax.annotation.Nullable;
@@ -282,9 +283,10 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     // SSL
     if (options.isSsl()) {
       ContextInternal other = ((VertxInternal) vertx).createWorkerContext();
-      SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
+      SslContextProvider provider;
       try {
-        helper.init(other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
+        provider = helper.init(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
       } catch (InterruptedException e) {
         throw new VertxException(e);
       } catch (ExecutionException e) {
@@ -292,7 +294,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       } catch (TimeoutException e) {
         throw new VertxException(e);
       }
-      SslContext ctx = helper.sslContext((VertxInternal) vertx, null, true);
+      SslContext ctx = provider.sslContext((VertxInternal) vertx, null, true);
       builder.sslContext(ctx);
     }
     Transport transport = ((VertxInternal) vertx).transport();
