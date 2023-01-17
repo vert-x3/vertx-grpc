@@ -8,7 +8,7 @@ import static io.grpc.MethodDescriptor.generateFullMethodName;
  * </pre>
  */
 @javax.annotation.Generated(
-    value = "by gRPC proto compiler (version 1.44.0)",
+    value = "by gRPC proto compiler (version 1.50.2)",
     comments = "Source: streaming.proto")
 @io.grpc.stub.annotations.GrpcGenerated
 public final class StreamingGrpc {
