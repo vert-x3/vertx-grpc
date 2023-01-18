@@ -63,6 +63,7 @@
     <module>vertx-grpc-common</module>
     <module>vertx-grpc-server</module>
     <module>vertx-grpc-client</module>
+    <module>vertx-grpc-context-storage</module>
     <module>vertx-grpc-it</module>
   </modules>
 
