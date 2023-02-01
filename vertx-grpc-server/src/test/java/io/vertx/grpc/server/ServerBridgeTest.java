@@ -10,6 +10,7 @@
  */
 package io.vertx.grpc.server;
 
+import com.google.rpc.Code;
 import io.grpc.ForwardingServerCall;
 import io.grpc.ForwardingServerCallListener;
 import io.grpc.Metadata;
@@ -26,6 +27,7 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.ext.unit.Async;
@@ -339,6 +341,29 @@ public class ServerBridgeTest extends ServerTest {
     startServer(server);
 
     super.testMetadata(should);
+  }
+
+  @Override
+  public void testTrailersOnly(TestContext should) {
+
+    GreeterGrpc.GreeterImplBase impl = new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> responseObserver) {
+        Metadata md = new Metadata();
+        md.put(Metadata.Key.of("custom_response_trailer", io.grpc.Metadata.ASCII_STRING_MARSHALLER), "custom_response_trailer_value");
+        final StatusRuntimeException t =
+          StatusProto.toStatusRuntimeException(
+            com.google.rpc.Status.newBuilder().setCode(Code.INVALID_ARGUMENT_VALUE).build(), md);
+        responseObserver.onError(t);
+      }
+    };
+
+    GrpcServer server = GrpcServer.server(vertx);
+    GrpcServiceBridge serverStub = GrpcServiceBridge.bridge(impl);
+    serverStub.bind(server);
+    startServer(server);
+
+    super.testTrailersOnly(should);
   }
 
   @Test

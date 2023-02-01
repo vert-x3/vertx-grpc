@@ -35,7 +35,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
@@ -260,6 +259,22 @@ public class ServerRequestTest extends ServerTest {
     }));
 
     super.testHandleCancel(should);
+  }
+
+  @Override
+  public void testTrailersOnly(TestContext should) {
+
+    startServer(GrpcServer.server(vertx).callHandler(GreeterGrpc.getSayHelloMethod(), call -> {
+      call.handler(helloRequest -> {
+        GrpcServerResponse<HelloRequest, HelloReply> response = call.response();
+        response.trailers().set("custom_response_trailer", "custom_response_trailer_value");
+        response
+          .status(GrpcStatus.INVALID_ARGUMENT)
+          .end();
+      });
+    }));
+
+    super.testTrailersOnly(should);
   }
 
   @Test

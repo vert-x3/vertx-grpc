@@ -306,4 +306,20 @@ public abstract class ServerTest extends ServerTestBase {
     latch.awaitSuccess(10_000);
     items.cancel("cancelled", new Exception());
   }
+
+  @Test
+  public void testTrailersOnly(TestContext should) {
+    HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
+    channel = ManagedChannelBuilder.forAddress( "localhost", port)
+      .usePlaintext()
+      .build();
+    GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
+    try {
+      stub.sayHello(request);
+    } catch (StatusRuntimeException e) {
+      Metadata trailers = e.getTrailers();
+      should.assertEquals("custom_response_trailer_value", trailers.get(Metadata.Key.of("custom_response_trailer", Metadata.ASCII_STRING_MARSHALLER)));
+      should.assertEquals(Status.INVALID_ARGUMENT, e.getStatus());
+    }
+  }
 }

@@ -172,6 +172,8 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
       }
     }
 
+    boolean trailersOnly = status != GrpcStatus.OK && !headersSent && end;
+
     MultiMap responseHeaders = httpResponse.headers();
     if (!headersSent) {
       headersSent = true;
@@ -187,19 +189,23 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
       responseHeaders.set("content-type", "application/grpc");
       responseHeaders.set("grpc-encoding", encoding);
       responseHeaders.set("grpc-accept-encoding", "gzip");
-      if (message == null && end) {
-        responseHeaders.set("grpc-status", status.toString());
-      }
     }
 
     if (end) {
-      trailersSent = true;
+      if (!trailersSent) {
+        trailersSent = true;
+      }
+      MultiMap responseTrailers;
+      if (trailersOnly) {
+        responseTrailers = httpResponse.headers();
+      } else {
+        responseTrailers = httpResponse.trailers();
+      }
+
       if (!responseHeaders.contains("grpc-status")) {
-        MultiMap responseTrailers = httpResponse.trailers();
         responseTrailers.set("grpc-status", status.toString());
       }
       if (trailers != null && trailers.size() > 0) {
-        MultiMap responseTrailers = httpResponse.trailers();
         for (Map.Entry<String, String> trailer : trailers) {
           if (!trailer.getKey().startsWith("grpc-")) {
             responseTrailers.add(trailer.getKey(), trailer.getValue());
