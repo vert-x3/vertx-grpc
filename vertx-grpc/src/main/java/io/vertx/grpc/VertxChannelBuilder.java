@@ -286,7 +286,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       SslContextProvider provider;
       try {
         SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
-        provider = helper.init(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        provider = helper.buildContextProvider(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
       } catch (InterruptedException e) {
         throw new VertxException(e);
       } catch (ExecutionException e) {
@@ -294,7 +294,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       } catch (TimeoutException e) {
         throw new VertxException(e);
       }
-      SslContext ctx = provider.sslContext((VertxInternal) vertx, null, true);
+      SslContext ctx = provider.createClientContext(null, true, options.isTrustAll());
       builder.sslContext(ctx);
     }
     Transport transport = ((VertxInternal) vertx).transport();
