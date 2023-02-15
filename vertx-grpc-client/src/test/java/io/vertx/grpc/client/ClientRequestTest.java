@@ -10,17 +10,14 @@
  */
 package io.vertx.grpc.client;
 
-import io.grpc.Grpc;
-import io.grpc.ServerCredentials;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.grpc.TlsServerCredentials;
+import io.grpc.*;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.streaming.Empty;
 import io.grpc.examples.streaming.Item;
 import io.grpc.examples.streaming.StreamingGrpc;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.StreamResetException;
@@ -28,6 +25,7 @@ import io.vertx.core.net.SelfSignedCertificate;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.grpc.common.GrpcReadStream;
 import io.vertx.grpc.common.GrpcStatus;
 import org.junit.Test;
 
@@ -459,6 +457,29 @@ public class ClientRequestTest extends ClientTest {
           } catch (IllegalStateException ignore) {
           }
         });
+      }));
+  }
+
+  @Test
+  public void testCall(TestContext should) throws IOException {
+
+    GreeterGrpc.GreeterImplBase called = new GreeterGrpc.GreeterImplBase() {
+      @Override
+      public void sayHello(HelloRequest request, StreamObserver<HelloReply> plainResponseObserver) {
+        ServerCallStreamObserver<HelloReply> responseObserver =
+          (ServerCallStreamObserver<HelloReply>) plainResponseObserver;
+        responseObserver.onNext(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
+        responseObserver.onCompleted();
+      }
+    };
+    startServer(called, ServerBuilder.forPort(port));
+
+    GrpcClient client = GrpcClient.client(vertx);
+    client.call(SocketAddress.inetSocketAddress(port, "localhost"), GreeterGrpc.getSayHelloMethod(),
+        callRequest -> callRequest.end(HelloRequest.newBuilder().setName("Julien").build()),
+        GrpcReadStream::last)
+      .onComplete(should.asyncAssertSuccess(reply -> {
+        should.assertEquals("Hello Julien", reply.getMessage());
       }));
   }
 }

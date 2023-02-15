@@ -16,7 +16,12 @@ import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpConnection;
+import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.streams.ReadStream;
 import io.vertx.grpc.common.GrpcWriteStream;
 import io.vertx.grpc.common.ServiceName;
 
@@ -94,4 +99,14 @@ public interface GrpcClientRequest<Req, Resp> extends GrpcWriteStream<Req> {
    * @return the underlying HTTP connection
    */
   HttpConnection connection();
+
+  default Future<GrpcClientResponse<Req, Resp>> send(Req item) {
+    this.end(item);
+    return this.response();
+  }
+
+  default Future<GrpcClientResponse<Req, Resp>> send(ReadStream<Req> body) {
+    body.pipeTo(this);
+    return this.response();
+  }
 }

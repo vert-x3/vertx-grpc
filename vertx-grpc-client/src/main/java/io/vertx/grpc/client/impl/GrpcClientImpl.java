@@ -51,16 +51,16 @@ public class GrpcClientImpl implements GrpcClient {
       .map(request -> new GrpcClientRequestImpl<>(request, GrpcMessageEncoder.IDENTITY, GrpcMessageDecoder.IDENTITY));
   }
 
-  @Override public <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> method) {
+  @Override public <Req, Resp> Future<GrpcClientRequest<Req, Resp>> request(SocketAddress server, MethodDescriptor<Req, Resp> service) {
     RequestOptions options = new RequestOptions()
       .setMethod(HttpMethod.POST)
       .setServer(server);
-    GrpcMessageDecoder<Resp> messageDecoder = GrpcMessageDecoder.unmarshaller(method.getResponseMarshaller());
-    GrpcMessageEncoder<Req> messageEncoder = GrpcMessageEncoder.marshaller(method.getRequestMarshaller());
+    GrpcMessageDecoder<Resp> messageDecoder = GrpcMessageDecoder.unmarshaller(service.getResponseMarshaller());
+    GrpcMessageEncoder<Req> messageEncoder = GrpcMessageEncoder.marshaller(service.getRequestMarshaller());
     return client.request(options)
       .map(request -> {
         GrpcClientRequestImpl<Req, Resp> call = new GrpcClientRequestImpl<>(request, messageEncoder, messageDecoder);
-        call.fullMethodName(method.getFullMethodName());
+        call.fullMethodName(service.getFullMethodName());
         return call;
       });
   }
