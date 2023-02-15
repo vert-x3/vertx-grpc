@@ -21,10 +21,10 @@
         <version>38</version>
     </parent>
     <artifactId>vertx-grpc</artifactId>
-    <version>3.9.15</version>
+    <version>3.9.16-SNAPSHOT</version>
     <name>Vert.x gRPC</name>
     <properties>
-        <stack.version>3.9.15</stack.version>
+        <stack.version>3.9.16-SNAPSHOT</stack.version>
         <vertx.grpc.version>1.50.2</vertx.grpc.version>
         <jetty.alpnAgent.version>2.0.9</jetty.alpnAgent.version>
         <jetty.alpnAgent.path>${settings.localRepository}/org/mortbay/jetty/alpn/jetty-alpn-agent/${jetty.alpnAgent.version}/jetty-alpn-agent-${jetty.alpnAgent.version}.jar</jetty.alpnAgent.path>
