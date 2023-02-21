@@ -1,10 +1,8 @@
 package io.vertx.grpc.common;
 
 import io.vertx.codegen.annotations.Fluent;
-import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -61,17 +59,4 @@ public interface GrpcWriteStream<T> extends WriteStream<T> {
    */
   boolean cancel();
 
-  @GenIgnore
-  @Override
-  void write(T t, Handler<AsyncResult<Void>> handler);
-
-  @GenIgnore
-  @Override
-  void end(Handler<AsyncResult<Void>> handler);
-
-  @GenIgnore
-  @Override
-  default void end(T data, Handler<AsyncResult<Void>> handler) {
-    WriteStream.super.end(data, handler);
-  }
 }

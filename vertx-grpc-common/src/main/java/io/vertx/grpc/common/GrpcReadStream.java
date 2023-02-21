@@ -4,12 +4,10 @@ import io.vertx.codegen.annotations.Fluent;
 import io.vertx.codegen.annotations.GenIgnore;
 import io.vertx.codegen.annotations.Nullable;
 import io.vertx.codegen.annotations.VertxGen;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.streams.ReadStream;
-import io.vertx.core.streams.WriteStream;
 
 @VertxGen
 public interface GrpcReadStream<T> extends ReadStream<T> {
@@ -77,8 +75,4 @@ public interface GrpcReadStream<T> extends ReadStream<T> {
   @GenIgnore(GenIgnore.PERMITTED_TYPE)
   <R, A> Future<R> collecting(java.util.stream.Collector<T , A , R> collector);
 
-  @GenIgnore
-  default void pipeTo(WriteStream<T> dst, Handler<AsyncResult<Void>> handler) {
-    ReadStream.super.pipeTo(dst, handler);
-  }
 }
