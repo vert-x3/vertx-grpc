@@ -3,7 +3,8 @@ package io.vertx.ext.grpc;
 import examples.GreeterGrpc;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
-import io.vertx.core.net.impl.transport.Transport;
+import io.vertx.core.impl.VertxBuilder;
+import io.vertx.core.spi.transport.Transport;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.grpc.VertxServerBuilder;
@@ -34,7 +35,7 @@ public class NativeTransportTest {
   }
 
   private void assumeNativeTransport() {
-    Transport nativeTransport = Transport.nativeTransport();
+    Transport nativeTransport = VertxBuilder.nativeTransport();
     Assume.assumeTrue(nativeTransport != null && nativeTransport.isAvailable());
   }
 }

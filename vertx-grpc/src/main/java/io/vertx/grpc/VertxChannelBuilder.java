@@ -26,12 +26,11 @@ import io.vertx.core.VertxException;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.EventLoopContext;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.impl.SSLHelper;
 import io.vertx.core.net.impl.SslContextProvider;
-import io.vertx.core.net.impl.transport.Transport;
+import io.vertx.core.spi.transport.Transport;
 
 import javax.annotation.Nullable;
 import java.net.SocketAddress;
