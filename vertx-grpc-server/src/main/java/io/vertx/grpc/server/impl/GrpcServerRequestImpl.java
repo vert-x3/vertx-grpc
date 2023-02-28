@@ -37,7 +37,7 @@ public class GrpcServerRequestImpl<Req, Resp> extends GrpcReadStreamBase<GrpcSer
   public GrpcServerRequestImpl(HttpServerRequest httpRequest, GrpcMessageDecoder<Req> messageDecoder, GrpcMessageEncoder<Resp> messageEncoder, GrpcMethodCall methodCall) {
     super(((HttpServerRequestInternal) httpRequest).context(), httpRequest, httpRequest.headers().get("grpc-encoding"), messageDecoder);
     this.httpRequest = httpRequest;
-    this.response = new GrpcServerResponseImpl<>(httpRequest.response(), messageEncoder);
+    this.response = new GrpcServerResponseImpl<>(this, httpRequest.response(), messageEncoder);
     this.methodCall = methodCall;
   }
 

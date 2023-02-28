@@ -23,6 +23,7 @@ import io.vertx.grpc.common.GrpcStatus;
 import io.vertx.grpc.common.GrpcMessageDecoder;
 import io.vertx.grpc.common.GrpcMessageEncoder;
 import io.vertx.grpc.common.impl.GrpcMessageImpl;
+import io.vertx.grpc.server.GrpcServerRequest;
 import io.vertx.grpc.server.GrpcServerResponse;
 
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.Objects;
  */
 public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req, Resp> {
 
+  private final GrpcServerRequestImpl<Req, Resp> request;
   private final HttpServerResponse httpResponse;
   private final GrpcMessageEncoder<Resp> encoder;
   private String encoding;
@@ -42,7 +44,8 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   private boolean cancelled;
   private MultiMap headers, trailers;
 
-  public GrpcServerResponseImpl(HttpServerResponse httpResponse, GrpcMessageEncoder<Resp> encoder) {
+  public GrpcServerResponseImpl(GrpcServerRequestImpl<Req, Resp> request, HttpServerResponse httpResponse, GrpcMessageEncoder<Resp> encoder) {
+    this.request = request;
     this.httpResponse = httpResponse;
     this.encoder = encoder;
   }
@@ -128,13 +131,21 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
   }
 
   @Override
-  public boolean cancel() {
-    if (cancelled || trailersSent) {
-      return false;
+  public void cancel() {
+    if (cancelled) {
+      return;
     }
     cancelled = true;
-    httpResponse.reset(GrpcError.CANCELLED.http2ResetCode);
-    return true;
+    Future<Void> fut = request.end();
+    boolean requestEnded;
+    if (fut.failed()) {
+      return;
+    } else {
+      requestEnded = fut.succeeded();
+    }
+    if (!requestEnded || !trailersSent) {
+      httpResponse.reset(GrpcError.CANCELLED.http2ResetCode);
+    }
   }
 
   private Future<Void> writeMessage(GrpcMessage message, boolean end) {

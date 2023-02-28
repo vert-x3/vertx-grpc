@@ -65,10 +65,10 @@ public class GrpcClientResponseImpl<Req, Resp> extends GrpcReadStreamBase<GrpcCl
     if (responseStatus != null) {
       status = GrpcStatus.valueOf(Integer.parseInt(responseStatus));
     }
+    super.handleEnd();
     if (!request.trailersSent) {
       request.cancel();
     }
-    super.handleEnd();
   }
 
   @Override

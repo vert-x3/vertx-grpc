@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import io.vertx.core.http.HttpConnection;
+import io.vertx.core.impl.ContextInternal;
+import io.vertx.core.impl.future.FutureInternal;
 import io.vertx.grpc.client.GrpcClientRequest;
 import io.vertx.grpc.client.GrpcClientResponse;
 import io.vertx.grpc.common.CodecException;
@@ -133,22 +135,26 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override public Future<Void> end() {
-    if (!headersSent || trailersSent) {
-      throw new IllegalStateException();
+    if (cancelled) {
+      throw new IllegalStateException("The stream has been cancelled");
+    }
+    if (!headersSent) {
+      throw new IllegalStateException("You must send a message before terminating the stream");
+    }
+    if (trailersSent) {
+      throw new IllegalStateException("The stream has been closed");
     }
     trailersSent = true;
     return httpRequest.end();
   }
 
   private Future<Void> writeMessage(GrpcMessage message, boolean end) {
-
     if (cancelled) {
       throw new IllegalStateException("The stream has been cancelled");
     }
     if (trailersSent) {
       throw new IllegalStateException("The stream has been closed");
     }
-
     if (encoding != null && !encoding.equals(message.encoding())) {
       switch (encoding) {
         case "gzip":
@@ -203,6 +209,7 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
     }
 
     if (end) {
+      trailersSent = true;
       return httpRequest.end(GrpcMessageImpl.encode(message));
     } else {
       return httpRequest.write(GrpcMessageImpl.encode(message));
@@ -234,13 +241,31 @@ public class GrpcClientRequestImpl<Req, Resp> implements GrpcClientRequest<Req, 
   }
 
   @Override
-  public boolean cancel() {
-    if (cancelled || trailersSent) {
-      return false;
+  public void cancel() {
+    if (cancelled) {
+      return;
     }
     cancelled = true;
-    httpRequest.reset(GrpcError.CANCELLED.http2ResetCode);
-    return true;
+    // That's a bit convoluted, the reset API should be improved instead
+    ContextInternal ctx = ((FutureInternal) (response)).context();
+    ctx.execute(() -> {
+      boolean responseEnded;
+      if (response.failed()) {
+        return;
+      } else if (response.succeeded()) {
+        GrpcClientResponse<Req, Resp> resp = response.result();
+        if (resp.end().failed()) {
+          return;
+        } else {
+          responseEnded = resp.end().succeeded();
+        }
+      } else {
+        responseEnded = false;
+      }
+      if (!trailersSent || !responseEnded) {
+        httpRequest.reset(GrpcError.CANCELLED.http2ResetCode);
+      }
+    });
   }
 
   @Override
