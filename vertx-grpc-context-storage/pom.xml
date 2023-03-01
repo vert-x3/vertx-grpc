@@ -21,7 +21,6 @@
 
   <properties>
     <doc.skip>false</doc.skip>
-    <skipAssembly>false</skipAssembly>
   </properties>
 
   <dependencies>
