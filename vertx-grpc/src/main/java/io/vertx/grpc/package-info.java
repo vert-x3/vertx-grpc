@@ -13,7 +13,7 @@
  *
  *  You may elect to redistribute this code under either of these licenses.
  */
-@ModuleGen(name = "vertx-grpc", groupPackage = "io.vertx")
+@ModuleGen(name = "vertx-grpc", groupPackage = "io.vertx", useFutures = true)
 package io.vertx.grpc;
 
 import io.vertx.codegen.annotations.ModuleGen;
