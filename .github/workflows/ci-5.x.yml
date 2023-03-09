@@ -1,0 +1,45 @@
+name: vertx-grpc (5.x)
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: '0 5 * * *'
+jobs:
+  CI:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            jdk: 8
+            profile: ''
+          - os: ubuntu-latest
+            jdk: 8
+            profile: '-PtestNativeTransport'
+          - os: ubuntu-latest
+            jdk: 8
+            profile: '-PtestDomainSockets'
+          - os: ubuntu-latest
+            jdk: 17
+            profile: ''
+          - os: windows-latest
+            jdk: 8
+            profile: ''
+    uses: ./.github/workflows/ci.yml
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      jdk: ${{ matrix.jdk }}
+      os: ${{ matrix.os }}
+      profile: ${{ matrix.profile }}
+    secrets: inherit
+  Deploy:
+    if: ${{ github.repository_owner == 'eclipse-vertx' && (github.event_name == 'push' || github.event_name == 'schedule') }}
+    needs: CI
+    uses: ./.github/workflows/deploy.yml
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      jdk: 8
+    secrets: inherit
