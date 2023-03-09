@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2022 Contributors to the Eclipse Foundation
+ * Copyright (c) 2011-2023 Contributors to the Eclipse Foundation
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
@@ -16,21 +16,23 @@ import io.netty.util.AsciiString;
 import io.vertx.core.MultiMap;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
 
   public static void writeMetadata(Metadata metadata, MultiMap mmap) {
     byte[][] t = InternalMetadata.serialize(metadata);
-    for (int i = 0;i < t.length;i+=2) {
+    for (int i = 0; i < t.length; i += 2) {
       mmap.add(new AsciiString(t[i], false), new AsciiString(t[i + 1], false));
     }
   }
 
   public static Metadata readMetadata(MultiMap headers) {
-    byte[][] abc = new byte[headers.size() * 2][];
+    List<Map.Entry<String, String>> entries = headers.entries();
+    byte[][] abc = new byte[entries.size() * 2][];
     int idx = 0;
-    for (Map.Entry<String, String> entry : headers) {
+    for (Map.Entry<String, String> entry : entries) {
       abc[idx++] = entry.getKey().getBytes(StandardCharsets.UTF_8);
       abc[idx++] = entry.getValue().getBytes(StandardCharsets.UTF_8);
     }
