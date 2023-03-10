@@ -2,7 +2,7 @@
 package {{packageName}};
 {{/packageName}}
 
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerRequest;
@@ -12,7 +12,6 @@ import io.vertx.grpc.server.GrpcServer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 public class {{className}}  {
   private final GrpcServer server;
@@ -23,34 +22,43 @@ public class {{className}}  {
 
   public interface {{serviceName}}Api {
 {{#unaryMethods}}
-    Future<{{outputType}}> {{methodName}}({{inputType}} request);
+    default void {{methodName}}({{inputType}} request, Promise<{{outputType}}> response) {}
 {{/unaryMethods}}
 {{#unaryManyMethods}}
-    Consumer<WriteStream<{{outputType}}>> {{methodName}}({{inputType}} request);
+    default void {{methodName}}({{inputType}} request, WriteStream<{{outputType}}> response) {}
 {{/unaryManyMethods}}
 {{#manyUnaryMethods}}
-    Future<{{outputType}}> {{methodName}}(ReadStream<{{inputType}}> request);
+    default void {{methodName}}(ReadStream<{{inputType}}> request, Promise<{{outputType}}> response) {}
 {{/manyUnaryMethods}}
 {{#manyManyMethods}}
-    Consumer<WriteStream<{{outputType}}>> {{methodName}}(ReadStream<{{inputType}}> request);
+    default void {{methodName}}(ReadStream<{{inputType}}> request, WriteStream<{{outputType}}> response) {}
 {{/manyManyMethods}}
   }
 
   public {{className}} callHandlers({{serviceName}}Api implementation) {
 {{#unaryMethods}}
-    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request ->
-            request.handler(req -> implementation.{{methodName}}(req)
-                .onSuccess(resp -> request.response().end(resp))
-            ));
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> {
+      Promise<{{outputType}}> promise = Promise.promise();
+      request.handler(req -> implementation.{{methodName}}(req, promise));
+      promise.future().onSuccess(resp -> request.response().end(resp));
+    });
 {{/unaryMethods}}
 {{#unaryManyMethods}}
-    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> request.handler(req -> implementation.{{methodName}}(req).accept(request.response())));
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> {
+      request.handler(req -> implementation.{{methodName}}(req, request.response()));
+    });
 {{/unaryManyMethods}}
 {{#manyUnaryMethods}}
-    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> implementation.{{methodName}}(request).onSuccess(resp -> request.response().end(resp)));
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> {
+      Promise<{{outputType}}> promise = Promise.promise();
+      implementation.{{methodName}}(request, promise);
+      promise.future().onSuccess(resp -> request.response().end(resp));
+    });
 {{/manyUnaryMethods}}
 {{#manyManyMethods}}
-    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> implementation.{{methodName}}(request).accept(request.response()));
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> {
+      implementation.{{methodName}}(request, request.response());
+    });
 {{/manyManyMethods}}
     return this;
   }
