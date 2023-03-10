@@ -1,0 +1,61 @@
+{{#packageName}}
+package {{packageName}};
+{{/packageName}}
+
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.streams.ReadStream;
+import io.vertx.core.streams.WriteStream;
+import io.vertx.grpc.server.GrpcServer;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+public class {{className}}  {
+  private final GrpcServer server;
+
+  public {{className}}(Vertx vertx) {
+    this.server = GrpcServer.server(vertx);
+  }
+
+  public interface {{serviceName}}Api {
+{{#unaryMethods}}
+    Future<{{outputType}}> {{methodName}}({{inputType}} request);
+{{/unaryMethods}}
+{{#unaryManyMethods}}
+    Consumer<WriteStream<{{outputType}}>> {{methodName}}({{inputType}} request);
+{{/unaryManyMethods}}
+{{#manyUnaryMethods}}
+    Future<{{outputType}}> {{methodName}}(ReadStream<{{inputType}}> request);
+{{/manyUnaryMethods}}
+{{#manyManyMethods}}
+    Consumer<WriteStream<{{outputType}}>> {{methodName}}(ReadStream<{{inputType}}> request);
+{{/manyManyMethods}}
+  }
+
+  public {{className}} callHandlers({{serviceName}}Api implementation) {
+{{#unaryMethods}}
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request ->
+            request.handler(req -> implementation.{{methodName}}(req)
+                .onSuccess(resp -> request.response().end(resp))
+            ));
+{{/unaryMethods}}
+{{#unaryManyMethods}}
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> request.handler(req -> implementation.{{methodName}}(req).accept(request.response())));
+{{/unaryManyMethods}}
+{{#manyUnaryMethods}}
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> implementation.{{methodName}}(request).onSuccess(resp -> request.response().end(resp)));
+{{/manyUnaryMethods}}
+{{#manyManyMethods}}
+    server.callHandler({{serviceName}}Grpc.{{methodNameGetter}}(), request -> implementation.{{methodName}}(request).accept(request.response()));
+{{/manyManyMethods}}
+    return this;
+  }
+
+  public Handler<HttpServerRequest> getGrpcServer() {
+    return server;
+  }
+}
