@@ -115,14 +115,14 @@ public class VertxServer extends Server {
         group.addWorker(context.nettyEventLoop());
         contextLocal.get().add(context);
         if (start) {
-          context.executeBlocking(v2 -> {
+          context.<Void>executeBlocking(v2 -> {
             try {
               server.start();
               v2.complete();
             } catch (IOException e) {
               v2.fail(e);
             }
-          }, completionHandler);
+          }).onComplete(completionHandler);
         } else {
           completionHandler.handle(Future.succeededFuture());
         }
@@ -136,10 +136,10 @@ public class VertxServer extends Server {
         contextLocal.get().remove(context);
         if (shutdown) {
           map.remove(id);
-          context.executeBlocking(p -> {
+          context.<Void>executeBlocking(p -> {
             server.shutdown();
             p.complete();
-          }, promise);
+          }).onComplete(promise);
         } else {
           promise.complete();
         }

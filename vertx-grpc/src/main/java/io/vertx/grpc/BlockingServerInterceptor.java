@@ -49,7 +49,7 @@ public class BlockingServerInterceptor implements ServerInterceptor {
     AsyncListener<ReqT> asyncListener = new AsyncListener<>();
     vertx.<ServerCall.Listener<ReqT>>executeBlocking(blockingCode ->
         blockingCode.complete(interceptor.interceptCall(serverCall, metadata, serverCallHandler)),
-      false,
+      false).onComplete(
       ar -> {
         if (ar.succeeded()) {
           asyncListener.setDelegate(ar.result());
