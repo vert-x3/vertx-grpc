@@ -61,10 +61,10 @@ public class ContextStorageTest {
       channel.shutdown();
     }
     if (httpServer != null) {
-      httpServer.close(should.asyncAssertSuccess());
+      httpServer.close().onComplete(should.asyncAssertSuccess());
     }
     if (vertx != null) {
-      vertx.close(should.asyncAssertSuccess());
+      vertx.close().onComplete(should.asyncAssertSuccess());
     }
   }
 
@@ -111,7 +111,7 @@ public class ContextStorageTest {
     Async servertStart = should.async();
     vertx.createHttpServer()
       .requestHandler(server)
-      .listen(0, should.asyncAssertSuccess(httpServer -> {
+      .listen(0).onComplete(should.asyncAssertSuccess(httpServer -> {
         this.httpServer = httpServer;
         servertStart.complete();
       }));

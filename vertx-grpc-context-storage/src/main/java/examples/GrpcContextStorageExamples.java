@@ -19,7 +19,7 @@ public class GrpcContextStorageExamples {
       String result = doSomething();
       prom.complete(result);
 
-    }, ar -> {
+    }).onComplete(ar -> {
 
       // Same as grpcCtx1 and grpcCtx2
       Context grpcCtx3 = Context.current();

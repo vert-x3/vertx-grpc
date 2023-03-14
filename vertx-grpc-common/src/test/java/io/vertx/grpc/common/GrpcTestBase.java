@@ -42,7 +42,7 @@ public abstract class GrpcTestBase {
 
   @After
   public void tearDown(TestContext should) {
-    vertx.close(should.asyncAssertSuccess());
+    vertx.close().onComplete(should.asyncAssertSuccess());
   }
 
   public static Buffer unzip(Buffer buffer) {
