@@ -59,25 +59,13 @@ public class GrpcWriteStream<T> implements WriteStream<T> {
   }
 
   @Override
-  public void write(T data, Handler<AsyncResult<Void>> hndlr) {
-    try {
-      observer.onNext(data);
-    } catch (Throwable e) {
-      hndlr.handle(Future.failedFuture(e));
-      return;
-    }
-    hndlr.handle(Future.succeededFuture());
-  }
-
-  @Override
-  public void end(Handler<AsyncResult<Void>> hndlr) {
+  public Future<Void> end() {
     try {
       observer.onCompleted();
     } catch (Throwable e) {
-      hndlr.handle(Future.failedFuture(e));
-      return;
+      return Future.failedFuture(e);
     }
-    hndlr.handle(Future.succeededFuture());
+    return Future.succeededFuture();
   }
 
   @Override
