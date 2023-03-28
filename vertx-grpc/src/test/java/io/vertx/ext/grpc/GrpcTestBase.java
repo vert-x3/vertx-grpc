@@ -43,7 +43,8 @@ public abstract class GrpcTestBase {
       VertxServer s = server;
       server = null;
       final long timerId = rule.vertx().setTimer(10_000L, t -> should.fail("Timeout shutting down"));
-      s.shutdown(shutdown -> {
+      Promise<Void> promise = Promise.promise();
+      promise.future().onComplete(shutdown -> {
         rule.vertx().cancelTimer(timerId);
         if (shutdown.failed()) {
           should.fail(shutdown.cause());
@@ -51,6 +52,7 @@ public abstract class GrpcTestBase {
           test.complete();
         }
       });
+      s.shutdown(promise);
     }
   }
 

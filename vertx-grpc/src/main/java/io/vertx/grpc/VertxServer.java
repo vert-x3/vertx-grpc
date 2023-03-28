@@ -191,10 +191,10 @@ public class VertxServer extends Server {
 
   @Override
   public VertxServer shutdown() {
-    return shutdown(ar -> {});
+    return shutdown(Promise.promise());
   }
 
-  public VertxServer shutdown(Handler<AsyncResult<Void>> completionHandler) {
+  public VertxServer shutdown(Promise<Void> completionHandler) {
     if (hook != null) {
       context.removeCloseHook(hook);
     }
