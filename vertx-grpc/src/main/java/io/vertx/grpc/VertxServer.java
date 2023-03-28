@@ -34,6 +34,9 @@ import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.SslContextProvider;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.spi.transport.Transport;
+import org.crac.Context;
+import org.crac.Core;
+import org.crac.Resource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +54,7 @@ import java.util.function.Consumer;
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
-public class VertxServer extends Server {
+public class VertxServer extends Server implements Resource {
 
   private static final ConcurrentMap<ServerID, ActualServer> map = new ConcurrentHashMap<>();
 
@@ -166,6 +169,7 @@ public class VertxServer extends Server {
     this.builder = builder;
     this.context = context;
     this.commandDecorator = commandDecorator;
+    Core.getGlobalContext().register(this);
   }
 
   @Override
@@ -235,5 +239,27 @@ public class VertxServer extends Server {
 
   public Server getRawServer() {
     return actual.server;
+  }
+
+  @Override
+  public void beforeCheckpoint(Context<? extends Resource> context) throws Exception {
+    Promise<Void> promise = Promise.promise();
+    this.context.runOnContext(ignored -> {
+      if (actual != null) {
+        shutdown(promise);
+      }
+    });
+    promise.future().toCompletionStage().toCompletableFuture().get();
+  }
+
+  @Override
+  public void afterRestore(Context<? extends Resource> context) throws Exception {
+    Promise<Void> promise = Promise.promise();
+    this.context.runOnContext(ignored -> {
+      if (actual != null) {
+        start(promise);
+      }
+    });
+    promise.future().toCompletionStage().toCompletableFuture().get();
   }
 }
