@@ -234,14 +234,4 @@ public class GrpcServerResponseImpl<Req, Resp> implements GrpcServerResponse<Req
       return httpResponse.write(GrpcMessageImpl.encode(message));
     }
   }
-
-  @Override
-  public void write(Resp data, Handler<AsyncResult<Void>> handler) {
-    write(data).onComplete(handler);
-  }
-
-  @Override
-  public void end(Handler<AsyncResult<Void>> handler) {
-    end().onComplete(handler);
-  }
 }
