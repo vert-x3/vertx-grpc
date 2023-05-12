@@ -11,10 +11,10 @@
   <packaging>pom</packaging>
 
   <artifactId>vertx-grpc-parent</artifactId>
-  <version>4.4.2</version>
+  <version>4.4.3-SNAPSHOT</version>
 
   <properties>
-    <stack.version>4.4.2</stack.version>
+    <stack.version>4.4.3-SNAPSHOT</stack.version>
     <doc.skip>true</doc.skip>
   </properties>
 
