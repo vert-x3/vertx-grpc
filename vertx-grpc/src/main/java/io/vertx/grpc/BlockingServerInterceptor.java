@@ -47,8 +47,7 @@ public class BlockingServerInterceptor implements ServerInterceptor {
   public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata,
                                                                ServerCallHandler<ReqT, RespT> serverCallHandler) {
     AsyncListener<ReqT> asyncListener = new AsyncListener<>();
-    vertx.<ServerCall.Listener<ReqT>>executeBlocking(blockingCode ->
-        blockingCode.complete(interceptor.interceptCall(serverCall, metadata, serverCallHandler)),
+    vertx.executeBlocking(() -> interceptor.interceptCall(serverCall, metadata, serverCallHandler),
       false).onComplete(
       ar -> {
         if (ar.succeeded()) {
