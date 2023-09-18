@@ -286,7 +286,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
         // options, Collections.singletonList(HttpVersion.HTTP_2.alpnName())
         SSLHelper helper = new SSLHelper(SSLHelper.resolveEngineOptions(options.getSslEngineOptions(), true));
         SslChannelProvider scp = helper
-          .resolveSslChannelProvider(options.getSslOptions(), "", false, null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), context)
+          .resolveSslChannelProvider(options.getSslOptions(), "", false, null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
           .toCompletionStage()
           .toCompletableFuture()
           .toCompletableFuture().get(1, TimeUnit.MINUTES);

@@ -29,10 +29,7 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.future.PromiseInternal;
 import io.vertx.core.impl.VertxInternal;
-import io.vertx.core.net.impl.SSLHelper;
-import io.vertx.core.net.impl.ServerID;
-import io.vertx.core.net.impl.SslContextProvider;
-import io.vertx.core.net.impl.VertxEventLoopGroup;
+import io.vertx.core.net.impl.*;
 import io.vertx.core.spi.transport.Transport;
 
 import java.io.IOException;
@@ -75,8 +72,13 @@ public class VertxServer extends Server {
         ContextInternal other = vertx.createWorkerContext();
         SslContextProvider provider;
         try {
-          SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
-          provider = helper.buildContextProvider(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+          SSLHelper helper = new SSLHelper(SSLHelper.resolveEngineOptions(options.getSslEngineOptions(), true));
+          SslChannelProvider scp = helper
+            .resolveSslChannelProvider(options.getSslOptions(), "", false, null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
+            .toCompletionStage()
+            .toCompletableFuture()
+            .toCompletableFuture().get(1, TimeUnit.MINUTES);
+          provider = scp.sslContextProvider();
         } catch (InterruptedException e) {
           throw new VertxException(e);
         } catch (ExecutionException e) {
