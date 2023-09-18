@@ -74,7 +74,7 @@ public class VertxServer extends Server {
         try {
           SSLHelper helper = new SSLHelper(SSLHelper.resolveEngineOptions(options.getSslEngineOptions(), true));
           SslChannelProvider scp = helper
-            .resolveSslChannelProvider(options.getSslOptions(), "", false, null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
+            .resolveSslChannelProvider(options.getSslOptions(), "", false, options.getClientAuth(), Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
             .toCompletionStage()
             .toCompletableFuture()
             .toCompletableFuture().get(1, TimeUnit.MINUTES);
