@@ -19,16 +19,15 @@ import io.grpc.*;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
+import io.vertx.core.*;
 import io.vertx.core.Context;
-import io.vertx.core.Handler;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxException;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.impl.ContextInternal;
 import io.vertx.core.impl.VertxInternal;
 import io.vertx.core.net.ClientOptionsBase;
 import io.vertx.core.net.impl.SSLHelper;
+import io.vertx.core.net.impl.SslChannelProvider;
 import io.vertx.core.net.impl.SslContextProvider;
 import io.vertx.core.spi.transport.Transport;
 
@@ -284,8 +283,14 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       ContextInternal other = ((VertxInternal) vertx).createWorkerContext();
       SslContextProvider provider;
       try {
-        SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
-        provider = helper.buildContextProvider(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
+        // options, Collections.singletonList(HttpVersion.HTTP_2.alpnName())
+        SSLHelper helper = new SSLHelper(SSLHelper.resolveEngineOptions(options.getSslEngineOptions(), true));
+        SslChannelProvider scp = helper
+          .resolveSslChannelProvider(options.getSslOptions(), "", false, null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
+          .toCompletionStage()
+          .toCompletableFuture()
+          .toCompletableFuture().get(1, TimeUnit.MINUTES);
+        provider = scp.sslContextProvider();
       } catch (InterruptedException e) {
         throw new VertxException(e);
       } catch (ExecutionException e) {
