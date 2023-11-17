@@ -28,13 +28,13 @@ public class SslTest extends GrpcTestBase {
   public void testConnect(TestContext ctx) throws Exception {
     testSimple(options -> options.setSsl(true)
       .setUseAlpn(true)
-      .setTrustStoreOptions(new JksOptions()
+      .setTrustOptions(new JksOptions()
         .setPath("tls/client-truststore.jks")
         .setPassword("wibble")), options ->
       options
         .setSsl(true)
         .setUseAlpn(true)
-        .setKeyStoreOptions(new JksOptions()
+        .setKeyCertOptions(new JksOptions()
           .setPath("tls/server-keystore.jks")
           .setPassword("wibble")), ctx, true);
   }
@@ -48,7 +48,7 @@ public class SslTest extends GrpcTestBase {
       options
         .setSsl(true)
         .setUseAlpn(true)
-        .setKeyStoreOptions(new JksOptions()
+        .setKeyCertOptions(new JksOptions()
           .setPath("tls/server-keystore.jks")
           .setPassword("wibble")), ctx, true);
   }
@@ -59,18 +59,18 @@ public class SslTest extends GrpcTestBase {
         .setTrustAll(true)
         .setSsl(true)
         .setUseAlpn(true)
-        .setKeyStoreOptions(new JksOptions()
+        .setKeyCertOptions(new JksOptions()
           .setPath("tls/server-keystore.jks")
           .setPassword("wibble"))
       , options ->
         options
           .setSsl(true)
           .setUseAlpn(true)
-          .setKeyStoreOptions(new JksOptions()
+          .setKeyCertOptions(new JksOptions()
             .setPath("tls/server-keystore.jks")
             .setPassword("wibble"))
           .setClientAuth(ClientAuth.REQUIRED)
-          .setTrustStoreOptions(new JksOptions()
+          .setTrustOptions(new JksOptions()
             .setPath("tls/client-truststore.jks")
             .setPassword("wibble")), ctx, true);
   }
@@ -84,11 +84,11 @@ public class SslTest extends GrpcTestBase {
       options
         .setSsl(true)
         .setUseAlpn(true)
-        .setKeyStoreOptions(new JksOptions()
+        .setKeyCertOptions(new JksOptions()
           .setPath("tls/server-keystore.jks")
           .setPassword("wibble"))
         .setClientAuth(ClientAuth.REQUIRED)
-        .setTrustStoreOptions(new JksOptions()
+        .setTrustOptions(new JksOptions()
           .setPath("tls/client-truststore.jks")
           .setPassword("wibble")), ctx, false);
   }

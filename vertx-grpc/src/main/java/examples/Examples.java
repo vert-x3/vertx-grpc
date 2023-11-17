@@ -158,7 +158,7 @@ public class Examples {
       .useSsl(options -> options
         .setSsl(true)
         .setUseAlpn(true)
-        .setKeyStoreOptions(new JksOptions()
+        .setKeyCertOptions(new JksOptions()
           .setPath("server-keystore.jks")
           .setPassword("secret")));
   }
@@ -206,7 +206,7 @@ public class Examples {
       .useSsl(options -> options
         .setSsl(true)
         .setUseAlpn(true)
-        .setTrustStoreOptions(new JksOptions()
+        .setKeyCertOptions(new JksOptions()
           .setPath("client-truststore.jks")
           .setPassword("secret")))
       .build();
