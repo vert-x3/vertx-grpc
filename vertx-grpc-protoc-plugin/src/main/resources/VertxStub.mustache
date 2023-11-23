@@ -70,6 +70,10 @@ public final class {{className}} {
         public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}(io.vertx.core.Handler<io.vertx.core.streams.WriteStream<{{inputType}}>> hdlr) {
             return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(ctx, hdlr, delegateStub::{{methodName}});
         }
+
+        public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}WithExceptionHandler(io.vertx.core.Handler<io.vertx.core.streams.WriteStream<{{inputType}}>> hdlr, io.vertx.core.Handler<java.lang.Throwable> exceptionHandler) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(ctx, hdlr, delegateStub::{{methodName}}, exceptionHandler);
+        }
         {{/manyManyMethods}}
     }
 
