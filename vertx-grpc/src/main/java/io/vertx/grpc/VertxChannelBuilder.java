@@ -16,7 +16,6 @@
 package io.vertx.grpc;
 
 import io.grpc.*;
-import io.grpc.internal.GrpcUtil;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.*;
@@ -33,6 +32,8 @@ import io.vertx.core.spi.transport.Transport;
 
 import javax.annotation.Nullable;
 import java.net.SocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,14 @@ import java.util.concurrent.TimeoutException;
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
  */
 public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuilder> {
+
+  private static String authorityFromHostAndPort(String host, int port) {
+    try {
+      return (new URI((String)null, (String)null, host, port, (String)null, (String)null, (String)null)).getAuthority();
+    } catch (URISyntaxException var3) {
+      throw new IllegalArgumentException("Invalid host or port: " + host + " " + port, var3);
+    }
+  }
 
   public static VertxChannelBuilder forTarget(Vertx vertx, String target) {
     return new VertxChannelBuilder(vertx, target);
@@ -64,7 +73,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   private final HttpClientOptions options = new HttpClientOptions();
 
   private VertxChannelBuilder(Vertx vertx, String host, int port) {
-    this(vertx, GrpcUtil.authorityFromHostAndPort(host, port));
+    this(vertx, authorityFromHostAndPort(host, port));
   }
 
   private VertxChannelBuilder(Vertx vertx, String target) {
@@ -196,12 +205,6 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   @Override
   public VertxChannelBuilder useTransportSecurity() {
     builder.useTransportSecurity();
-    return this;
-  }
-
-  @Override
-  public VertxChannelBuilder enableFullStreamDecompression() {
-    builder.enableFullStreamDecompression();
     return this;
   }
 
