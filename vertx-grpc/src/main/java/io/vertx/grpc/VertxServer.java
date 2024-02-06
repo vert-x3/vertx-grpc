@@ -84,7 +84,7 @@ public class VertxServer extends Server {
         } catch (TimeoutException e) {
           throw new VertxException(e);
         }
-        SslContext ctx = provider.createServerContext(true);
+        SslContext ctx = provider.createContext(true, true);
         builder.sslContext(ctx);
       }
 
