@@ -77,7 +77,7 @@ public class VertxServer extends Server {
         try {
           SSLHelper helper = new SSLHelper(options, Collections.singletonList(HttpVersion.HTTP_2.alpnName()));
           provider = helper.buildContextProvider(options.getSslOptions(), other).toCompletionStage().toCompletableFuture().get(1, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {Ssl
+        } catch (InterruptedException e) {
           throw new VertxException(e);
         } catch (ExecutionException e) {
           throw new VertxException(e.getCause());
