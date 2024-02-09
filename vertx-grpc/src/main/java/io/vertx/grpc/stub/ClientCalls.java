@@ -43,7 +43,12 @@ public final class ClientCalls {
   }
 
   public static <I, O> ReadStream<O> oneToMany(ContextInternal ctx, I request, BiConsumer<I, StreamObserver<O>> delegate) {
+    return oneToMany(ctx, request, delegate, null, null, null);
+  }
+
+  public static <I, O> ReadStream<O> oneToMany(ContextInternal ctx, I request, BiConsumer<I, StreamObserver<O>> delegate, Handler<O> handler, Handler<Void> endHandler, Handler<Throwable> exceptionHandler) {
     StreamObserverReadStream<O> response = new StreamObserverReadStream<>();
+    response.handler(handler).endHandler(endHandler).exceptionHandler(exceptionHandler);
     delegate.accept(request, response);
     return response;
   }
@@ -60,8 +65,12 @@ public final class ClientCalls {
   }
 
   public static <I, O> ReadStream<O> manyToMany(ContextInternal ctx, Handler<WriteStream<I>> requestHandler, Function<StreamObserver<O>, StreamObserver<I>> delegate, Handler<Throwable> exceptionHandler) {
+    return manyToMany(ctx, requestHandler, delegate, null, null, null);
+  }
+
+  public static <I, O> ReadStream<O> manyToMany(ContextInternal ctx, Handler<WriteStream<I>> requestHandler, Function<StreamObserver<O>, StreamObserver<I>> delegate, Handler<O> handler, Handler<Void> endHandler, Handler<Throwable> exceptionHandler) {
     StreamObserverReadStream<O> response = new StreamObserverReadStream<>();
-    response.exceptionHandler(exceptionHandler);
+    response.handler(handler).endHandler(endHandler).exceptionHandler(exceptionHandler);
     StreamObserver<I> request = delegate.apply(response);
     requestHandler.handle(new GrpcWriteStream<>(request));
     return response;
