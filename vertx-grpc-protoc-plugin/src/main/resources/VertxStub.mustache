@@ -57,6 +57,10 @@ public final class {{className}} {
             return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(ctx, request, delegateStub::{{methodName}});
         }
 
+        public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}WithHandler({{inputType}} request, io.vertx.core.Handler<{{outputType}}> handler, io.vertx.core.Handler<java.lang.Void> endHandler, io.vertx.core.Handler<java.lang.Throwable> exceptionHandler) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(ctx, request, delegateStub::{{methodName}}, handler, endHandler, exceptionHandler);
+        }
+
         {{/unaryManyMethods}}
         {{#manyUnaryMethods}}
         {{{methodHeader}}}
@@ -73,6 +77,10 @@ public final class {{className}} {
 
         public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}WithExceptionHandler(io.vertx.core.Handler<io.vertx.core.streams.WriteStream<{{inputType}}>> hdlr, io.vertx.core.Handler<java.lang.Throwable> exceptionHandler) {
             return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(ctx, hdlr, delegateStub::{{methodName}}, exceptionHandler);
+        }
+
+        public io.vertx.core.streams.ReadStream<{{outputType}}> {{methodName}}WithHandler(io.vertx.core.Handler<io.vertx.core.streams.WriteStream<{{inputType}}>> hdlr, io.vertx.core.Handler<{{outputType}}> handler, io.vertx.core.Handler<java.lang.Void> endHandler, io.vertx.core.Handler<java.lang.Throwable> exceptionHandler) {
+            return io.vertx.grpc.stub.ClientCalls.{{vertxCallsMethodName}}(ctx, hdlr, delegateStub::{{methodName}}, handler, endHandler, exceptionHandler);
         }
         {{/manyManyMethods}}
     }
