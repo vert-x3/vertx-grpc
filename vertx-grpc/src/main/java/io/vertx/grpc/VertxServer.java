@@ -29,7 +29,11 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.PromiseInternal;
 import io.vertx.core.internal.VertxInternal;
-import io.vertx.core.net.impl.*;
+import io.vertx.core.internal.tls.SslContextManager;
+import io.vertx.core.internal.tls.SslContextProvider;
+import io.vertx.core.net.impl.NetServerImpl;
+import io.vertx.core.net.impl.ServerID;
+import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.spi.transport.Transport;
 
 import java.io.IOException;
@@ -72,13 +76,12 @@ public class VertxServer extends Server {
         ContextInternal other = vertx.createWorkerContext();
         SslContextProvider provider;
         try {
-          SSLHelper helper = new SSLHelper(SSLHelper.resolveEngineOptions(options.getSslEngineOptions(), true));
-          SslChannelProvider scp = helper
-            .resolveSslChannelProvider(options.getSslOptions(), "", false, options.getClientAuth(), Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
+          SslContextManager helper = new SslContextManager(NetServerImpl.resolveEngineOptions(options.getSslEngineOptions(), true));
+          provider = helper
+            .resolveSslContextProvider(options.getSslOptions(), "", options.getClientAuth(), Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
             .toCompletionStage()
             .toCompletableFuture()
             .toCompletableFuture().get(1, TimeUnit.MINUTES);
-          provider = scp.sslContextProvider();
         } catch (InterruptedException e) {
           throw new VertxException(e);
         } catch (ExecutionException e) {
