@@ -24,19 +24,19 @@ public final class {{className}} {
 
     {{#javaDoc}}{{{javaDoc}}}{{/javaDoc}}
     public static final class {{serviceName}}VertxStub extends io.grpc.stub.AbstractStub<{{serviceName}}VertxStub> {
-        private final io.vertx.core.impl.ContextInternal ctx;
+        private final io.vertx.core.internal.ContextInternal ctx;
         private {{serviceName}}Grpc.{{serviceName}}Stub delegateStub;
 
         private {{serviceName}}VertxStub(io.grpc.Channel channel) {
             super(channel);
             delegateStub = {{serviceName}}Grpc.newStub(channel);
-            this.ctx = (io.vertx.core.impl.ContextInternal) io.vertx.core.Vertx.currentContext();
+            this.ctx = (io.vertx.core.internal.ContextInternal) io.vertx.core.Vertx.currentContext();
         }
 
         private {{serviceName}}VertxStub(io.grpc.Channel channel, io.grpc.CallOptions callOptions) {
             super(channel, callOptions);
             delegateStub = {{serviceName}}Grpc.newStub(channel).build(channel, callOptions);
-            this.ctx = (io.vertx.core.impl.ContextInternal) io.vertx.core.Vertx.currentContext();
+            this.ctx = (io.vertx.core.internal.ContextInternal) io.vertx.core.Vertx.currentContext();
         }
 
         @Override
