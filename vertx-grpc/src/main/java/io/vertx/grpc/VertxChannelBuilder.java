@@ -287,7 +287,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       SslContextProvider provider;
       try {
         // options, Collections.singletonList(HttpVersion.HTTP_2.alpnName())
-        SslContextManager helper = new SslContextManager(NetServerImpl.resolveEngineOptions(options.getSslEngineOptions(), true));
+        SslContextManager helper = new SslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
         provider = helper
           .resolveSslContextProvider(options.getSslOptions(), "", null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
           .toCompletionStage()

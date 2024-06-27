@@ -76,7 +76,7 @@ public class VertxServer extends Server {
         ContextInternal other = vertx.createWorkerContext();
         SslContextProvider provider;
         try {
-          SslContextManager helper = new SslContextManager(NetServerImpl.resolveEngineOptions(options.getSslEngineOptions(), true));
+          SslContextManager helper = new SslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
           provider = helper
             .resolveSslContextProvider(options.getSslOptions(), "", options.getClientAuth(), Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
             .toCompletionStage()
