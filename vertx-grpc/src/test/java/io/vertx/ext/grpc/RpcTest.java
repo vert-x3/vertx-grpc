@@ -140,9 +140,9 @@ public class RpcTest extends GrpcTestBase {
     server = VertxServerBuilder.forPort(vertx, port)
       .addService(ServerInterceptors.intercept(service, BlockingServerInterceptor.wrap(vertx, blockingInterceptor)))
       .build()
-      .start(ar -> {
-        if (ar.failed()) {
-          should.fail(ar.cause());
+      .start((res, err) -> {
+        if (err != null) {
+          should.fail(err);
           return;
         }
 
@@ -151,9 +151,9 @@ public class RpcTest extends GrpcTestBase {
           .build();
 
         VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
-        stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(should.asyncAssertFailure(err -> {
-          should.assertTrue(err instanceof StatusRuntimeException);
-          StatusRuntimeException sre = (StatusRuntimeException) err;
+        stub.sayHello(HelloRequest.newBuilder().setName("Julien").build()).onComplete(should.asyncAssertFailure(failure -> {
+          should.assertTrue(failure instanceof StatusRuntimeException);
+          StatusRuntimeException sre = (StatusRuntimeException) failure;
           should.assertEquals(Status.ABORTED, sre.getStatus());
           should.assertEquals("mdvalue", sre.getTrailers().get(mdKey));
           test.complete();

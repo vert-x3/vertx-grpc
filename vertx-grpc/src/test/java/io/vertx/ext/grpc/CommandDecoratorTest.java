@@ -38,8 +38,8 @@ public class CommandDecoratorTest extends GrpcTestBase {
         }
       }).build();
 
-    server.start(ar -> {
-      if (ar.succeeded()) {
+    server.start((res, err) -> {
+      if (err == null) {
         if (server.getRawServer() == null) {
           should.fail("The underlying server not exposed (server.getRawServer())");
         }
@@ -64,7 +64,7 @@ public class CommandDecoratorTest extends GrpcTestBase {
             test.complete();
           });
       } else {
-        should.fail(ar.cause());
+        should.fail(err);
       }
     });
   }

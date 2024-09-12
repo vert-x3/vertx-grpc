@@ -1,8 +1,7 @@
 package io.vertx.ext.grpc;
 
 import examples.GreeterGrpc;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
+import io.vertx.core.*;
 import io.vertx.core.impl.VertxBootstrapImpl;
 import io.vertx.core.spi.transport.Transport;
 import io.vertx.ext.unit.TestContext;
@@ -28,10 +27,17 @@ public class NativeTransportTest {
   }
 
   private void testInternal(TestContext ctx, Vertx vertx) {
+    Handler<AsyncResult<Void>> latch = ctx.asyncAssertSuccess();
     VertxServerBuilder.forPort(vertx, 0)
       .addService(new GreeterGrpc.GreeterImplBase() { })
       .build()
-      .start(ctx.asyncAssertSuccess());
+      .start((result, failure) -> {
+        if (failure == null) {
+          latch.handle(Future.failedFuture(failure));
+        } else {
+          latch.handle(Future.succeededFuture());
+        }
+      });
   }
 
   private void assumeNativeTransport() {

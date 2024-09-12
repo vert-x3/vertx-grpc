@@ -18,12 +18,7 @@ package io.vertx.grpc;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.handler.ssl.SslContext;
-import io.vertx.core.AsyncResult;
-import io.vertx.core.Closeable;
-import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.VertxException;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.internal.ContextInternal;
@@ -111,7 +106,7 @@ public class VertxServer extends Server {
           .build();
     }
 
-    void start(ContextInternal context, Handler<AsyncResult<Void>> completionHandler) {
+    void start(ContextInternal context, Completable<Void> completionHandler) {
       boolean start = count.getAndIncrement() == 0;
       context.runOnContext(v -> {
         if (contextLocal.get() == null) {
@@ -125,7 +120,7 @@ public class VertxServer extends Server {
             return null;
           }).onComplete(completionHandler);
         } else {
-          completionHandler.handle(Future.succeededFuture());
+          completionHandler.succeed();
         }
       });
     }
@@ -171,21 +166,21 @@ public class VertxServer extends Server {
 
   @Override
   public VertxServer start() throws IOException {
-    return start(ar -> {});
+    return start((res, err) -> {});
   }
 
-  public VertxServer start(Handler<AsyncResult<Void>> completionHandler) {
+  public VertxServer start(Completable<Void> completionHandler) {
     if (id.port > 0) {
       actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder, commandDecorator));
     } else {
       actual = new ActualServer(context.owner(), id, options, builder, commandDecorator);
     }
-    actual.start(context, ar1 -> {
-      if (ar1.succeeded()) {
+    actual.start(context, (res, err) -> {
+      if (err == null) {
         hook = this::shutdown;
         context.addCloseHook(hook);
       }
-      completionHandler.handle(ar1);
+      completionHandler.complete(res, err);
     });
     return this;
   }

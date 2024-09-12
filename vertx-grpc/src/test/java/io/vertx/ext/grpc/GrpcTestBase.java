@@ -72,21 +72,15 @@ public abstract class GrpcTestBase {
 
   Future<Void> startServer(ServerServiceDefinition service) {
     Promise<Void> promise = Promise.promise();
-    startServer(service, ar -> {
-      if (ar.succeeded()) {
-        promise.complete();
-      } else {
-        promise.fail(ar.cause());
-      }
-    });
+    startServer(service,promise);
     return promise.future();
   }
 
-  void startServer(ServerServiceDefinition service, Handler<AsyncResult<Void>> completionHandler) {
+  void startServer(ServerServiceDefinition service, Completable<Void> completionHandler) {
     startServer(service, VertxServerBuilder.forPort(vertx, port), completionHandler);
   }
 
-  void startServer(ServerServiceDefinition service, VertxServerBuilder builder, Handler<AsyncResult<Void>> completionHandler) {
+  void startServer(ServerServiceDefinition service, VertxServerBuilder builder, Completable<Void> completionHandler) {
     server = builder
       .addService(service)
       .build()
