@@ -32,7 +32,7 @@ public class NativeTransportTest {
       .addService(new GreeterGrpc.GreeterImplBase() { })
       .build()
       .start((result, failure) -> {
-        if (failure == null) {
+        if (failure != null) {
           latch.handle(Future.failedFuture(failure));
         } else {
           latch.handle(Future.succeededFuture());
