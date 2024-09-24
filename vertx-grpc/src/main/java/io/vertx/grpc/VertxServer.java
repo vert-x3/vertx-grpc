@@ -170,7 +170,7 @@ public class VertxServer extends Server {
   }
 
   public VertxServer start(Completable<Void> completionHandler) {
-    if (id.port > 0) {
+    if (id.port() > 0) {
       actual = map.computeIfAbsent(id, id -> new ActualServer(context.owner(), id, options, builder, commandDecorator));
     } else {
       actual = new ActualServer(context.owner(), id, options, builder, commandDecorator);
