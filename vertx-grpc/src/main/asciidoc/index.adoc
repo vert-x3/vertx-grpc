@@ -393,7 +393,7 @@ in your client
 
 == Advanced configuration
 
-Until now all gRPC examples where using sensible defaults but there is more, if you need to have full control over
+Until now all gRPC examples were using sensible defaults but there is more, if you need to have full control over
 the server configuration you should refer to the documentation: {@link io.vertx.grpc.VertxServerBuilder}, or if you
 need to control your client channel {@link io.vertx.grpc.VertxChannelBuilder}. Vert.x gRPC extends the grpc-java
 project (Netty transport) and therefore reading its http://www.grpc.io/grpc-java/javadoc/[documentation] is
