@@ -101,7 +101,7 @@ public class VertxServer extends Server {
       this.server = builder
           .executor(executor)
           .channelFactory(transport.serverChannelFactory(false))
-          .bossEventLoopGroup(vertx.getAcceptorEventLoopGroup())
+          .bossEventLoopGroup(vertx.acceptorEventLoopGroup())
           .workerEventLoopGroup(group)
           .build();
     }
