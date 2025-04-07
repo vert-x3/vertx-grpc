@@ -65,7 +65,7 @@ public final class ClientCalls {
   }
 
   public static <I, O> ReadStream<O> manyToMany(ContextInternal ctx, Handler<WriteStream<I>> requestHandler, Function<StreamObserver<O>, StreamObserver<I>> delegate, Handler<Throwable> exceptionHandler) {
-    return manyToMany(ctx, requestHandler, delegate, null, null, null);
+    return manyToMany(ctx, requestHandler, delegate, null, null, exceptionHandler);
   }
 
   public static <I, O> ReadStream<O> manyToMany(ContextInternal ctx, Handler<WriteStream<I>> requestHandler, Function<StreamObserver<O>, StreamObserver<I>> delegate, Handler<O> handler, Handler<Void> endHandler, Handler<Throwable> exceptionHandler) {
