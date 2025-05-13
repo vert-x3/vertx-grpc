@@ -190,7 +190,7 @@ public class VertxServer extends Server {
     return shutdown(Promise.promise());
   }
 
-  public VertxServer shutdown(Promise<Void> completionHandler) {
+  public VertxServer shutdown(Completable<Void> completionHandler) {
     if (hook != null) {
       context.removeCloseHook(hook);
     }
