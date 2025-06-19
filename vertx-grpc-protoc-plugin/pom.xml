@@ -12,6 +12,8 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>vertx-grpc-protoc-plugin</artifactId>
+  <name>Vert.x gRPC Protoc Plugin</name>
+
   <properties>
     <jprotoc.version>1.2.1</jprotoc.version>
     <canteen.version>1.1.0</canteen.version>
