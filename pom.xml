@@ -13,6 +13,8 @@
   <artifactId>vertx-grpc-parent</artifactId>
   <version>5.0.1-SNAPSHOT</version>
 
+  <name>Vert.x gRPC Parent</name>
+
   <scm>
     <connection>scm:git:git@github.com:vert-x3/vertx-grpc.git</connection>
     <developerConnection>scm:git:git@github.com:vert-x3/vertx-grpc.git</developerConnection>

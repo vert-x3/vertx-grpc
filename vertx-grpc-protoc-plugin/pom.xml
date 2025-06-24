@@ -17,6 +17,8 @@
     <canteen.version>1.1.0</canteen.version>
   </properties>
 
+  <name>Vert.x gRPC Protoc Plugin</name>
+
   <dependencies>
     <dependency>
       <groupId>com.salesforce.servicelibs</groupId>
