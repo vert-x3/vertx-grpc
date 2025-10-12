@@ -26,7 +26,7 @@ import io.vertx.core.internal.PromiseInternal;
 import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.tls.SslContextManager;
 import io.vertx.core.internal.tls.SslContextProvider;
-import io.vertx.core.net.impl.NetServerImpl;
+import io.vertx.core.net.impl.tcp.NetServerImpl;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.spi.transport.Transport;
@@ -68,12 +68,13 @@ public class VertxServer extends Server {
 
       // SSL
       if (options.isSsl()) {
+        options.setAlpnVersions(Collections.singletonList(HttpVersion.HTTP_2));
         ContextInternal other = vertx.createWorkerContext();
         SslContextProvider provider;
         try {
           SslContextManager helper = new SslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
           provider = helper
-            .resolveSslContextProvider(options.getSslOptions(), "", options.getClientAuth(), Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
+            .resolveSslContextProvider(options.getSslOptions(), "", options.getClientAuth(), other)
             .toCompletionStage()
             .toCompletableFuture()
             .toCompletableFuture().get(1, TimeUnit.MINUTES);

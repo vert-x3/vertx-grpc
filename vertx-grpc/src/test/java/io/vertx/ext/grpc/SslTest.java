@@ -114,12 +114,18 @@ public class SslTest extends GrpcTestBase {
 
         AtomicReference<ManagedChannel> channelRef = new AtomicReference<>();
         try {
-            ManagedChannel channel = VertxChannelBuilder.
+          ManagedChannel channel = null;
+          try {
+            channel = VertxChannelBuilder.
               forAddress(vertx, "localhost", port)
               .useSsl(clientSslBuilder)
               .build();
+          } catch (Exception e) {
+            e.printStackTrace(System.out);
+            throw new RuntimeException(e);
+          }
 
-            channelRef.set(channel);
+          channelRef.set(channel);
             VertxGreeterGrpc.GreeterVertxStub stub = VertxGreeterGrpc.newVertxStub(channel);
             HelloRequest request = HelloRequest.newBuilder().setName("Julien").build();
             Future<HelloReply> fut = stub.sayHello(request);

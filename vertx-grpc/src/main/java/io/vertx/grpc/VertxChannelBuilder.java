@@ -27,7 +27,7 @@ import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.tls.SslContextManager;
 import io.vertx.core.internal.tls.SslContextProvider;
 import io.vertx.core.net.ClientOptionsBase;
-import io.vertx.core.net.impl.NetServerImpl;
+import io.vertx.core.net.impl.tcp.NetServerImpl;
 import io.vertx.core.spi.transport.Transport;
 
 import javax.annotation.Nullable;
@@ -70,7 +70,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
   private final Vertx vertx;
   private final NettyChannelBuilder builder;
   private final ContextInternal context;
-  private final HttpClientOptions options = new HttpClientOptions();
+  private final HttpClientOptions options = new HttpClientOptions().setAlpnVersions(Collections.singletonList(HttpVersion.HTTP_2));
 
   private VertxChannelBuilder(Vertx vertx, String host, int port) {
     this(vertx, authorityFromHostAndPort(host, port));
@@ -289,7 +289,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
         // options, Collections.singletonList(HttpVersion.HTTP_2.alpnName())
         SslContextManager helper = new SslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
         provider = helper
-          .resolveSslContextProvider(options.getSslOptions(), "", null, Collections.singletonList(HttpVersion.HTTP_2.alpnName()), other)
+          .resolveSslContextProvider(options.getSslOptions(), "", null, other)
           .toCompletionStage()
           .toCompletableFuture()
           .toCompletableFuture().get(1, TimeUnit.MINUTES);
