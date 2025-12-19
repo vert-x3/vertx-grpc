@@ -1,6 +1,6 @@
 = Vert.x gRPC
 
-WARNING: this project is deprecated for removal, instead Vert.x gRPC should be used.
+WARNING: This project is *deprecated* for removal, instead you should use https://github.com/eclipse-vertx/vertx-grpc.
 
 The best description of gRPC can be seen at wikipedia.
 

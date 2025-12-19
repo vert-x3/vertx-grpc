@@ -1,0 +1,37 @@
+image:https://github.com/vert-x3/vertx-grpc/actions/workflows/ci-5.x.yml/badge.svg[Build Status (5.x),link=https://github.com/vert-x3/vertx-grpc/actions/workflows/ci-5.x.yml]
+image:https://github.com/vert-x3/vertx-grpc/actions/workflows/ci-4.x.yml/badge.svg[Build Status (4.x),link=https://github.com/vert-x3/vertx-grpc/actions/workflows/ci-4.x.yml]
+
+= Vert.x gRPC Netty
+
+WARNING: This project is *deprecated* for removal, instead you should use https://github.com/eclipse-vertx/vertx-grpc
+
+* client and server
+* server scaling
+* ssl configuration with options
+* auto close in Verticle
+
+== Plugin installation
+
+To use vertx-grpc-protoc-plugin with the protobuf-maven-plugin, add a https://www.xolstice.org/protobuf-maven-plugin/examples/protoc-plugin.html[custom protoc plugin configuration section].
+
+----
+<protocPlugins>
+    <protocPlugin>
+        <id>vertx-grpc-protoc-plugin</id>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-grpc-protoc-plugin</artifactId>
+        <version>[VERSION]</version>
+        <mainClass>io.vertx.grpc.protoc.plugin.VertxGrpcGenerator</mainClass>
+    </protocPlugin>
+</protocPlugins>
+----
+
+And add the https://github.com/vert-x3/vertx-grpc[vertx-grpc] dependency:
+
+----
+<dependency>
+  <groupId>io.vertx</groupId>
+  <artifactId>vertx-grpc</artifactId>
+  <version>[VERSION]</version>
+</dependency>
+----
