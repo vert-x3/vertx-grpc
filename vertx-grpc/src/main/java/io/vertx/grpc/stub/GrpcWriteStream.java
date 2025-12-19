@@ -22,9 +22,10 @@ import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;
 
 /**
- *
  * @author ecatala
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated
 public class GrpcWriteStream<T> implements WriteStream<T> {
 
   private final StreamObserver<T> observer;

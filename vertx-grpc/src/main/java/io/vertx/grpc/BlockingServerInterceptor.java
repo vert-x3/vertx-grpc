@@ -28,7 +28,9 @@ import java.util.function.Consumer;
  *
  * @author <a href="mailto:pkopachevskiy@corp.finam.ru">Pavel Kopachevskiy</a>
  * @author <a href="mailto:ruslan.sennov@gmail.com">Ruslan Sennov</a>
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated
 public class BlockingServerInterceptor implements ServerInterceptor {
 
   public static ServerInterceptor wrap(Vertx vertx, ServerInterceptor interceptor) {

@@ -13,6 +13,7 @@
  *
  *  You may elect to redistribute this code under either of these licenses.
  */
+
 @ModuleGen(name = "vertx-grpc", groupPackage = "io.vertx")
 package io.vertx.grpc;
 

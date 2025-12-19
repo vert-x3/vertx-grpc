@@ -1,5 +1,7 @@
 = Vert.x gRPC
 
+WARNING: this project is deprecated for removal, instead Vert.x gRPC should be used.
+
 The best description of gRPC can be seen at wikipedia.
 
 [quote, wikipedia, wikipedia]

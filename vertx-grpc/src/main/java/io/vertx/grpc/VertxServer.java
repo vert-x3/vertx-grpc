@@ -26,7 +26,6 @@ import io.vertx.core.internal.PromiseInternal;
 import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.tls.SslContextManager;
 import io.vertx.core.internal.tls.SslContextProvider;
-import io.vertx.core.net.impl.tcp.NetServerImpl;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.spi.transport.Transport;
@@ -46,7 +45,9 @@ import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated(forRemoval = true)
 public class VertxServer extends Server {
 
   private static final ConcurrentMap<ServerID, ActualServer> map = new ConcurrentHashMap<>();
