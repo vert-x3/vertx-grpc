@@ -30,7 +30,9 @@ import java.util.function.Function;
 /**
  * @author Rogelio Orts
  * @author Eduard Català
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated(forRemoval = true)
 public final class ServerCalls {
 
   private ServerCalls() {

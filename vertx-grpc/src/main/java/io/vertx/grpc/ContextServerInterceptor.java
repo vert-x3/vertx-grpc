@@ -31,7 +31,10 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * An abstract interceptor that allows capturing data from the metadata to the vertx context so it can be used later
  * on the asynchronous APIs.
+ *
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated
 public abstract class ContextServerInterceptor implements ServerInterceptor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ContextServerInterceptor.class);

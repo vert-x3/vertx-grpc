@@ -17,7 +17,9 @@ import java.util.stream.Collectors;
 
 /**
  * @author Rogelio Orts
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated
 public class VertxGrpcGenerator extends Generator {
 
   private static final int SERVICE_NUMBER_OF_PATHS = 2;

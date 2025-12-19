@@ -27,7 +27,6 @@ import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.tls.SslContextManager;
 import io.vertx.core.internal.tls.SslContextProvider;
 import io.vertx.core.net.ClientOptionsBase;
-import io.vertx.core.net.impl.tcp.NetServerImpl;
 import io.vertx.core.spi.transport.Transport;
 
 import javax.annotation.Nullable;
@@ -44,7 +43,9 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated(forRemoval = true)
 public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuilder> {
 
   private static String authorityFromHostAndPort(String host, int port) {

@@ -22,7 +22,9 @@ import io.vertx.core.streams.ReadStream;
 
 /**
  * @author Rogelio Orts
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated
 class StreamObserverReadStream<T> implements StreamObserver<T>, ReadStream<T> {
 
   private Handler<Throwable> exceptionHandler;

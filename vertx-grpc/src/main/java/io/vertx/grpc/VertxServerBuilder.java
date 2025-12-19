@@ -35,7 +35,9 @@ import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
+ * @deprecated instead use Vert.x gRPC
  */
+@Deprecated(forRemoval = true)
 public class VertxServerBuilder extends ServerBuilder<VertxServerBuilder> {
 
   public static VertxServerBuilder forPort(Vertx vertx, int port) {
