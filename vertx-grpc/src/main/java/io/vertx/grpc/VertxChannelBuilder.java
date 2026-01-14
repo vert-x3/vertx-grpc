@@ -301,7 +301,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       } catch (TimeoutException e) {
         throw new VertxException(e);
       }
-      SslContext ctx = provider.createContext(false, null, null, null, true);
+      SslContext ctx = provider.createContext(false, null, null, null, List.of("h2"));
       builder.sslContext(ctx);
     }
     Transport transport = ((VertxInternal) vertx).transport();
