@@ -24,6 +24,8 @@ import io.vertx.core.http.HttpVersion;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.PromiseInternal;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.internal.tls.ServerSslContextManager;
+import io.vertx.core.internal.tls.ServerSslContextProvider;
 import io.vertx.core.internal.tls.SslContextManager;
 import io.vertx.core.internal.tls.SslContextProvider;
 import io.vertx.core.net.impl.ServerID;
@@ -71,11 +73,11 @@ public class VertxServer extends Server {
       if (options.isSsl()) {
         options.setAlpnVersions(Collections.singletonList(HttpVersion.HTTP_2));
         ContextInternal other = vertx.createWorkerContext();
-        SslContextProvider provider;
+        ServerSslContextProvider provider;
         try {
-          SslContextManager helper = new SslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
+          ServerSslContextManager helper = new ServerSslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
           provider = helper
-            .resolveSslContextProvider(options.getSslOptions(), "", options.getClientAuth(), other)
+            .resolveSslContextProvider(options.getSslOptions(), other)
             .toCompletionStage()
             .toCompletableFuture()
             .toCompletableFuture().get(1, TimeUnit.MINUTES);
@@ -86,7 +88,7 @@ public class VertxServer extends Server {
         } catch (TimeoutException e) {
           throw new VertxException(e);
         }
-        SslContext ctx = provider.createContext(true, List.of("h2"));
+        SslContext ctx = provider.createServerContext(List.of("h2"));
         builder.sslContext(ctx);
       }
 

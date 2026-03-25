@@ -24,9 +24,12 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.internal.ContextInternal;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.internal.tls.ClientSslContextManager;
+import io.vertx.core.internal.tls.ClientSslContextProvider;
 import io.vertx.core.internal.tls.SslContextManager;
 import io.vertx.core.internal.tls.SslContextProvider;
 import io.vertx.core.net.ClientOptionsBase;
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.spi.transport.Transport;
 
 import javax.annotation.Nullable;
@@ -285,12 +288,16 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
     // SSL
     if (options.isSsl()) {
       ContextInternal other = ((VertxInternal) vertx).createWorkerContext();
-      SslContextProvider provider;
+      ClientSslContextProvider provider;
       try {
         // options, Collections.singletonList(HttpVersion.HTTP_2.alpnName())
-        SslContextManager helper = new SslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
+        ClientSslContextManager helper = new ClientSslContextManager(SslContextManager.resolveEngineOptions(options.getSslEngineOptions(), true));
+        ClientSSLOptions sslOptions = options
+          .getSslOptions()
+          .copy()
+          .setHostnameVerificationAlgorithm(options.isVerifyHost() ? "HTTPS" : "");
         provider = helper
-          .resolveSslContextProvider(options.getSslOptions(), "", null, other)
+          .resolveSslContextProvider(sslOptions, other)
           .toCompletionStage()
           .toCompletableFuture()
           .toCompletableFuture().get(1, TimeUnit.MINUTES);
@@ -301,7 +308,7 @@ public class VertxChannelBuilder extends ManagedChannelBuilder<VertxChannelBuild
       } catch (TimeoutException e) {
         throw new VertxException(e);
       }
-      SslContext ctx = provider.createContext(false,   List.of("h2"));
+      SslContext ctx = provider.createClientContext(List.of("h2"));
       builder.sslContext(ctx);
     }
     Transport transport = ((VertxInternal) vertx).transport();
