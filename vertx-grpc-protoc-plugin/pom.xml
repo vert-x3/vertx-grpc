@@ -11,6 +11,7 @@
 
   <modelVersion>4.0.0</modelVersion>
 
+  <name>vertx-grpc-protoc-plugin</name>
   <artifactId>vertx-grpc-protoc-plugin</artifactId>
   <properties>
     <jprotoc.version>1.2.1</jprotoc.version>

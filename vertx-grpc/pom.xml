@@ -25,9 +25,8 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
+  <name>vertx-grpc</name>
   <artifactId>vertx-grpc</artifactId>
-
-  <name>Vert.x gRPC</name>
 
   <properties>
     <grpc.version>1.65.0</grpc.version>
