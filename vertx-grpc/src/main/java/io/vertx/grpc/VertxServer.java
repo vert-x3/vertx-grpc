@@ -27,7 +27,6 @@ import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.tls.ServerSslContextManager;
 import io.vertx.core.internal.tls.ServerSslContextProvider;
 import io.vertx.core.internal.tls.SslContextManager;
-import io.vertx.core.internal.tls.SslContextProvider;
 import io.vertx.core.net.impl.ServerID;
 import io.vertx.core.net.impl.VertxEventLoopGroup;
 import io.vertx.core.spi.transport.Transport;

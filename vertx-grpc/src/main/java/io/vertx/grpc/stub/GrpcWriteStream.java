@@ -16,7 +16,6 @@
 package io.vertx.grpc.stub;
 
 import io.grpc.stub.StreamObserver;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.streams.WriteStream;

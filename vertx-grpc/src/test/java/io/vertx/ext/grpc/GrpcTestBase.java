@@ -3,7 +3,6 @@ package io.vertx.ext.grpc;
 import io.grpc.BindableService;
 import io.grpc.ServerServiceDefinition;
 import io.vertx.core.*;
-import io.vertx.core.internal.VertxInternal;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;

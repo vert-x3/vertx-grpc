@@ -16,12 +16,12 @@ public final class HelloWorldProto {
   }
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_helloworld_HelloRequest_descriptor;
-  static final 
+  static final
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_helloworld_HelloRequest_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
     internal_static_helloworld_HelloReply_descriptor;
-  static final 
+  static final
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_helloworld_HelloReply_fieldAccessorTable;
 

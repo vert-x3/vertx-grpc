@@ -4,37 +4,20 @@ import io.grpc.*;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.VertxGreeterGrpc;
-import io.grpc.examples.streaming.Empty;
-import io.grpc.examples.streaming.Item;
-import io.grpc.examples.streaming.VertxStreamingGrpc;
 import io.grpc.stub.MetadataUtils;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
-import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.streams.ReadStream;
-import io.vertx.core.streams.WriteStream;
-import io.vertx.ext.grpc.utils.IterableReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.grpc.BlockingServerInterceptor;
 import io.vertx.grpc.ContextServerInterceptor;
 import io.vertx.grpc.VertxChannelBuilder;
-import io.vertx.grpc.VertxServerBuilder;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static io.grpc.Metadata.ASCII_STRING_MARSHALLER;
-import static org.junit.Assert.assertEquals;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>

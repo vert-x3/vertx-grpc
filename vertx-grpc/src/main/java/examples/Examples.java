@@ -5,13 +5,10 @@ import io.grpc.stub.MetadataUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import io.vertx.core.*;
-import io.vertx.core.Context;
 import io.vertx.core.net.JksOptions;
 import io.vertx.docgen.Source;
 import io.vertx.grpc.*;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author <a href="mailto:julien@julienviet.com">Julien Viet</a>
