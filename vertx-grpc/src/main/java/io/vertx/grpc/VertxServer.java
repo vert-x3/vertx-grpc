@@ -153,7 +153,7 @@ public class VertxServer extends Server {
   private ActualServer actual;
   private final ContextInternal context;
   private final Consumer<Runnable> commandDecorator;
-  private Closeable hook;
+  private io.vertx.core.internal.Closeable hook;
 
   VertxServer(ServerID id,
               HttpServerOptions options,
@@ -180,8 +180,12 @@ public class VertxServer extends Server {
     }
     actual.start(context, (res, err) -> {
       if (err == null) {
-        hook = this::shutdown;
-        context.addCloseHook(hook);
+        hook = timeout -> {
+          PromiseInternal<Void> promise = context.promise();
+          actual.stop(context, promise);
+          return promise.future();
+        };
+        hook = context.registerResource(hook);
       }
       completionHandler.complete(res, err);
     });
@@ -194,11 +198,7 @@ public class VertxServer extends Server {
   }
 
   public VertxServer shutdown(Completable<Void> completionHandler) {
-    if (hook != null) {
-      context.removeCloseHook(hook);
-    }
-    PromiseInternal<Void> promise = context.promise(completionHandler);
-    actual.stop(context, promise);
+    hook.close().onComplete(completionHandler);
     return this;
   }
 
