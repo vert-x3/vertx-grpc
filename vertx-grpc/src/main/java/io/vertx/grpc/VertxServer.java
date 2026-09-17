@@ -17,6 +17,7 @@ package io.vertx.grpc;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.vertx.core.*;
 import io.vertx.core.http.HttpServerOptions;
@@ -53,7 +54,7 @@ public class VertxServer extends Server {
 
   private static final ConcurrentMap<ServerID, ActualServer> map = new ConcurrentHashMap<>();
 
-  private static class ActualServer {
+  private static class ActualServer implements Handler<Channel> {
 
     final ServerID id;
     final HttpServerOptions options;
@@ -109,13 +110,17 @@ public class VertxServer extends Server {
           .build();
     }
 
+    @Override
+    public void handle(Channel event) {
+    }
+
     void start(ContextInternal context, Completable<Void> completionHandler) {
       boolean start = count.getAndIncrement() == 0;
       context.runOnContext(v -> {
         if (contextLocal.get() == null) {
           contextLocal.set(new ArrayList<>());
         }
-        group.addWorker(context.nettyEventLoop());
+        group.addHandler(context.nettyEventLoop(), this);
         contextLocal.get().add(context);
         if (start) {
           context.<Void>executeBlocking(() -> {
@@ -131,7 +136,7 @@ public class VertxServer extends Server {
     void stop(ContextInternal context, Promise<Void> promise) {
       boolean shutdown = count.decrementAndGet() == 0;
       context.runOnContext(v -> {
-        group.removeWorker(context.nettyEventLoop());
+        group.removeHandler(context.nettyEventLoop(), this);
         contextLocal.get().remove(context);
         if (shutdown) {
           map.remove(id);
